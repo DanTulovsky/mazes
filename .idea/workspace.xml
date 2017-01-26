@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f656cca5-9f08-4901-9680-1d2fadfaa3e3" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/grid/grid_test.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/libraries/GOPATH__mazes_.xml" afterPath="$PROJECT_DIR$/.idea/libraries/GOPATH__mazes_.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/genalgos/bintree/bintree_test.go" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -24,8 +22,8 @@
       <file leaf-file-name="grid.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/grid/grid.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-165">
-              <caret line="21" column="12" lean-forward="false" selection-start-line="21" selection-start-column="5" selection-end-line="21" selection-end-column="12" />
+            <state relative-caret-position="195">
+              <caret line="13" column="0" lean-forward="true" selection-start-line="13" selection-start-column="0" selection-end-line="13" selection-end-column="0" />
               <folding>
                 <element signature="e#14#74#0" expanded="true" />
               </folding>
@@ -33,13 +31,25 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="grid_test.go" pinned="false" current-in-tab="true">
+      <file leaf-file-name="grid_test.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/grid/grid_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
-              <caret line="18" column="16" lean-forward="false" selection-start-line="18" selection-start-column="16" selection-end-line="18" selection-end-column="16" />
+            <state relative-caret-position="315">
+              <caret line="21" column="1" lean-forward="false" selection-start-line="21" selection-start-column="1" selection-end-line="21" selection-end-column="1" />
               <folding>
                 <element signature="e#14#30#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="bintree_test.go" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/genalgos/bintree/bintree_test.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="300">
+              <caret line="20" column="9" lean-forward="true" selection-start-line="20" selection-start-column="9" selection-end-line="20" selection-end-column="9" />
+              <folding>
+                <element signature="e#17#52#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -60,9 +70,11 @@
       <file leaf-file-name="bintree.go" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/genalgos/bintree/bintree.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="405">
-              <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-              <folding />
+            <state relative-caret-position="30">
+              <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
+              <folding>
+                <element signature="e#17#56#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -105,8 +117,9 @@
         <option value="$PROJECT_DIR$/utils/utils.go" />
         <option value="$PROJECT_DIR$/genalgos/bintree/bintree.go" />
         <option value="$PROJECT_DIR$/generate/genmaze.go" />
-        <option value="$PROJECT_DIR$/grid/grid.go" />
         <option value="$PROJECT_DIR$/grid/grid_test.go" />
+        <option value="$PROJECT_DIR$/genalgos/bintree/bintree_test.go" />
+        <option value="$PROJECT_DIR$/grid/grid.go" />
       </list>
     </option>
   </component>
@@ -240,7 +253,7 @@
       <recent name="$PROJECT_DIR$/genalgos" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.Grid Benchmarks">
+  <component name="RunManager" selected="Go Test.All Tests">
     <configuration default="false" name="Build genmaze.go and run" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
       <module name="mazes" />
       <working_directory value="$PROJECT_DIR$" />
@@ -648,6 +661,24 @@
     <configuration default="true" type="osgi.bnd.run" factoryName="Test Launcher (JUnit)">
       <method />
     </configuration>
+    <configuration default="false" name="Bintree Benchmarks" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="mazes" />
+      <working_directory value="$PROJECT_DIR$/genalgos/bintree" />
+      <framework value="gobench" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$/genalgos/bintree" />
+      <filePath value="$PROJECT_DIR$" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Bintree Tests" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="mazes" />
+      <working_directory value="$PROJECT_DIR$/genalgos/bintree" />
+      <framework value="gotest" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$/genalgos/bintree" />
+      <filePath value="$PROJECT_DIR$" />
+      <method />
+    </configuration>
     <configuration default="false" name="Grid Tests" type="GoTestRunConfiguration" factoryName="Go Test">
       <module name="mazes" />
       <working_directory value="$PROJECT_DIR$" />
@@ -666,10 +697,33 @@
       <filePath value="$PROJECT_DIR$" />
       <method />
     </configuration>
-    <list size="3">
-      <item index="0" class="java.lang.String" itemvalue="Go Test.Grid Tests" />
-      <item index="1" class="java.lang.String" itemvalue="Go Application.Build genmaze.go and run" />
-      <item index="2" class="java.lang.String" itemvalue="Go Test.Grid Benchmarks" />
+    <configuration default="false" name="All Tests" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="mazes" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <kind value="DIRECTORY" />
+      <package value="mazes/" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method />
+    </configuration>
+    <configuration default="false" name="All Benchmarks" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="mazes" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gobench" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method />
+    </configuration>
+    <list size="7">
+      <item index="0" class="java.lang.String" itemvalue="Go Test.Bintree Benchmarks" />
+      <item index="1" class="java.lang.String" itemvalue="Go Test.Bintree Tests" />
+      <item index="2" class="java.lang.String" itemvalue="Go Test.Grid Tests" />
+      <item index="3" class="java.lang.String" itemvalue="Go Test.Grid Benchmarks" />
+      <item index="4" class="java.lang.String" itemvalue="Go Test.All Tests" />
+      <item index="5" class="java.lang.String" itemvalue="Go Test.All Benchmarks" />
+      <item index="6" class="java.lang.String" itemvalue="Go Application.Build genmaze.go and run" />
     </list>
     <recent_temporary>
       <list size="1">
@@ -697,7 +751,7 @@
       <workItem from="1485446228754" duration="13000" />
       <workItem from="1485446255635" duration="2929000" />
       <workItem from="1485463320219" duration="137000" />
-      <workItem from="1485463485021" duration="952000" />
+      <workItem from="1485463485021" duration="1587000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <created>1485446626914</created>
@@ -706,34 +760,50 @@
       <option name="project" value="LOCAL" />
       <updated>1485446626915</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="initial tests and benchmarks for grid.">
+      <created>1485466110564</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1485466110564</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Grid_Benchmarks - 2017.01.26 at 16h 04m 00s.xml">
-      <configuration name="Grid Benchmarks" configurationId="GoTestRunConfiguration" />
+    <history-entry file="All_Benchmarks - 2017.01.26 at 16h 43m 25s.xml">
+      <configuration name="All Benchmarks" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Grid_Benchmarks - 2017.01.26 at 16h 05m 02s.xml">
-      <configuration name="Grid Benchmarks" configurationId="GoTestRunConfiguration" />
+    <history-entry file="All_Tests - 2017.01.26 at 16h 42m 53s.xml">
+      <configuration name="All Tests" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Grid_Benchmarks - 2017.01.26 at 16h 05m 11s.xml">
-      <configuration name="Grid Benchmarks" configurationId="GoTestRunConfiguration" />
+    <history-entry file="All_Tests - 2017.01.26 at 16h 42m 55s.xml">
+      <configuration name="All Tests" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Grid_Tests - 2017.01.26 at 15h 49m 37s.xml">
-      <configuration name="Grid Tests" configurationId="GoTestRunConfiguration" />
+    <history-entry file="All_Tests - 2017.01.26 at 16h 44m 14s.xml">
+      <configuration name="All Tests" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Grid_Tests - 2017.01.26 at 15h 49m 44s.xml">
-      <configuration name="Grid Tests" configurationId="GoTestRunConfiguration" />
+    <history-entry file="All_Tests - 2017.01.26 at 16h 45m 26s.xml">
+      <configuration name="All Tests" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Grid_Tests - 2017.01.26 at 16h 02m 48s.xml">
-      <configuration name="Grid Tests" configurationId="GoTestRunConfiguration" />
+    <history-entry file="Bintree_Benchmarks - 2017.01.26 at 16h 40m 05s.xml">
+      <configuration name="Bintree Benchmarks" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="Grid_Tests - 2017.01.26 at 16h 03m 14s.xml">
-      <configuration name="Grid Tests" configurationId="GoTestRunConfiguration" />
+    <history-entry file="Bintree_Benchmarks - 2017.01.26 at 16h 40m 31s.xml">
+      <configuration name="Bintree Benchmarks" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="Bintree_Benchmarks - 2017.01.26 at 16h 40m 44s.xml">
+      <configuration name="Bintree Benchmarks" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="Bintree_Benchmarks - 2017.01.26 at 16h 41m 42s.xml">
+      <configuration name="Bintree Benchmarks" configurationId="GoTestRunConfiguration" />
+    </history-entry>
+    <history-entry file="Bintree_Tests - 2017.01.26 at 16h 41m 34s.xml">
+      <configuration name="Bintree Tests" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="5436000" />
+    <option name="totallyTimeSpent" value="6071000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="4" y="23" width="1436" height="877" extended-state="6" />
@@ -748,7 +818,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.34123847" sideWeight="0.27943167" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297491" sideWeight="0.4925575" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28853756" sideWeight="0.72056836" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28853756" sideWeight="0.72056836" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Properties" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297491" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -780,7 +850,8 @@
     <option name="CHECK_COMMIT_MESSAGE_SPELLING" value="false" />
     <option name="SHOW_DIRTY_RECURSIVELY" value="true" />
     <MESSAGE value="test" />
-    <option name="LAST_COMMIT_MESSAGE" value="test" />
+    <MESSAGE value="initial tests and benchmarks for grid." />
+    <option name="LAST_COMMIT_MESSAGE" value="initial tests and benchmarks for grid." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -815,7 +886,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
           <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#17#56#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -851,7 +924,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
           <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#17#56#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -887,7 +962,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
           <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#17#56#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -923,7 +1000,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
           <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#17#56#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -959,54 +1038,8 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="405">
           <caret line="30" column="0" lean-forward="true" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/utils/utils.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="1" lean-forward="false" selection-start-line="6" selection-start-column="1" selection-end-line="6" selection-end-column="1" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/grid/grid.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#14#74#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/grid/grid.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#14#74#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/grid/grid.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#14#74#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/grid/grid.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#14#74#0" expanded="true" />
+            <element signature="e#17#56#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1019,10 +1052,50 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/genalgos/bintree/bintree.go">
+    <entry file="file://$PROJECT_DIR$/grid/grid.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#14#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/grid/grid.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#14#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/grid/grid.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#14#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/grid/grid.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#14#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/utils.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="6" column="1" lean-forward="false" selection-start-line="6" selection-start-column="1" selection-end-line="6" selection-end-column="1" />
           <folding />
         </state>
       </provider>
@@ -1037,22 +1110,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/grid/grid.go">
+    <entry file="file://$PROJECT_DIR$/genalgos/bintree/bintree.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-165">
-          <caret line="21" column="12" lean-forward="false" selection-start-line="21" selection-start-column="5" selection-end-line="21" selection-end-column="12" />
+        <state relative-caret-position="30">
+          <caret line="2" column="7" lean-forward="true" selection-start-line="2" selection-start-column="7" selection-end-line="2" selection-end-column="7" />
           <folding>
-            <element signature="e#14#74#0" expanded="true" />
+            <element signature="e#17#56#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/grid/grid_test.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="18" column="16" lean-forward="false" selection-start-line="18" selection-start-column="16" selection-end-line="18" selection-end-column="16" />
+        <state relative-caret-position="315">
+          <caret line="21" column="1" lean-forward="false" selection-start-line="21" selection-start-column="1" selection-end-line="21" selection-end-column="1" />
           <folding>
             <element signature="e#14#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/grid/grid.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="13" column="0" lean-forward="true" selection-start-line="13" selection-start-column="0" selection-end-line="13" selection-end-column="0" />
+          <folding>
+            <element signature="e#14#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/genalgos/bintree/bintree_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="20" column="9" lean-forward="true" selection-start-line="20" selection-start-column="9" selection-end-line="20" selection-end-column="9" />
+          <folding>
+            <element signature="e#17#52#0" expanded="true" />
           </folding>
         </state>
       </provider>
