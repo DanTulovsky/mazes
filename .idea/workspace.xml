@@ -850,7 +850,7 @@
       <workItem from="1485445035583" duration="651000" />
       <workItem from="1485445704142" duration="500000" />
       <workItem from="1485446228754" duration="13000" />
-      <workItem from="1485446255635" duration="2929000" />
+      <workItem from="1485446255635" duration="2942000" />
     </task>
     <task id="LOCAL-00001" summary="test">
       <created>1485446626914</created>
@@ -859,11 +859,18 @@
       <option name="project" value="LOCAL" />
       <updated>1485446626915</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="prettier ascii chart.">
+      <created>1485460584811</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1485460584811</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="4347000" />
+    <option name="totallyTimeSpent" value="4360000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="371" y="32" width="2066" height="1513" extended-state="0" />
@@ -910,7 +917,8 @@
     <option name="CHECK_COMMIT_MESSAGE_SPELLING" value="false" />
     <option name="SHOW_DIRTY_RECURSIVELY" value="true" />
     <MESSAGE value="test" />
-    <option name="LAST_COMMIT_MESSAGE" value="test" />
+    <MESSAGE value="prettier ascii chart." />
+    <option name="LAST_COMMIT_MESSAGE" value="prettier ascii chart." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
