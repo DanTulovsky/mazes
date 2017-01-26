@@ -11,7 +11,7 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano()) // need to initialize the seed
 }
 
-func random(min, max int) int {
+func Random(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
@@ -52,13 +52,13 @@ func (g *Grid) String() string {
 			}
 			body := "   "
 			east_boundary := " "
-			if !cell.Linked(cell.east) {
+			if !cell.Linked(cell.East) {
 				east_boundary = "|"
 			}
 			top = fmt.Sprintf("%v%v%v", top, body, east_boundary)
 
 			south_boundary := "   "
-			if !cell.Linked(cell.south) {
+			if !cell.Linked(cell.South) {
 				south_boundary = "---"
 			}
 			corner := "+"
@@ -91,10 +91,10 @@ func (g *Grid) configureCells() {
 				log.Fatalf("failed to initialize grid: %v", err)
 			}
 			// error is ignored, we just set nil if there is no neighbor
-			cell.north, _ = g.Cell(r-1, c)
-			cell.south, _ = g.Cell(r+1, c)
-			cell.west, _ = g.Cell(r, c-1)
-			cell.east, _ = g.Cell(r, c+1)
+			cell.North, _ = g.Cell(r-1, c)
+			cell.South, _ = g.Cell(r+1, c)
+			cell.West, _ = g.Cell(r, c-1)
+			cell.East, _ = g.Cell(r, c+1)
 		}
 	}
 }
@@ -109,7 +109,7 @@ func (g *Grid) Cell(r, c int) (*Cell, error) {
 
 // RandomCell returns a random cell
 func (g *Grid) RandomCell() *Cell {
-	return g.cells[random(0, g.rows)][random(0, g.columns)]
+	return g.cells[Random(0, g.rows)][Random(0, g.columns)]
 }
 
 // Size returns the number of cells in the grid
@@ -138,7 +138,7 @@ func (g *Grid) Cells() []*Cell {
 type Cell struct {
 	row, column int
 	// keep track of neighborgs
-	north, south, east, west *Cell
+	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
 	links map[*Cell]bool
 }
@@ -196,9 +196,9 @@ func (c *Cell) Linked(cell *Cell) bool {
 // Neighbors returns a list of all cells that are neighbors (weather connected by passage or not)
 func (c *Cell) Neighbors() []*Cell {
 	n := []*Cell{}
-	for _, cell := range []*Cell{c.north, c.south, c.east, c.west} {
+	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
 		if cell != nil {
-			n = append(n, c.north)
+			n = append(n, cell)
 		}
 	}
 	return n
