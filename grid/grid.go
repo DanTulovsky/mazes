@@ -35,7 +35,40 @@ func NewGrid(r, c int) *Grid {
 }
 
 func (g *Grid) String() string {
-	return fmt.Sprintf("Grid size %v\n", g.Size())
+	output := "+"
+	for x := 0; x < g.columns; x++ {
+		output = fmt.Sprintf("%v---+", output)
+	}
+	output = output + "\n"
+
+	for r := 0; r < g.rows; r++ {
+		top := "|"
+		bottom := "+"
+
+		for c := 0; c < g.columns; c++ {
+			cell, err := g.Cell(r, c)
+			if err != nil {
+				continue
+			}
+			body := "   "
+			east_boundary := " "
+			if !cell.Linked(cell.east) {
+				east_boundary = "|"
+			}
+			top = fmt.Sprintf("%v%v%v", top, body, east_boundary)
+
+			south_boundary := "   "
+			if !cell.Linked(cell.south) {
+				south_boundary = "---"
+			}
+			corner := "+"
+			bottom = fmt.Sprintf("%v%v%v", bottom, south_boundary, corner)
+		}
+		output = fmt.Sprintf("%v%v\n", output, top)
+		output = fmt.Sprintf("%v%v\n", output, bottom)
+	}
+
+	return output
 }
 
 func (g *Grid) prepareGrid() {
