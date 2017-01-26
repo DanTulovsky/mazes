@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"mazes/bintree"
+	"mazes/genalgos/bintree"
 	"mazes/grid"
 )
 

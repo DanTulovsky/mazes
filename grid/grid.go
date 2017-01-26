@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"mazes/utils"
 	"time"
 )
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano()) // need to initialize the seed
-}
-
-func Random(min, max int) int {
-	return rand.Intn(max-min) + min
 }
 
 type Grid struct {
@@ -109,7 +106,7 @@ func (g *Grid) Cell(r, c int) (*Cell, error) {
 
 // RandomCell returns a random cell
 func (g *Grid) RandomCell() *Cell {
-	return g.cells[Random(0, g.rows)][Random(0, g.columns)]
+	return g.cells[utils.Random(0, g.rows)][utils.Random(0, g.columns)]
 }
 
 // Size returns the number of cells in the grid
