@@ -1,5 +1,5 @@
 <component name="libraryTable">
-  <library name="GOPATH &lt;mazes&gt;">
+  <library name="GOPATH &lt;grid&gt;">
     <CLASSES>
       <root url="file://$PROJECT_DIR$/../digits1" />
       <root url="file://$PROJECT_DIR$/../deck" />
