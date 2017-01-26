@@ -32,15 +32,15 @@ func NewGrid(r, c int) *Grid {
 }
 
 func (g *Grid) String() string {
-	output := "+"
-	for x := 0; x < g.columns; x++ {
-		output = fmt.Sprintf("%v---+", output)
+	output := "┌"
+	for x := 0; x < g.columns-1; x++ {
+		output = fmt.Sprintf("%v───┬", output)
 	}
-	output = output + "\n"
+	output = output + "───┐" + "\n"
 
 	for r := 0; r < g.rows; r++ {
-		top := "|"
-		bottom := "+"
+		top := "│"
+		bottom := "├"
 
 		for c := 0; c < g.columns; c++ {
 			cell, err := g.Cell(r, c)
@@ -50,15 +50,27 @@ func (g *Grid) String() string {
 			body := "   "
 			east_boundary := " "
 			if !cell.Linked(cell.East) {
-				east_boundary = "|"
+				east_boundary = "│"
 			}
 			top = fmt.Sprintf("%v%v%v", top, body, east_boundary)
 
 			south_boundary := "   "
 			if !cell.Linked(cell.South) {
-				south_boundary = "---"
+				south_boundary = "───"
 			}
-			corner := "+"
+			corner := "┼"
+			if c == g.columns-1 {
+				corner = "┤" // right wall
+			}
+			if c == g.columns-1 && r == g.rows-1 {
+				corner = "┘"
+			}
+			if c == 0 && r == g.rows-1 {
+				bottom = "└"
+			}
+			if c < g.columns-1 && r == g.rows-1 {
+				corner = "┴"
+			}
 			bottom = fmt.Sprintf("%v%v%v", bottom, south_boundary, corner)
 		}
 		output = fmt.Sprintf("%v%v\n", output, top)
