@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"mazes/utils"
 	"time"
+
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 func init() {
@@ -80,6 +82,13 @@ func (g *Grid) String() string {
 	return output
 }
 
+// Draw renders the gui maze
+func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
+	fmt.Println("would add maze to render object here")
+	return r
+}
+
+// prepareGrid initializes the grid with cells
 func (g *Grid) prepareGrid() {
 	g.cells = make([][]*Cell, g.rows)
 
@@ -92,6 +101,7 @@ func (g *Grid) prepareGrid() {
 	}
 }
 
+// configureCells configures cells with their neighbors
 func (g *Grid) configureCells() {
 	for r := 0; r < g.rows; r++ {
 		for c := 0; c < g.columns; c++ {
