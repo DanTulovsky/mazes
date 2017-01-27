@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"mazes/genalgos/bintree"
 	"mazes/grid"
-
 	"os"
-
 	"runtime"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
+
+// For gui support
+// brew install sdl2{,_image,_ttf,_mixer}
+// go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 
 var winTitle string = "Maze"
 
