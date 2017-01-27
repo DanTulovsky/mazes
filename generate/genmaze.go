@@ -7,6 +7,8 @@ import (
 	"os"
 	"runtime"
 
+	"log"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -18,12 +20,14 @@ var winTitle string = "Maze"
 
 func main() {
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
 	// each cell is 10 pixels?
-	rows := 80
-	columns := 80
+	rows := 20
+	columns := 20
 
 	g := grid.NewGrid(rows, columns)
 
@@ -31,13 +35,14 @@ func main() {
 	g = bintree.Apply(g)
 
 	// ascii maze
-	// fmt.Printf("%v\n", g)
+	fmt.Printf("%v\n", g)
 
 	// GUI maze
 	sdl.Init(sdl.INIT_EVERYTHING)
 
 	// window
 	window, err := sdl.CreateWindow(winTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
 		rows*grid.PixelsPerCell, columns*grid.PixelsPerCell, sdl.WINDOW_SHOWN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
@@ -46,7 +51,7 @@ func main() {
 	defer window.Destroy()
 
 	// renderer
-	r, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
+	r, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", err)
 		os.Exit(1)

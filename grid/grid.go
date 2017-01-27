@@ -9,6 +9,8 @@ import (
 
 	"os"
 
+	"mazes/colors"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -22,7 +24,13 @@ type Grid struct {
 	cells   [][]*Cell
 }
 
-const PixelsPerCell = 15
+const PixelsPerCell = 30
+
+var (
+	BackgroundColor = colors.GetColor("blue")
+	BorderColor     = colors.GetColor("red")
+	WallColor       = colors.GetColor("yellow")
+)
 
 // Fail fails the process due to an unrecoverable error
 func Fail(err error) {
@@ -95,12 +103,6 @@ func (g *Grid) String() string {
 
 // Draw renders the gui maze
 func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
-	// border around
-	border := &sdl.Rect{0, 0, int32(g.columns) * PixelsPerCell, int32(g.rows) * PixelsPerCell}
-
-	if err := r.DrawRect(border); err != nil {
-		Fail(fmt.Errorf("error drawing border: %v", err))
-	}
 
 	// Each cell draws the right and bottom border
 	for x := 0; x < g.columns; x++ {
@@ -113,6 +115,13 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 		}
 	}
 
+	// Draw outside border
+	colors.SetDrawColor(BorderColor, r)
+	bg := &sdl.Rect{0, 0, int32(g.columns) * PixelsPerCell, int32(g.rows) * PixelsPerCell}
+
+	if err := r.DrawRect(bg); err != nil {
+		Fail(fmt.Errorf("error drawing border: %v", err))
+	}
 	return r
 }
 
@@ -187,14 +196,22 @@ type Cell struct {
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
 	links map[*Cell]bool
+	// Has this cell been visited?
+	visited bool
+	// Background color of the cell
+	bgColor colors.Color
+	// Wall color of the cell
+	wallColor colors.Color
 }
 
 // NewCell initializes a new cell
 func NewCell(x, y int) *Cell {
 	return &Cell{
-		row:    y,
-		column: x,
-		links:  make(map[*Cell]bool),
+		row:       y,
+		column:    x,
+		links:     make(map[*Cell]bool),
+		bgColor:   BackgroundColor, // default
+		wallColor: WallColor,       // default
 	}
 }
 
@@ -205,34 +222,59 @@ func (c *Cell) String() string {
 // Draw draws one cell on renderer. Draws the east and south walls
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
-	log.Printf("drawing %v\n", c)
-	log.Printf("neighbors: %v\n", c.Neighbors())
-	log.Printf("links: %v\n", c.Links())
-	log.Printf("east: %v\n", c.East)
-	log.Printf("south: %v\n", c.South)
+	//log.Printf("drawing %v\n", c)
+	//log.Printf("neighbors: %v\n", c.Neighbors())
+	//log.Printf("links: %v\n", c.Links())
+	//log.Printf("east: %v\n", c.East)
+	//log.Printf("south: %v\n", c.South)
 	// East
 
-	log.Printf("l east: %v\n", c.Linked(c.East))
+	// Fill cell background color. The fill is one pixel in from the wall.
+	colors.SetDrawColor(c.bgColor, r)
+	bg := &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+		int32(PixelsPerCell), int32(PixelsPerCell)}
+	r.FillRect(bg)
+
+	// Draw walls as needed
+	// East
 	if !c.Linked(c.East) {
 		x := c.column*PixelsPerCell + PixelsPerCell
 		y := c.row * PixelsPerCell
 		x2 := (c.column * PixelsPerCell) + PixelsPerCell
 		y2 := (c.row * PixelsPerCell) + PixelsPerCell
-		log.Printf(" >East: (%v, %v) -> (%v, %v)\n", x, y, x2, y2)
+		colors.SetDrawColor(c.wallColor, r)
+		r.DrawLine(x, y, x2, y2)
+	}
+
+	// West
+	if !c.Linked(c.West) {
+		x := c.column * PixelsPerCell
+		y := c.row * PixelsPerCell
+		x2 := (c.column * PixelsPerCell)
+		y2 := (c.row * PixelsPerCell) + PixelsPerCell
+		colors.SetDrawColor(c.wallColor, r)
+		r.DrawLine(x, y, x2, y2)
+	}
+
+	// North
+	if !c.Linked(c.North) {
+		x := (c.column * PixelsPerCell)
+		y := c.row * PixelsPerCell
+		x2 := (c.column * PixelsPerCell) + PixelsPerCell
+		y2 := c.row * PixelsPerCell
+		colors.SetDrawColor(c.wallColor, r)
 		r.DrawLine(x, y, x2, y2)
 	}
 
 	// South
-	log.Printf("l south: %v\n", c.Linked(c.South))
 	if !c.Linked(c.South) {
 		x := (c.column * PixelsPerCell)
 		y := (c.row * PixelsPerCell) + PixelsPerCell
 		x2 := (c.column * PixelsPerCell) + PixelsPerCell
 		y2 := (c.row * PixelsPerCell) + PixelsPerCell
-		log.Printf(" >South: (%v, %v) -> (%v, %v)\n", x, y, x2, y2)
+		colors.SetDrawColor(c.wallColor, r)
 		r.DrawLine(x, y, x2, y2)
 	}
-	log.Print("\n")
 
 	return r
 }
