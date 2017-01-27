@@ -30,10 +30,7 @@ func main() {
 	// apply algorithm
 	g = bintree.Apply(g)
 
-<<<<<<< HEAD
-=======
 	// ascii maze
->>>>>>> 289dac017d48a153981a447bdbde1b17fa5dea6d
 	fmt.Printf("%v\n", g)
 
 	// GUI maze
