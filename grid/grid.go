@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"mazes/utils"
 	"time"
+
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano()) // need to initialize the seed
-}
-
-func Random(min, max int) int {
-	return rand.Intn(max-min) + min
 }
 
 type Grid struct {
@@ -35,15 +34,15 @@ func NewGrid(r, c int) *Grid {
 }
 
 func (g *Grid) String() string {
-	output := "+"
-	for x := 0; x < g.columns; x++ {
-		output = fmt.Sprintf("%v---+", output)
+	output := "┌"
+	for x := 0; x < g.columns-1; x++ {
+		output = fmt.Sprintf("%v───┬", output)
 	}
-	output = output + "\n"
+	output = output + "───┐" + "\n"
 
 	for r := 0; r < g.rows; r++ {
-		top := "|"
-		bottom := "+"
+		top := "│"
+		bottom := "├"
 
 		for c := 0; c < g.columns; c++ {
 			cell, err := g.Cell(r, c)
@@ -53,15 +52,27 @@ func (g *Grid) String() string {
 			body := "   "
 			east_boundary := " "
 			if !cell.Linked(cell.East) {
-				east_boundary = "|"
+				east_boundary = "│"
 			}
 			top = fmt.Sprintf("%v%v%v", top, body, east_boundary)
 
 			south_boundary := "   "
 			if !cell.Linked(cell.South) {
-				south_boundary = "---"
+				south_boundary = "───"
 			}
-			corner := "+"
+			corner := "┼"
+			if c == g.columns-1 {
+				corner = "┤" // right wall
+			}
+			if c == g.columns-1 && r == g.rows-1 {
+				corner = "┘"
+			}
+			if c == 0 && r == g.rows-1 {
+				bottom = "└"
+			}
+			if c < g.columns-1 && r == g.rows-1 {
+				corner = "┴"
+			}
 			bottom = fmt.Sprintf("%v%v%v", bottom, south_boundary, corner)
 		}
 		output = fmt.Sprintf("%v%v\n", output, top)
@@ -71,6 +82,13 @@ func (g *Grid) String() string {
 	return output
 }
 
+// Draw renders the gui maze
+func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
+	fmt.Println("would add maze to render object here")
+	return r
+}
+
+// prepareGrid initializes the grid with cells
 func (g *Grid) prepareGrid() {
 	g.cells = make([][]*Cell, g.rows)
 
@@ -83,6 +101,7 @@ func (g *Grid) prepareGrid() {
 	}
 }
 
+// configureCells configures cells with their neighbors
 func (g *Grid) configureCells() {
 	for r := 0; r < g.rows; r++ {
 		for c := 0; c < g.columns; c++ {
@@ -109,7 +128,7 @@ func (g *Grid) Cell(r, c int) (*Cell, error) {
 
 // RandomCell returns a random cell
 func (g *Grid) RandomCell() *Cell {
-	return g.cells[Random(0, g.rows)][Random(0, g.columns)]
+	return g.cells[utils.Random(0, g.rows)][utils.Random(0, g.columns)]
 }
 
 // Size returns the number of cells in the grid

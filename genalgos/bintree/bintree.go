@@ -1,6 +1,9 @@
 package bintree
 
-import "mazes/grid"
+import (
+	"mazes/grid"
+	"mazes/utils"
+)
 
 // Apply applies the binary tree algorithm to the grid.
 func Apply(g *grid.Grid) *grid.Grid {
@@ -17,7 +20,7 @@ func Apply(g *grid.Grid) *grid.Grid {
 		if len(neighbors) == 0 {
 			continue
 		}
-		index := grid.Random(0, len(neighbors))
+		index := utils.Random(0, len(neighbors))
 		neighbor := neighbors[index]
 		if neighbor != nil {
 			cell.Link(neighbor)
