@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"mazes/genalgos/bintree"
 	"mazes/grid"
@@ -16,26 +17,30 @@ import (
 // brew install sdl2{,_image,_ttf,_mixer}
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 
-var winTitle string = "Maze"
+var (
+	winTitle  string = "Maze"
+	rows             = flag.Int("r", 30, "number of rows in the maze")
+	columns          = flag.Int("c", 30, "number of rows in the maze")
+	cellWidth        = flag.Int("w", 20, "cell width")
+	showAscii        = flag.Bool("ascii", false, "show ascii maze")
+)
 
 func main() {
-
+	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
-	// each cell is 10 pixels?
-	rows := 20
-	columns := 20
-
-	g := grid.NewGrid(rows, columns)
+	g := grid.NewGrid(*rows, *columns, *cellWidth)
 
 	// apply algorithm
 	g = bintree.Apply(g)
 
 	// ascii maze
-	fmt.Printf("%v\n", g)
+	if *showAscii {
+		fmt.Printf("%v\n", g)
+	}
 
 	// GUI maze
 	sdl.Init(sdl.INIT_EVERYTHING)
@@ -43,7 +48,7 @@ func main() {
 	// window
 	window, err := sdl.CreateWindow(winTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		rows*grid.PixelsPerCell, columns*grid.PixelsPerCell, sdl.WINDOW_SHOWN)
+		(*rows)**cellWidth, (*columns)**cellWidth, sdl.WINDOW_SHOWN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
 		os.Exit(1)

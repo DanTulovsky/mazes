@@ -22,9 +22,10 @@ type Grid struct {
 	rows    int
 	columns int
 	cells   [][]*Cell
+	width   int // cell width
 }
 
-const PixelsPerCell = 30
+var PixelsPerCell = 0 // set by caller
 
 var (
 	BackgroundColor = colors.GetColor("blue")
@@ -40,15 +41,17 @@ func Fail(err error) {
 }
 
 // NewGrid returns a new grid.
-func NewGrid(r, c int) *Grid {
+func NewGrid(r, c, w int) *Grid {
 	g := &Grid{
 		rows:    r,
 		columns: c,
 		cells:   [][]*Cell{},
+		width:   w,
 	}
 
 	g.prepareGrid()
 	g.configureCells()
+	PixelsPerCell = w
 	return g
 }
 
@@ -117,7 +120,7 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// Draw outside border
 	colors.SetDrawColor(BorderColor, r)
-	bg := &sdl.Rect{0, 0, int32(g.columns) * PixelsPerCell, int32(g.rows) * PixelsPerCell}
+	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
 
 	if err := r.DrawRect(bg); err != nil {
 		Fail(fmt.Errorf("error drawing border: %v", err))
