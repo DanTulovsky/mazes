@@ -22,8 +22,8 @@ func main() {
 	runtime.LockOSThread()
 
 	// each cell is 10 pixels?
-	rows := 10
-	columns := 10
+	rows := 80
+	columns := 80
 
 	g := grid.NewGrid(rows, columns)
 
@@ -31,14 +31,14 @@ func main() {
 	g = bintree.Apply(g)
 
 	// ascii maze
-	fmt.Printf("%v\n", g)
+	// fmt.Printf("%v\n", g)
 
 	// GUI maze
 	sdl.Init(sdl.INIT_EVERYTHING)
 
 	// window
 	window, err := sdl.CreateWindow(winTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
-		rows*100, columns*100, sdl.WINDOW_SHOWN)
+		rows*grid.PixelsPerCell, columns*grid.PixelsPerCell, sdl.WINDOW_SHOWN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
 		os.Exit(1)

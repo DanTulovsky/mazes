@@ -7,6 +7,8 @@ import (
 	"mazes/utils"
 	"time"
 
+	"os"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -18,6 +20,15 @@ type Grid struct {
 	rows    int
 	columns int
 	cells   [][]*Cell
+}
+
+const PixelsPerCell = 15
+
+// Fail fails the process due to an unrecoverable error
+func Fail(err error) {
+	fmt.Println(err)
+	os.Exit(1)
+
 }
 
 // NewGrid returns a new grid.
@@ -40,12 +51,12 @@ func (g *Grid) String() string {
 	}
 	output = output + "───┐" + "\n"
 
-	for r := 0; r < g.rows; r++ {
+	for y := 0; y < g.rows; y++ {
 		top := "│"
 		bottom := "├"
 
-		for c := 0; c < g.columns; c++ {
-			cell, err := g.Cell(r, c)
+		for x := 0; x < g.columns; x++ {
+			cell, err := g.Cell(x, y)
 			if err != nil {
 				continue
 			}
@@ -61,16 +72,16 @@ func (g *Grid) String() string {
 				south_boundary = "───"
 			}
 			corner := "┼"
-			if c == g.columns-1 {
+			if x == g.columns-1 {
 				corner = "┤" // right wall
 			}
-			if c == g.columns-1 && r == g.rows-1 {
+			if x == g.columns-1 && y == g.rows-1 {
 				corner = "┘"
 			}
-			if c == 0 && r == g.rows-1 {
+			if x == 0 && y == g.rows-1 {
 				bottom = "└"
 			}
-			if c < g.columns-1 && r == g.rows-1 {
+			if x < g.columns-1 && y == g.rows-1 {
 				corner = "┴"
 			}
 			bottom = fmt.Sprintf("%v%v%v", bottom, south_boundary, corner)
@@ -84,7 +95,24 @@ func (g *Grid) String() string {
 
 // Draw renders the gui maze
 func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
-	fmt.Println("would add maze to render object here")
+	// border around
+	border := &sdl.Rect{0, 0, int32(g.columns) * PixelsPerCell, int32(g.rows) * PixelsPerCell}
+
+	if err := r.DrawRect(border); err != nil {
+		Fail(fmt.Errorf("error drawing border: %v", err))
+	}
+
+	// Each cell draws the right and bottom border
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			cell, err := g.Cell(x, y)
+			if err != nil {
+				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
+			}
+			cell.Draw(r)
+		}
+	}
+
 	return r
 }
 
@@ -92,48 +120,48 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 func (g *Grid) prepareGrid() {
 	g.cells = make([][]*Cell, g.rows)
 
-	for r := 0; r < g.rows; r++ {
-		g.cells[r] = make([]*Cell, g.columns)
+	for x := 0; x < g.columns; x++ {
+		g.cells[x] = make([]*Cell, g.rows)
 
-		for c := 0; c < g.columns; c++ {
-			g.cells[r][c] = NewCell(r, c)
+		for y := 0; y < g.rows; y++ {
+			g.cells[x][y] = NewCell(x, y)
 		}
 	}
 }
 
 // configureCells configures cells with their neighbors
 func (g *Grid) configureCells() {
-	for r := 0; r < g.rows; r++ {
-		for c := 0; c < g.columns; c++ {
-			cell, err := g.Cell(r, c)
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			cell, err := g.Cell(x, y)
 			if err != nil {
 				log.Fatalf("failed to initialize grid: %v", err)
 			}
 			// error is ignored, we just set nil if there is no neighbor
-			cell.North, _ = g.Cell(r-1, c)
-			cell.South, _ = g.Cell(r+1, c)
-			cell.West, _ = g.Cell(r, c-1)
-			cell.East, _ = g.Cell(r, c+1)
+			cell.North, _ = g.Cell(x, y-1)
+			cell.South, _ = g.Cell(x, y+1)
+			cell.West, _ = g.Cell(x-1, y)
+			cell.East, _ = g.Cell(x+1, y)
 		}
 	}
 }
 
 // Cell returns the cell at r,c
-func (g *Grid) Cell(r, c int) (*Cell, error) {
-	if r < 0 || r >= g.rows || c < 0 || c >= g.columns {
-		return nil, fmt.Errorf("(%v, %v) is outside the grid", r, c)
+func (g *Grid) Cell(x, y int) (*Cell, error) {
+	if x < 0 || x >= g.columns || y < 0 || y >= g.rows {
+		return nil, fmt.Errorf("(%v, %v) is outside the grid", x, y)
 	}
-	return g.cells[r][c], nil
+	return g.cells[x][y], nil
 }
 
 // RandomCell returns a random cell
 func (g *Grid) RandomCell() *Cell {
-	return g.cells[utils.Random(0, g.rows)][utils.Random(0, g.columns)]
+	return g.cells[utils.Random(0, g.columns)][utils.Random(0, g.rows)]
 }
 
 // Size returns the number of cells in the grid
 func (g *Grid) Size() int {
-	return g.rows * g.columns
+	return g.columns * g.rows
 }
 
 // Rows returns a list of rows (essentially the grid
@@ -142,12 +170,11 @@ func (g *Grid) Rows() [][]*Cell {
 }
 
 // Cells returns a list of cells in the grid
-// TODO(dan): Make this into a generator?
 func (g *Grid) Cells() []*Cell {
 	cells := []*Cell{}
-	for r := 0; r < g.rows; r++ {
-		for c := 0; c < g.columns; c++ {
-			cells = append(cells, g.cells[r][c])
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			cells = append(cells, g.cells[x][y])
 		}
 	}
 	return cells
@@ -155,7 +182,7 @@ func (g *Grid) Cells() []*Cell {
 
 // Cell defines a single cell in the grid
 type Cell struct {
-	row, column int
+	column, row int
 	// keep track of neighborgs
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
@@ -163,16 +190,51 @@ type Cell struct {
 }
 
 // NewCell initializes a new cell
-func NewCell(r, c int) *Cell {
+func NewCell(x, y int) *Cell {
 	return &Cell{
-		row:    r,
-		column: c,
+		row:    y,
+		column: x,
 		links:  make(map[*Cell]bool),
 	}
 }
 
 func (c *Cell) String() string {
-	return fmt.Sprintf("(%v, %v)", c.row, c.column)
+	return fmt.Sprintf("(%v, %v)", c.column, c.row)
+}
+
+// Draw draws one cell on renderer. Draws the east and south walls
+func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
+
+	log.Printf("drawing %v\n", c)
+	log.Printf("neighbors: %v\n", c.Neighbors())
+	log.Printf("links: %v\n", c.Links())
+	log.Printf("east: %v\n", c.East)
+	log.Printf("south: %v\n", c.South)
+	// East
+
+	log.Printf("l east: %v\n", c.Linked(c.East))
+	if !c.Linked(c.East) {
+		x := c.column*PixelsPerCell + PixelsPerCell
+		y := c.row * PixelsPerCell
+		x2 := (c.column * PixelsPerCell) + PixelsPerCell
+		y2 := (c.row * PixelsPerCell) + PixelsPerCell
+		log.Printf(" >East: (%v, %v) -> (%v, %v)\n", x, y, x2, y2)
+		r.DrawLine(x, y, x2, y2)
+	}
+
+	// South
+	log.Printf("l south: %v\n", c.Linked(c.South))
+	if !c.Linked(c.South) {
+		x := (c.column * PixelsPerCell)
+		y := (c.row * PixelsPerCell) + PixelsPerCell
+		x2 := (c.column * PixelsPerCell) + PixelsPerCell
+		y2 := (c.row * PixelsPerCell) + PixelsPerCell
+		log.Printf(" >South: (%v, %v) -> (%v, %v)\n", x, y, x2, y2)
+		r.DrawLine(x, y, x2, y2)
+	}
+	log.Print("\n")
+
+	return r
 }
 
 func (c *Cell) linkOneWay(cell *Cell) {
@@ -197,24 +259,29 @@ func (c *Cell) UnLink(cell *Cell) {
 
 // Links returns a list of all cells linked to this one
 func (c *Cell) Links() []*Cell {
-	keys := make([]*Cell, len(c.links))
-	i := 0
-	for k := range c.links {
-		keys[i] = k
-		i++
+	var keys []*Cell
+	for k, linked := range c.links {
+		log.Printf("key: %v; value: %v\n", k, linked)
+		if linked {
+			keys = append(keys, k)
+		}
 	}
 	return keys
 }
 
 // Linked returns true if the two cells are linked (joined by a passage)
 func (c *Cell) Linked(cell *Cell) bool {
-	_, linked := c.links[cell] // linked if in the map
+	linked, ok := c.links[cell]
+	if !ok {
+		return false
+	}
 	return linked
 }
 
 // Neighbors returns a list of all cells that are neighbors (weather connected by passage or not)
 func (c *Cell) Neighbors() []*Cell {
-	n := []*Cell{}
+	var n []*Cell
+
 	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
 		if cell != nil {
 			n = append(n, cell)
