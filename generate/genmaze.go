@@ -10,6 +10,8 @@ import (
 
 	"log"
 
+	"mazes/colors"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -18,11 +20,14 @@ import (
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 
 var (
-	winTitle  string = "Maze"
-	rows             = flag.Int("r", 30, "number of rows in the maze")
-	columns          = flag.Int("c", 30, "number of rows in the maze")
-	cellWidth        = flag.Int("w", 20, "cell width")
-	showAscii        = flag.Bool("ascii", false, "show ascii maze")
+	winTitle    string = "Maze"
+	rows               = flag.Int("r", 30, "number of rows in the maze")
+	columns            = flag.Int("c", 30, "number of rows in the maze")
+	bgColor            = flag.String("bgcolor", "white", "background color")
+	wallColor          = flag.String("wall_color", "black", "wall color")
+	borderColor        = flag.String("border_color", "red", "border color")
+	cellWidth          = flag.Int("w", 20, "cell width")
+	showAscii          = flag.Bool("ascii", false, "show ascii maze")
 )
 
 func main() {
@@ -32,7 +37,7 @@ func main() {
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
-	g := grid.NewGrid(*rows, *columns, *cellWidth)
+	g := grid.NewGrid(*rows, *columns, *cellWidth, colors.GetColor(*bgColor), colors.GetColor(*borderColor), colors.GetColor(*wallColor))
 
 	// apply algorithm
 	g = bintree.Apply(g)

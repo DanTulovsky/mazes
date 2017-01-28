@@ -19,18 +19,18 @@ func init() {
 }
 
 type Grid struct {
-	rows    int
-	columns int
-	cells   [][]*Cell
-	width   int // cell width
+	rows        int
+	columns     int
+	cells       [][]*Cell
+	cellWidth   int // cell width
+	bgColor     colors.Color
+	borderColor colors.Color
+	wallColor   colors.Color
 }
 
-var PixelsPerCell = 0 // set by caller
-
 var (
-	BackgroundColor = colors.GetColor("blue")
-	BorderColor     = colors.GetColor("red")
-	WallColor       = colors.GetColor("yellow")
+	// set by caller
+	PixelsPerCell int
 )
 
 // Fail fails the process due to an unrecoverable error
@@ -41,17 +41,21 @@ func Fail(err error) {
 }
 
 // NewGrid returns a new grid.
-func NewGrid(r, c, w int) *Grid {
+func NewGrid(r, c, w int, bgColor, borderColor, wallColor colors.Color) *Grid {
 	g := &Grid{
-		rows:    r,
-		columns: c,
-		cells:   [][]*Cell{},
-		width:   w,
+		rows:        r,
+		columns:     c,
+		cells:       [][]*Cell{},
+		cellWidth:   w,
+		bgColor:     bgColor,
+		borderColor: borderColor,
+		wallColor:   wallColor,
 	}
 
 	g.prepareGrid()
 	g.configureCells()
 	PixelsPerCell = w
+
 	return g
 }
 
@@ -119,7 +123,7 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Draw outside border
-	colors.SetDrawColor(BorderColor, r)
+	colors.SetDrawColor(g.borderColor, r)
 	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
 
 	if err := r.DrawRect(bg); err != nil {
@@ -136,7 +140,7 @@ func (g *Grid) prepareGrid() {
 		g.cells[x] = make([]*Cell, g.rows)
 
 		for y := 0; y < g.rows; y++ {
-			g.cells[x][y] = NewCell(x, y)
+			g.cells[x][y] = NewCell(x, y, g.cellWidth, g.bgColor, g.wallColor)
 		}
 	}
 }
@@ -205,16 +209,19 @@ type Cell struct {
 	bgColor colors.Color
 	// Wall color of the cell
 	wallColor colors.Color
+	// size of the cell
+	width int
 }
 
 // NewCell initializes a new cell
-func NewCell(x, y int) *Cell {
+func NewCell(x, y, w int, bgColor, wallColor colors.Color) *Cell {
 	return &Cell{
 		row:       y,
 		column:    x,
 		links:     make(map[*Cell]bool),
-		bgColor:   BackgroundColor, // default
-		wallColor: WallColor,       // default
+		bgColor:   bgColor,   // default
+		wallColor: wallColor, // default
+		width:     w,
 	}
 }
 
