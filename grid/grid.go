@@ -31,6 +31,7 @@ type Grid struct {
 var (
 	// set by caller
 	PixelsPerCell int
+	gridSize      int
 )
 
 // Fail fails the process due to an unrecoverable error
@@ -55,6 +56,7 @@ func NewGrid(r, c, w int, bgColor, borderColor, wallColor colors.Color) *Grid {
 	g.prepareGrid()
 	g.configureCells()
 	PixelsPerCell = w
+	gridSize = g.Size()
 
 	return g
 }
@@ -211,7 +213,7 @@ func NewDistances(c *Cell) *Distances {
 // Cells returns a list of cells that we have distance information for
 func (d *Distances) Cells() []*Cell {
 	var cells []*Cell
-	for c, _ := range d.cells {
+	for c := range d.cells {
 		cells = append(cells, c)
 	}
 	return cells
@@ -296,7 +298,10 @@ func (c *Cell) Distances() *Distances {
 				// l.bgColor = colors.Darker(colors.GetColor("white"), d)
 
 				// use alpha blending, works for any color
-				l.bgColor = colors.OpacityAdjust(c.bgColor, d)
+				maxSteps := gridSize / 30 // TODO(dant): this needs to be the size of the longest path
+				adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, sdl.ALPHA_OPAQUE)
+				log.Print(adjustedColor)
+				l.bgColor = colors.OpacityAdjust(c.bgColor, adjustedColor)
 
 				newFrontier = append(newFrontier, l)
 			}
