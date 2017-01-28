@@ -196,6 +196,41 @@ func (g *Grid) Cells() []*Cell {
 	return cells
 }
 
+type Distances struct {
+	root  *Cell         // the root cell
+	cells map[*Cell]int // Distance to this cell
+}
+
+func NewDistances(c *Cell) *Distances {
+	return &Distances{
+		root:  c,
+		cells: map[*Cell]int{c: 0},
+	}
+}
+
+// Cells returns a list of cells that we have distance information for
+func (d *Distances) Cells() []*Cell {
+	var cells []*Cell
+	for c, _ := range d.cells {
+		cells = append(cells, c)
+	}
+	return cells
+
+}
+
+// Set sets the distance to the provided cell
+func (d *Distances) Set(c *Cell, dist int) {
+	d.cells[c] = dist
+}
+
+func (d *Distances) Get(c *Cell) (int, error) {
+	dist, ok := d.cells[c]
+	if !ok {
+		return -1, fmt.Errorf("distance to [%v] not known", c)
+	}
+	return dist, nil
+}
+
 // Cell defines a single cell in the grid
 type Cell struct {
 	column, row int
@@ -203,6 +238,8 @@ type Cell struct {
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
 	links map[*Cell]bool
+	// distances to other cells
+	distances *Distances
 	// Has this cell been visited?
 	visited bool
 	// Background color of the cell
@@ -215,7 +252,7 @@ type Cell struct {
 
 // NewCell initializes a new cell
 func NewCell(x, y, w int, bgColor, wallColor colors.Color) *Cell {
-	return &Cell{
+	c := &Cell{
 		row:       y,
 		column:    x,
 		links:     make(map[*Cell]bool),
@@ -223,22 +260,52 @@ func NewCell(x, y, w int, bgColor, wallColor colors.Color) *Cell {
 		wallColor: wallColor, // default
 		width:     w,
 	}
+	c.distances = NewDistances(c)
+
+	return c
 }
 
 func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
 }
 
-// Draw draws one cell on renderer. Draws the east and south walls
+// Distances finds the distances of all cells to *this* cell
+// Implements simplified Dijkstra’s algorithm
+func (c *Cell) Distances() *Distances {
+	frontier := []*Cell{c}
+
+	for len(frontier) > 0 {
+		newFrontier := []*Cell{}
+
+		for _, cell := range frontier {
+			for _, l := range cell.Links() {
+				if _, err := c.distances.Get(l); err == nil {
+					continue // already been
+				}
+				d, err := c.distances.Get(cell)
+				if err != nil {
+					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
+				}
+
+				// sets distance to new cell
+				c.distances.Set(l, d+1)
+
+				// sets the color of the new cell to be slightly darker than the previous
+				r, g, b := c.bgColor.R-uint8(d), c.bgColor.G-uint8(d), c.bgColor.G-uint8(d)
+				l.bgColor = colors.Color{R: r, G: g, B: b}
+
+				newFrontier = append(newFrontier, l)
+			}
+		}
+
+		frontier = newFrontier
+
+	}
+	return c.distances
+}
+
+// Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
-
-	//log.Printf("drawing %v\n", c)
-	//log.Printf("neighbors: %v\n", c.Neighbors())
-	//log.Printf("links: %v\n", c.Links())
-	//log.Printf("east: %v\n", c.East)
-	//log.Printf("south: %v\n", c.South)
-	// East
-
 	// Fill cell background color. The fill is one pixel in from the wall.
 	colors.SetDrawColor(c.bgColor, r)
 	bg := &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
@@ -313,7 +380,6 @@ func (c *Cell) UnLink(cell *Cell) {
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
 	for k, linked := range c.links {
-		log.Printf("key: %v; value: %v\n", k, linked)
 		if linked {
 			keys = append(keys, k)
 		}

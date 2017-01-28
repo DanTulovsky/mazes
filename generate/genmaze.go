@@ -42,6 +42,22 @@ func main() {
 	// apply algorithm
 	g = bintree.Apply(g)
 
+	// apply Dijkstra’s to record distance information
+	x, y := *rows/2, *columns/2
+	source, err := g.Cell(x, y)
+	if err != nil {
+		log.Fatalf("error getting cell: %v", err)
+	}
+	d := source.Distances()
+	// log.Printf("%#v", d)
+	for _, c := range d.Cells() {
+		dist, _ := d.Get(c)
+		log.Printf("%v: %v", c, dist)
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	// DISPLAY
+	///////////////////////////////////////////////////////////////////////////
 	// ascii maze
 	if *showAscii {
 		fmt.Printf("%v\n", g)
@@ -51,7 +67,7 @@ func main() {
 	sdl.Init(sdl.INIT_EVERYTHING)
 
 	// window
-	window, err := sdl.CreateWindow(winTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+	window, err := sdl.CreateWindow(winTitle, 0, 0,
 		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
 		(*rows)**cellWidth, (*columns)**cellWidth, sdl.WINDOW_SHOWN)
 	if err != nil {
