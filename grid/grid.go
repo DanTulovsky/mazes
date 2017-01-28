@@ -303,7 +303,7 @@ func (c *Cell) Distances() *Distances {
 					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 				}
 
-				if l != cell {
+				if c != cell {
 					c.distances.paths[l] = append(c.distances.paths[cell], cell)
 				}
 
