@@ -44,16 +44,17 @@ func main() {
 
 	// apply Dijkstra’s to record distance information
 	x, y := *rows/2, *columns/2
-	source, err := g.Cell(x, y)
+	fromCell, err := g.Cell(x, y)
 	if err != nil {
 		log.Fatalf("error getting cell: %v", err)
 	}
-	d := source.Distances()
-	for _, c := range d.Cells() {
-		path := d.Path(c)
-		dist, _ := d.Get(c)
-		log.Printf("Path (%v) from [%v]->[%v]:%v", dist, source, c, path)
+	toCell, err := g.Cell(x+30, y-30)
+	if err != nil {
+		log.Fatalf("error getting cell: %v", err)
 	}
+	// source.Distances()
+	dist, path := g.ShortestPath(fromCell, toCell)
+	log.Printf("Shortest path from [%v]->[%v] = %v > %v", fromCell, toCell, dist, path)
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY

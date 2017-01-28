@@ -11,6 +11,8 @@ import (
 
 	"mazes/colors"
 
+	"math"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -134,11 +136,6 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
-// LongestPath returns the longest path (list of cells) through the maze
-func (g *Grid) LongestPath() {
-
-}
-
 // prepareGrid initializes the grid with cells
 func (g *Grid) prepareGrid() {
 	g.cells = make([][]*Cell, g.rows)
@@ -203,18 +200,61 @@ func (g *Grid) Cells() []*Cell {
 	return cells
 }
 
+// LongestPath returns the longest path through the maze
+func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
+	// TODO(dant): implement
+	return dist, fromCell, toCell, path
+}
+
+func reverseCells(cells []*Cell) {
+	for i, j := 0, len(cells)-1; i < j; i, j = i+1, j-1 {
+		cells[i], cells[j] = cells[j], cells[i]
+	}
+}
+
+// ShortestPath finds the shortest path from fromCell to toCell
+func (g *Grid) ShortestPath(fromCell, toCell *Cell) (dist int, path []*Cell) {
+	// Get all distances from this cell
+	log.Printf("getting distance from %v", fromCell)
+	d := fromCell.Distances()
+	toCellDist, _ := d.Get(toCell)
+	log.Printf("distance from [%v] to [%v] = %v", fromCell, toCell, toCellDist)
+
+	current := toCell
+
+	for current != d.root {
+		smallest := math.MaxInt16
+		var next *Cell
+		for _, link := range current.Links() {
+			dist, _ := d.Get(link)
+			if dist < smallest {
+				smallest = dist
+				next = link
+			}
+		}
+		path = append(path, next)
+		current = next
+	}
+
+	reverseCells(path)
+	return toCellDist, path
+}
+
 type Distances struct {
-	root  *Cell             // the root cell
-	cells map[*Cell]int     // Distance to this cell
-	paths map[*Cell][]*Cell // path to this cell
+	root  *Cell         // the root cell
+	cells map[*Cell]int // Distance to this cell
 }
 
 func NewDistances(c *Cell) *Distances {
 	return &Distances{
 		root:  c,
 		cells: map[*Cell]int{c: 0},
-		paths: make(map[*Cell][]*Cell),
 	}
+}
+
+func (d *Distances) String() string {
+	// TODO(dan): Implenet
+	return "TODO"
 }
 
 // Cells returns a list of cells that we have distance information for
@@ -224,12 +264,6 @@ func (d *Distances) Cells() []*Cell {
 		cells = append(cells, c)
 	}
 	return cells
-
-}
-
-// Path returns the path from this cell to c
-func (d *Distances) Path(c *Cell) []*Cell {
-	return d.paths[c]
 
 }
 
@@ -301,10 +335,6 @@ func (c *Cell) Distances() *Distances {
 				d, err := c.distances.Get(cell)
 				if err != nil {
 					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
-				}
-
-				if c != cell {
-					c.distances.paths[l] = append(c.distances.paths[cell], cell)
 				}
 
 				// sets distance to new cell
