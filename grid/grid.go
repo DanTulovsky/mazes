@@ -291,13 +291,16 @@ func (c *Cell) Distances() *Distances {
 				c.distances.Set(l, d+1)
 
 				// sets the color of the new cell to be slightly darker than the previous
-				r, g, b := c.bgColor.R-uint8(d), c.bgColor.G-uint8(d), c.bgColor.G-uint8(d)
-				l.bgColor = colors.Color{R: r, G: g, B: b}
+
+				// always start at white, d is the distance from the source cell
+				// l.bgColor = colors.Darker(colors.GetColor("white"), d)
+
+				// use alpha blending, works for any color
+				l.bgColor = colors.OpacityAdjust(c.bgColor, d)
 
 				newFrontier = append(newFrontier, l)
 			}
 		}
-
 		frontier = newFrontier
 
 	}

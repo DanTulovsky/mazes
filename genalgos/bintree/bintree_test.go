@@ -1,22 +1,31 @@
 package bintree
 
 import (
+	"mazes/colors"
 	"mazes/grid"
 	"testing"
 )
 
 func TestBinTreeApply(t *testing.T) {
-	rows := 10
-	columns := 10
-	g := grid.NewGrid(rows, columns)
+	r := 10
+	c := 10
+	w := 1
+	bgColor := colors.GetColor("white")
+	borderColor := colors.GetColor("red")
+	wallColor := colors.GetColor("black")
+	g := grid.NewGrid(r, c, w, bgColor, borderColor, wallColor)
 	Apply(g)
 }
 
 func BenchmarkBinTreeApply(b *testing.B) {
-	rows := 10
-	columns := 10
+	r := 10
+	c := 10
+	w := 1
+	bgColor := colors.GetColor("white")
+	borderColor := colors.GetColor("red")
+	wallColor := colors.GetColor("black")
 	for i := 0; i < b.N; i++ {
-		g := grid.NewGrid(rows, columns)
+		g := grid.NewGrid(r, c, w, bgColor, borderColor, wallColor)
 		Apply(g)
 	}
 

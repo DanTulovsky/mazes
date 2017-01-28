@@ -49,10 +49,8 @@ func main() {
 		log.Fatalf("error getting cell: %v", err)
 	}
 	d := source.Distances()
-	// log.Printf("%#v", d)
 	for _, c := range d.Cells() {
-		dist, _ := d.Get(c)
-		log.Printf("%v: %v", c, dist)
+		d.Get(c)
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -84,6 +82,8 @@ func main() {
 	}
 	defer r.Destroy()
 
+	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
+	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
 	r.Clear() // call this before every Present()
 
 	r = g.Draw(r) // adds maze to render
