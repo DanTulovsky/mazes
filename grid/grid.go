@@ -134,6 +134,11 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
+// LongestPath returns the longest path (list of cells) through the maze
+func (g *Grid) LongestPath() {
+
+}
+
 // prepareGrid initializes the grid with cells
 func (g *Grid) prepareGrid() {
 	g.cells = make([][]*Cell, g.rows)
@@ -199,14 +204,16 @@ func (g *Grid) Cells() []*Cell {
 }
 
 type Distances struct {
-	root  *Cell         // the root cell
-	cells map[*Cell]int // Distance to this cell
+	root  *Cell             // the root cell
+	cells map[*Cell]int     // Distance to this cell
+	paths map[*Cell][]*Cell // path to this cell
 }
 
 func NewDistances(c *Cell) *Distances {
 	return &Distances{
 		root:  c,
 		cells: map[*Cell]int{c: 0},
+		paths: make(map[*Cell][]*Cell),
 	}
 }
 
@@ -217,6 +224,12 @@ func (d *Distances) Cells() []*Cell {
 		cells = append(cells, c)
 	}
 	return cells
+
+}
+
+// Path returns the path from this cell to c
+func (d *Distances) Path(c *Cell) []*Cell {
+	return d.paths[c]
 
 }
 
@@ -280,6 +293,7 @@ func (c *Cell) Distances() *Distances {
 		newFrontier := []*Cell{}
 
 		for _, cell := range frontier {
+
 			for _, l := range cell.Links() {
 				if _, err := c.distances.Get(l); err == nil {
 					continue // already been
@@ -287,6 +301,10 @@ func (c *Cell) Distances() *Distances {
 				d, err := c.distances.Get(cell)
 				if err != nil {
 					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
+				}
+
+				if l != cell {
+					c.distances.paths[l] = append(c.distances.paths[cell], cell)
 				}
 
 				// sets distance to new cell
@@ -300,7 +318,6 @@ func (c *Cell) Distances() *Distances {
 				// use alpha blending, works for any color
 				maxSteps := gridSize / 30 // TODO(dant): this needs to be the size of the longest path
 				adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, sdl.ALPHA_OPAQUE)
-				log.Print(adjustedColor)
 				l.bgColor = colors.OpacityAdjust(c.bgColor, adjustedColor)
 
 				newFrontier = append(newFrontier, l)

@@ -50,7 +50,9 @@ func main() {
 	}
 	d := source.Distances()
 	for _, c := range d.Cells() {
-		d.Get(c)
+		path := d.Path(c)
+		dist, _ := d.Get(c)
+		log.Printf("Path (%v) from [%v]->[%v]:%v", dist, source, c, path)
 	}
 
 	///////////////////////////////////////////////////////////////////////////
