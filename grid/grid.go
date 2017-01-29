@@ -96,6 +96,13 @@ func NewGrid(c *Config) (*Grid, error) {
 	return g, nil
 }
 
+// ClearDrawPresent clears the buffer, draws the maze in buffer, and displays on the screen
+func (g *Grid) ClearDrawPresent(r *sdl.Renderer) {
+	r.Clear()   // clears buffer
+	g.Draw(r)   // populate buffer
+	r.Present() // redraw screen
+}
+
 func (g *Grid) String() string {
 	output := "┌"
 	for x := 0; x < g.columns-1; x++ {
@@ -145,7 +152,7 @@ func (g *Grid) String() string {
 	return output
 }
 
-// Draw renders the gui maze
+// Draw renders the gui maze in memory, display by calling Present
 func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// Each cell draws the right and bottom border

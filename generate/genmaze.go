@@ -31,7 +31,35 @@ var (
 	wallWidth          = flag.Int("wall_width", 4, "wall width (min of 2 to have walls - half on each side")
 	pathWidth          = flag.Int("path_width", 2, "path width")
 	showAscii          = flag.Bool("ascii", false, "show ascii maze")
+	showGUI            = flag.Bool("gui", true, "show gui maze")
 )
+
+func setupSDL() (*sdl.Window, *sdl.Renderer) {
+	sdl.Init(sdl.INIT_EVERYTHING)
+	sdl.EnableScreenSaver()
+
+	// window
+	w, err := sdl.CreateWindow(winTitle, 0, 0,
+		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
+		(*columns)**cellWidth, (*rows)**cellWidth, sdl.WINDOW_SHOWN)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
+		os.Exit(1)
+	}
+
+	// renderer
+	r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", err)
+		os.Exit(1)
+	}
+
+	// Set options
+	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
+	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+
+	return w, r
+}
 
 func main() {
 	flag.Parse()
@@ -40,6 +68,20 @@ func main() {
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	w, r := setupSDL()
+	defer w.Destroy()
+	defer r.Destroy()
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Configure new grid
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	config := &grid.Config{
 		Rows:        *rows,
 		Columns:     *columns,
@@ -57,6 +99,9 @@ func main() {
 		fmt.Printf("invalid config: %v", err)
 		os.Exit(1)
 	}
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Configure new grid
+	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	// apply algorithm
 	g = bintree.Apply(g)
@@ -86,47 +131,22 @@ func main() {
 		fmt.Printf("%v\n", g)
 	}
 
-	// GUI maze
-	sdl.Init(sdl.INIT_EVERYTHING)
-	sdl.EnableScreenSaver()
+	// gui maze
+	if *showGUI {
+		g.ClearDrawPresent(r)
 
-	// window
-	window, err := sdl.CreateWindow(winTitle, 0, 0,
-		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		(*columns)**cellWidth, (*rows)**cellWidth, sdl.WINDOW_SHOWN)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
-		os.Exit(1)
-	}
-	defer window.Destroy()
+		// wait for GUI to be closed
+	L:
+		for {
+			event := sdl.WaitEvent()
+			switch event.(type) {
+			case *sdl.QuitEvent:
+				break L
+			}
 
-	// renderer
-	r, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", err)
-		os.Exit(1)
-	}
-	defer r.Destroy()
-
-	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
-	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-	r.Clear() // call this before every Present()
-
-	r = g.Draw(r) // adds maze to render
-
-	fmt.Print("Rendering maze...\n")
-	r.Present()
-
-L:
-	for {
-		event := sdl.WaitEvent()
-		switch event.(type) {
-		case *sdl.QuitEvent:
-			break L
 		}
 
+		sdl.Quit()
 	}
-
-	sdl.Quit()
 
 }
