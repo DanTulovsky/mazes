@@ -306,8 +306,8 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 		if err != nil {
 			log.Fatalf("failed to get distance from %v to %v", c, cell)
 		}
-		// decrease the last parameter to make the longest cells brighter. max = 255
-		adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, 100)
+		// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
+		adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, 228)
 		cell.bgColor = colors.OpacityAdjust(g.bgColor, adjustedColor)
 
 	}
