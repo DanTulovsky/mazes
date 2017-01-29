@@ -13,7 +13,11 @@ func TestBinTreeApply(t *testing.T) {
 	bgColor := colors.GetColor("white")
 	borderColor := colors.GetColor("red")
 	wallColor := colors.GetColor("black")
-	g := grid.NewGrid(r, c, w, bgColor, borderColor, wallColor)
+	pathColor := colors.GetColor("yellow")
+	wallWidth := 2
+	pathWidth := 2
+
+	g := grid.NewGrid(r, c, w, wallWidth, pathWidth, bgColor, borderColor, wallColor, pathColor)
 	Apply(g)
 }
 
@@ -24,8 +28,12 @@ func BenchmarkBinTreeApply(b *testing.B) {
 	bgColor := colors.GetColor("white")
 	borderColor := colors.GetColor("red")
 	wallColor := colors.GetColor("black")
+	pathColor := colors.GetColor("yellow")
+	wallWidth := 2
+	pathWidth := 2
+
 	for i := 0; i < b.N; i++ {
-		g := grid.NewGrid(r, c, w, bgColor, borderColor, wallColor)
+		g := grid.NewGrid(r, c, w, wallWidth, pathWidth, bgColor, borderColor, wallColor, pathColor)
 		Apply(g)
 	}
 

@@ -25,15 +25,18 @@ type Grid struct {
 	columns     int
 	cells       [][]*Cell
 	cellWidth   int // cell width
+	wallWidth   int
+	pathWidth   int
 	bgColor     colors.Color
 	borderColor colors.Color
 	wallColor   colors.Color
+	pathColor   colors.Color
 }
 
 var (
 	// set by caller
 	PixelsPerCell int
-	gridSize      int
+	longestPath   int
 )
 
 // Fail fails the process due to an unrecoverable error
@@ -44,21 +47,23 @@ func Fail(err error) {
 }
 
 // NewGrid returns a new grid.
-func NewGrid(r, c, w int, bgColor, borderColor, wallColor colors.Color) *Grid {
+func NewGrid(r, c, w, wallWidth, pathWidth int, bgColor, borderColor, wallColor, pathColor colors.Color) *Grid {
 	g := &Grid{
 		rows:        r,
 		columns:     c,
 		cells:       [][]*Cell{},
 		cellWidth:   w,
+		wallWidth:   wallWidth,
+		pathWidth:   pathWidth,
 		bgColor:     bgColor,
 		borderColor: borderColor,
 		wallColor:   wallColor,
+		pathColor:   pathColor,
 	}
 
 	g.prepareGrid()
 	g.configureCells()
 	PixelsPerCell = w
-	gridSize = g.Size()
 
 	return g
 }
@@ -144,7 +149,7 @@ func (g *Grid) prepareGrid() {
 		g.cells[x] = make([]*Cell, g.rows)
 
 		for y := 0; y < g.rows; y++ {
-			g.cells[x][y] = NewCell(x, y, g.cellWidth, g.bgColor, g.wallColor)
+			g.cells[x][y] = NewCell(x, y, g.cellWidth, g.wallWidth, g.pathWidth, g.bgColor, g.wallColor, g.pathColor)
 		}
 	}
 }
@@ -202,8 +207,29 @@ func (g *Grid) Cells() []*Cell {
 
 // LongestPath returns the longest path through the maze
 func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
-	// TODO(dant): implement
-	return dist, fromCell, toCell, path
+
+	// pick random starting point
+	fromCell = g.RandomCell()
+
+	// find furthest point
+	furthest := fromCell.FurthestCell()
+
+	// now find the furthest point from that
+	toCell = furthest.FurthestCell()
+
+	// now get the path
+	dist, path = g.ShortestPath(furthest, toCell)
+
+	// update longest path for colors
+	longestPath = dist
+
+	// set the distance colors starting at new source
+	g.SetDistanceColors(furthest)
+
+	// draw the path
+	g.DrawPath(furthest, toCell)
+
+	return dist, furthest, toCell, path
 }
 
 func reverseCells(cells []*Cell) {
@@ -212,13 +238,32 @@ func reverseCells(cells []*Cell) {
 	}
 }
 
+// DrawPath draws the shortest path from fromCell to toCell
+func (g *Grid) DrawPath(fromCell, toCell *Cell) {
+	_, path := g.ShortestPath(fromCell, toCell)
+	log.Printf("drawing path [%v]->[%v]", fromCell, toCell)
+
+	var prev, next *Cell
+	for x := 0; x < len(path); x++ {
+		if x > 0 {
+			prev = path[x-1]
+		} else {
+			prev = path[x]
+		}
+
+		if x < len(path)-1 {
+			next = path[x+1]
+		}
+		path[x].SetPaths(prev, next)
+	}
+}
+
 // ShortestPath finds the shortest path from fromCell to toCell
-func (g *Grid) ShortestPath(fromCell, toCell *Cell) (dist int, path []*Cell) {
+func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
+	var path []*Cell
 	// Get all distances from this cell
-	log.Printf("getting distance from %v", fromCell)
 	d := fromCell.Distances()
 	toCellDist, _ := d.Get(toCell)
-	log.Printf("distance from [%v] to [%v] = %v", fromCell, toCell, toCellDist)
 
 	current := toCell
 
@@ -236,8 +281,36 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (dist int, path []*Cell) {
 		current = next
 	}
 
+	// add toCell to path
 	reverseCells(path)
+	path = append(path, toCell)
 	return toCellDist, path
+}
+
+// SetDistanceColors colors the graph based on distances from c
+func (g *Grid) SetDistanceColors(c *Cell) {
+	// sets the color of the new cell to be slightly darker than the previous
+
+	// always start at white, d is the distance from the source cell
+	// l.bgColor = colors.Darker(colors.GetColor("white"), d)
+
+	// longest path
+	maxSteps := longestPath
+
+	// figure out the distances if needed
+	c.Distances()
+
+	// use alpha blending, works for any color
+	for _, cell := range g.Cells() {
+		d, err := c.distances.Get(cell)
+		if err != nil {
+			log.Fatalf("failed to get distance from %v to %v", c, cell)
+		}
+		// decrease the last parameter to make the longest cells brighter. max = 255
+		adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, 100)
+		cell.bgColor = colors.OpacityAdjust(g.bgColor, adjustedColor)
+
+	}
 }
 
 type Distances struct {
@@ -295,19 +368,29 @@ type Cell struct {
 	bgColor colors.Color
 	// Wall color of the cell
 	wallColor colors.Color
+	// path color
+	pathColor colors.Color
 	// size of the cell
-	width int
+	width     int
+	wallWidth int
+	pathWidth int
+
+	// keep track of what cells we have a path to
+	pathNorth, pathSouth, pathEast, pathWest bool
 }
 
 // NewCell initializes a new cell
-func NewCell(x, y, w int, bgColor, wallColor colors.Color) *Cell {
+func NewCell(x, y, w, wallWidth, pathWidth int, bgColor, wallColor, pathColor colors.Color) *Cell {
 	c := &Cell{
 		row:       y,
 		column:    x,
 		links:     make(map[*Cell]bool),
 		bgColor:   bgColor,   // default
 		wallColor: wallColor, // default
+		pathColor: pathColor, //default
 		width:     w,
+		wallWidth: wallWidth,
+		pathWidth: pathWidth,
 	}
 	c.distances = NewDistances(c)
 
@@ -318,8 +401,42 @@ func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
 }
 
+// SetPaths sets the paths present in the cell
+func (c *Cell) SetPaths(previous, next *Cell) {
+	if c.North == previous || c.North == next {
+		c.pathNorth = true
+	}
+	if c.South == previous || c.South == next {
+		c.pathSouth = true
+	}
+	if c.East == previous || c.East == next {
+		c.pathEast = true
+	}
+	if c.West == previous || c.West == next {
+		c.pathWest = true
+	}
+}
+
+// FurthestCell returns the cell that is furthest from this one
+func (c *Cell) FurthestCell() *Cell {
+	var furthest *Cell
+	fromDist := c.Distances()
+
+	longest := 0
+	for _, c := range fromDist.Cells() {
+		dist, _ := fromDist.Get(c)
+		if dist > longest {
+			furthest = c
+			longest = dist
+		}
+
+	}
+	return furthest
+}
+
 // Distances finds the distances of all cells to *this* cell
 // Implements simplified Dijkstra’s algorithm
+// Shades the cells
 func (c *Cell) Distances() *Distances {
 	frontier := []*Cell{c}
 
@@ -336,20 +453,8 @@ func (c *Cell) Distances() *Distances {
 				if err != nil {
 					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 				}
-
 				// sets distance to new cell
 				c.distances.Set(l, d+1)
-
-				// sets the color of the new cell to be slightly darker than the previous
-
-				// always start at white, d is the distance from the source cell
-				// l.bgColor = colors.Darker(colors.GetColor("white"), d)
-
-				// use alpha blending, works for any color
-				maxSteps := gridSize / 30 // TODO(dant): this needs to be the size of the longest path
-				adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, sdl.ALPHA_OPAQUE)
-				l.bgColor = colors.OpacityAdjust(c.bgColor, adjustedColor)
-
 				newFrontier = append(newFrontier, l)
 			}
 		}
@@ -361,51 +466,75 @@ func (c *Cell) Distances() *Distances {
 
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
-	// Fill cell background color. The fill is one pixel in from the wall.
+	var bg *sdl.Rect
+
+	// Fill in background color
 	colors.SetDrawColor(c.bgColor, r)
-	bg := &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+	bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
 		int32(PixelsPerCell), int32(PixelsPerCell)}
 	r.FillRect(bg)
 
 	// Draw walls as needed
 	// East
 	if !c.Linked(c.East) {
-		x := c.column*PixelsPerCell + PixelsPerCell
-		y := c.row * PixelsPerCell
-		x2 := (c.column * PixelsPerCell) + PixelsPerCell
-		y2 := (c.row * PixelsPerCell) + PixelsPerCell
 		colors.SetDrawColor(c.wallColor, r)
-		r.DrawLine(x, y, x2, y2)
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell - c.wallWidth/2), int32(c.row * PixelsPerCell),
+			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
+		r.FillRect(bg)
 	}
 
 	// West
 	if !c.Linked(c.West) {
-		x := c.column * PixelsPerCell
-		y := c.row * PixelsPerCell
-		x2 := (c.column * PixelsPerCell)
-		y2 := (c.row * PixelsPerCell) + PixelsPerCell
 		colors.SetDrawColor(c.wallColor, r)
-		r.DrawLine(x, y, x2, y2)
+		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
+		r.FillRect(bg)
 	}
 
 	// North
 	if !c.Linked(c.North) {
-		x := (c.column * PixelsPerCell)
-		y := c.row * PixelsPerCell
-		x2 := (c.column * PixelsPerCell) + PixelsPerCell
-		y2 := c.row * PixelsPerCell
 		colors.SetDrawColor(c.wallColor, r)
-		r.DrawLine(x, y, x2, y2)
+		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+			int32(PixelsPerCell), int32(c.wallWidth / 2)}
+		r.FillRect(bg)
 	}
 
 	// South
 	if !c.Linked(c.South) {
-		x := (c.column * PixelsPerCell)
-		y := (c.row * PixelsPerCell) + PixelsPerCell
-		x2 := (c.column * PixelsPerCell) + PixelsPerCell
-		y2 := (c.row * PixelsPerCell) + PixelsPerCell
 		colors.SetDrawColor(c.wallColor, r)
-		r.DrawLine(x, y, x2, y2)
+		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2),
+			int32(PixelsPerCell), int32(c.wallWidth / 2)}
+		r.FillRect(bg)
+	}
+
+	// Path
+	var path *sdl.Rect
+	colors.SetDrawColor(c.pathColor, r)
+	pathWidth := c.pathWidth
+
+	if c.pathEast {
+		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(PixelsPerCell / 2), int32(pathWidth)}
+		r.FillRect(path)
+	}
+	if c.pathWest {
+		path = &sdl.Rect{int32(c.column * PixelsPerCell),
+			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(PixelsPerCell/2 + pathWidth), int32(pathWidth)}
+		r.FillRect(path)
+	}
+	if c.pathNorth {
+		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row * PixelsPerCell),
+			int32(pathWidth), int32(PixelsPerCell / 2)}
+		r.FillRect(path)
+	}
+	if c.pathSouth {
+		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(pathWidth), int32(PixelsPerCell / 2)}
+		r.FillRect(path)
 	}
 
 	return r

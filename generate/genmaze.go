@@ -26,7 +26,10 @@ var (
 	bgColor            = flag.String("bgcolor", "white", "background color")
 	wallColor          = flag.String("wall_color", "black", "wall color")
 	borderColor        = flag.String("border_color", "red", "border color")
+	pathColor          = flag.String("path_color", "red", "border color")
 	cellWidth          = flag.Int("w", 20, "cell width")
+	wallWidth          = flag.Int("wall_width", 4, "wall width")
+	pathWidth          = flag.Int("path_width", 2, "path width")
 	showAscii          = flag.Bool("ascii", false, "show ascii maze")
 )
 
@@ -37,24 +40,28 @@ func main() {
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
-	g := grid.NewGrid(*rows, *columns, *cellWidth, colors.GetColor(*bgColor), colors.GetColor(*borderColor), colors.GetColor(*wallColor))
+	g := grid.NewGrid(*rows, *columns, *cellWidth, *wallWidth, *pathWidth, colors.GetColor(*bgColor),
+		colors.GetColor(*borderColor), colors.GetColor(*wallColor), colors.GetColor(*pathColor))
 
 	// apply algorithm
 	g = bintree.Apply(g)
 
-	// apply Dijkstra’s to record distance information
-	x, y := *rows/2, *columns/2
-	fromCell, err := g.Cell(x, y)
-	if err != nil {
-		log.Fatalf("error getting cell: %v", err)
-	}
-	toCell, err := g.Cell(x+30, y-30)
-	if err != nil {
-		log.Fatalf("error getting cell: %v", err)
-	}
-	// source.Distances()
-	dist, path := g.ShortestPath(fromCell, toCell)
-	log.Printf("Shortest path from [%v]->[%v] = %v > %v", fromCell, toCell, dist, path)
+	// find the longest path in the maze automatically
+	dist, fromCell, toCell, _ := g.LongestPath()
+	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
+
+	//x, y := *rows/2, *columns/2
+	//fromCell, err := g.Cell(x, y)
+	//if err != nil {
+	//	log.Fatalf("error getting cell: %v", err)
+	//}
+	//toCell, err := g.Cell(x+10, y)
+	//if err != nil {
+	//	log.Fatalf("error getting cell: %v", err)
+	//}
+	//// Find shortests distance between fromCell and toCell
+	// dist, path = g.ShortestPath(fromCell, toCell)
+	// log.Printf("Shortest path from [%v]->[%v] = %v > %v", fromCell, toCell, dist, path)
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
