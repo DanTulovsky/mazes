@@ -52,7 +52,11 @@ func main() {
 		PathColor:   colors.GetColor(*pathColor),
 	}
 
-	g := grid.NewGrid(config)
+	g, err := grid.NewGrid(config)
+	if err != nil {
+		fmt.Printf("invalid config: %v", err)
+		os.Exit(1)
+	}
 
 	// apply algorithm
 	g = bintree.Apply(g)

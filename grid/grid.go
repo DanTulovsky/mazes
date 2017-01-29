@@ -33,6 +33,15 @@ type Config struct {
 	PathColor   colors.Color
 }
 
+// CheckConfig makes sure the config is valid
+func (c *Config) CheckConfig() error {
+
+	if c.Rows <= 0 || c.Columns <= 0 {
+		return fmt.Errorf("rows and columns must be > 0: %#v", c)
+	}
+	return nil
+}
+
 // Grid defines the maze grid
 type Grid struct {
 	config      *Config
@@ -62,7 +71,10 @@ func Fail(err error) {
 }
 
 // NewGrid returns a new grid.
-func NewGrid(c *Config) *Grid {
+func NewGrid(c *Config) (*Grid, error) {
+	if err := c.CheckConfig(); err != nil {
+		return nil, err
+	}
 	g := &Grid{
 		rows:        c.Rows,
 		columns:     c.Columns,
@@ -81,7 +93,7 @@ func NewGrid(c *Config) *Grid {
 	g.configureCells()
 	PixelsPerCell = c.CellWidth
 
-	return g
+	return g, nil
 }
 
 func (g *Grid) String() string {
@@ -162,12 +174,9 @@ func (g *Grid) prepareGrid() {
 	g.cells = make([][]*Cell, g.columns)
 
 	for x := 0; x < g.columns; x++ {
-		log.Printf("x: %v", x)
 		g.cells[x] = make([]*Cell, g.rows)
 
 		for y := 0; y < g.rows; y++ {
-			log.Printf("x, y: %v, %v", x, y)
-			log.Printf("config: %v", g.config)
 			g.cells[x][y] = NewCell(x, y, g.config)
 		}
 	}
