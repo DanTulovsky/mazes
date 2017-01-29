@@ -73,6 +73,7 @@ func main() {
 
 	// GUI maze
 	sdl.Init(sdl.INIT_EVERYTHING)
+	sdl.EnableScreenSaver()
 
 	// window
 	window, err := sdl.CreateWindow(winTitle, 0, 0,
