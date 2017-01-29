@@ -20,7 +20,22 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano()) // need to initialize the seed
 }
 
+// Config defines the configuration parameters passed to the Grid
+type Config struct {
+	Rows        int
+	Columns     int
+	CellWidth   int // cell width
+	WallWidth   int
+	PathWidth   int
+	BgColor     colors.Color
+	BorderColor colors.Color
+	WallColor   colors.Color
+	PathColor   colors.Color
+}
+
+// Grid defines the maze grid
 type Grid struct {
+	config      *Config
 	rows        int
 	columns     int
 	cells       [][]*Cell
@@ -47,23 +62,23 @@ func Fail(err error) {
 }
 
 // NewGrid returns a new grid.
-func NewGrid(r, c, w, wallWidth, pathWidth int, bgColor, borderColor, wallColor, pathColor colors.Color) *Grid {
+func NewGrid(c *Config) *Grid {
 	g := &Grid{
-		rows:        r,
-		columns:     c,
+		rows:        c.Rows,
+		columns:     c.Columns,
 		cells:       [][]*Cell{},
-		cellWidth:   w,
-		wallWidth:   wallWidth,
-		pathWidth:   pathWidth,
-		bgColor:     bgColor,
-		borderColor: borderColor,
-		wallColor:   wallColor,
-		pathColor:   pathColor,
+		cellWidth:   c.CellWidth,
+		wallWidth:   c.WallWidth,
+		pathWidth:   c.PathWidth,
+		bgColor:     c.BgColor,
+		borderColor: c.BorderColor,
+		wallColor:   c.WallColor,
+		pathColor:   c.PathColor,
 	}
 
 	g.prepareGrid()
 	g.configureCells()
-	PixelsPerCell = w
+	PixelsPerCell = c.CellWidth
 
 	return g
 }

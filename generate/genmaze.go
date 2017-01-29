@@ -28,7 +28,7 @@ var (
 	borderColor        = flag.String("border_color", "red", "border color")
 	pathColor          = flag.String("path_color", "red", "border color")
 	cellWidth          = flag.Int("w", 20, "cell width")
-	wallWidth          = flag.Int("wall_width", 4, "wall width")
+	wallWidth          = flag.Int("wall_width", 4, "wall width (min of 2 to have walls - half on each side")
 	pathWidth          = flag.Int("path_width", 2, "path width")
 	showAscii          = flag.Bool("ascii", false, "show ascii maze")
 )
@@ -40,8 +40,19 @@ func main() {
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
-	g := grid.NewGrid(*rows, *columns, *cellWidth, *wallWidth, *pathWidth, colors.GetColor(*bgColor),
-		colors.GetColor(*borderColor), colors.GetColor(*wallColor), colors.GetColor(*pathColor))
+	config := &grid.Config{
+		Rows:        *rows,
+		Columns:     *columns,
+		CellWidth:   *cellWidth,
+		WallWidth:   *wallWidth,
+		PathWidth:   *pathWidth,
+		BgColor:     colors.GetColor(*bgColor),
+		BorderColor: colors.GetColor(*borderColor),
+		WallColor:   colors.GetColor(*wallColor),
+		PathColor:   colors.GetColor(*pathColor),
+	}
+
+	g := grid.NewGrid(config)
 
 	// apply algorithm
 	g = bintree.Apply(g)
