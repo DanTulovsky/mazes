@@ -278,6 +278,10 @@ func (g *Grid) Cells() []*Cell {
 // LongestPath returns the longest path through the maze
 func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
 
+	if longestPath > 0 {
+		return longestPath, nil, nil, nil // already done
+	}
+
 	// pick random starting point
 	fromCell = g.RandomCell()
 
@@ -357,6 +361,9 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 
 	// always start at white, d is the distance from the source cell
 	// l.bgColor = colors.Darker(colors.GetColor("white"), d)
+
+	// figure out longest possible path through maze if needed, for proper colors
+	g.LongestPath()
 
 	// figure out the distances if needed
 	c.Distances()

@@ -131,7 +131,6 @@ func main() {
 	log.Printf("[%v] -> [%v]", fromCell, toCell)
 
 	// For coloring
-	g.LongestPath()
 	g.SetDistanceColors(fromCell)
 
 	g.ShortestPath(fromCell, toCell)
