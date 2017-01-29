@@ -98,6 +98,9 @@ func NewGrid(c *Config) (*Grid, error) {
 
 // ClearDrawPresent clears the buffer, draws the maze in buffer, and displays on the screen
 func (g *Grid) ClearDrawPresent(r *sdl.Renderer) {
+	if r == nil {
+		log.Fatal("trying to render on an uninitialied render, did you pass --gui?")
+	}
 	r.Clear()   // clears buffer
 	g.Draw(r)   // populate buffer
 	r.Present() // redraw screen
@@ -155,7 +158,7 @@ func (g *Grid) String() string {
 // Draw renders the gui maze in memory, display by calling Present
 func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 
-	// Each cell draws the right and bottom border
+	// Each cell draws its background, half the wall and the path, as well as anything inside it
 	for x := 0; x < g.columns; x++ {
 		for y := 0; y < g.rows; y++ {
 			cell, err := g.Cell(x, y)
@@ -167,12 +170,44 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Draw outside border
+	// TODO(dan): This should be based on wallWidth, and the maze should offset itself away from the outside border
 	colors.SetDrawColor(g.borderColor, r)
 	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
-
 	if err := r.DrawRect(bg); err != nil {
 		Fail(fmt.Errorf("error drawing border: %v", err))
 	}
+
+	return r
+}
+
+// DrawPath renders the gui maze path in memory, display by calling Present
+func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
+
+	// TODO(dan): Figure out how to animate this
+	r.Clear()
+	g.Draw(r)
+
+	// Each cell draws its background, half the wall and the path, as well as anything inside it
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			cell, err := g.Cell(x, y)
+			if err != nil {
+				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
+			}
+			cell.DrawPath(r)
+		}
+	}
+
+	// Draw outside border
+	// TODO(dan): This should be based on wallWidth, and the maze should offset itself away from the outside border
+	colors.SetDrawColor(g.borderColor, r)
+	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
+	if err := r.DrawRect(bg); err != nil {
+		Fail(fmt.Errorf("error drawing border: %v", err))
+	}
+
+	r.Present()
+
 	return r
 }
 
@@ -258,12 +293,6 @@ func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
 	// update longest path for colors
 	longestPath = dist
 
-	// set the distance colors starting at new source
-	g.SetDistanceColors(furthest)
-
-	// draw the path
-	g.DrawPath(furthest, toCell)
-
 	return dist, furthest, toCell, path
 }
 
@@ -273,10 +302,9 @@ func reverseCells(cells []*Cell) {
 	}
 }
 
-// DrawPath draws the shortest path from fromCell to toCell
-func (g *Grid) DrawPath(fromCell, toCell *Cell) {
+// SetPath draws the shortest path from fromCell to toCell
+func (g *Grid) SetPath(fromCell, toCell *Cell) {
 	_, path := g.ShortestPath(fromCell, toCell)
-	log.Printf("drawing path [%v]->[%v]", fromCell, toCell)
 
 	var prev, next *Cell
 	for x := 0; x < len(path); x++ {
@@ -319,6 +347,7 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
 	// add toCell to path
 	reverseCells(path)
 	path = append(path, toCell)
+
 	return toCellDist, path
 }
 
@@ -328,9 +357,6 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 
 	// always start at white, d is the distance from the source cell
 	// l.bgColor = colors.Darker(colors.GetColor("white"), d)
-
-	// longest path
-	maxSteps := longestPath
 
 	// figure out the distances if needed
 	c.Distances()
@@ -342,7 +368,7 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 			log.Fatalf("failed to get distance from %v to %v", c, cell)
 		}
 		// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
-		adjustedColor := utils.AffineTransform(float32(d), 0, float32(maxSteps), 0, 228)
+		adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
 		cell.bgColor = colors.OpacityAdjust(g.bgColor, adjustedColor)
 
 	}
@@ -380,6 +406,7 @@ func (d *Distances) Set(c *Cell, dist int) {
 	d.cells[c] = dist
 }
 
+// Get returns the distance to c
 func (d *Distances) Get(c *Cell) (int, error) {
 	dist, ok := d.cells[c]
 	if !ok {
@@ -473,6 +500,11 @@ func (c *Cell) FurthestCell() *Cell {
 // Implements simplified Dijkstra’s algorithm
 // Shades the cells
 func (c *Cell) Distances() *Distances {
+	if len(c.distances.cells) > 1 {
+		// Already have this info
+		return c.distances
+	}
+
 	frontier := []*Cell{c}
 
 	for len(frontier) > 0 {
@@ -488,9 +520,11 @@ func (c *Cell) Distances() *Distances {
 				if err != nil {
 					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 				}
+
 				// sets distance to new cell
 				c.distances.Set(l, d+1)
 				newFrontier = append(newFrontier, l)
+
 			}
 		}
 		frontier = newFrontier
@@ -542,7 +576,11 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		r.FillRect(bg)
 	}
 
-	// Path
+	return r
+}
+
+// DrawPath draws the path as present in the cells
+func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	var path *sdl.Rect
 	colors.SetDrawColor(c.pathColor, r)
 	pathWidth := c.pathWidth

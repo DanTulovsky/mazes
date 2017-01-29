@@ -107,8 +107,10 @@ func main() {
 	g = bintree.Apply(g)
 
 	// find the longest path in the maze automatically
-	dist, fromCell, toCell, _ := g.LongestPath()
-	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
+	// dist, fromCell, toCell, _ := g.LongestPath()
+	// g.SetDistanceColors(fromCell)
+	// g.SetPath(fromCell, toCell)
+	/// log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
 
 	//x, y := *rows/2, *columns/2
 	//fromCell, err := g.Cell(x, y)
@@ -123,6 +125,18 @@ func main() {
 	// dist, path = g.ShortestPath(fromCell, toCell)
 	// log.Printf("Shortest path from [%v]->[%v] = %v > %v", fromCell, toCell, dist, path)
 
+	// shortest distance between two random cells
+	fromCell := g.RandomCell()
+	toCell := g.RandomCell()
+	log.Printf("[%v] -> [%v]", fromCell, toCell)
+
+	// For coloring
+	g.LongestPath()
+	g.SetDistanceColors(fromCell)
+
+	g.ShortestPath(fromCell, toCell)
+	g.SetPath(fromCell, toCell)
+
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
@@ -134,6 +148,7 @@ func main() {
 	// gui maze
 	if *showGUI {
 		g.ClearDrawPresent(r)
+		g.DrawPath(r)
 
 		// wait for GUI to be closed
 	L:
