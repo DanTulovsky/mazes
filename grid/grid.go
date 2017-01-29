@@ -74,6 +74,7 @@ func NewGrid(c *Config) *Grid {
 		borderColor: c.BorderColor,
 		wallColor:   c.WallColor,
 		pathColor:   c.PathColor,
+		config:      c,
 	}
 
 	g.prepareGrid()
@@ -158,13 +159,16 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 // prepareGrid initializes the grid with cells
 func (g *Grid) prepareGrid() {
-	g.cells = make([][]*Cell, g.rows)
+	g.cells = make([][]*Cell, g.columns)
 
 	for x := 0; x < g.columns; x++ {
+		log.Printf("x: %v", x)
 		g.cells[x] = make([]*Cell, g.rows)
 
 		for y := 0; y < g.rows; y++ {
-			g.cells[x][y] = NewCell(x, y, g.cellWidth, g.wallWidth, g.pathWidth, g.bgColor, g.wallColor, g.pathColor)
+			log.Printf("x, y: %v, %v", x, y)
+			log.Printf("config: %v", g.config)
+			g.cells[x][y] = NewCell(x, y, g.config)
 		}
 	}
 }
@@ -395,21 +399,21 @@ type Cell struct {
 }
 
 // NewCell initializes a new cell
-func NewCell(x, y, w, wallWidth, pathWidth int, bgColor, wallColor, pathColor colors.Color) *Cell {
-	c := &Cell{
+func NewCell(x, y int, c *Config) *Cell {
+	cell := &Cell{
 		row:       y,
 		column:    x,
 		links:     make(map[*Cell]bool),
-		bgColor:   bgColor,   // default
-		wallColor: wallColor, // default
-		pathColor: pathColor, //default
-		width:     w,
-		wallWidth: wallWidth,
-		pathWidth: pathWidth,
+		bgColor:   c.BgColor,   // default
+		wallColor: c.WallColor, // default
+		pathColor: c.PathColor, //default
+		width:     c.CellWidth,
+		wallWidth: c.WallWidth,
+		pathWidth: c.PathWidth,
 	}
-	c.distances = NewDistances(c)
+	cell.distances = NewDistances(cell)
 
-	return c
+	return cell
 }
 
 func (c *Cell) String() string {

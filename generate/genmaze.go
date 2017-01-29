@@ -89,7 +89,7 @@ func main() {
 	// window
 	window, err := sdl.CreateWindow(winTitle, 0, 0,
 		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		(*rows)**cellWidth, (*columns)**cellWidth, sdl.WINDOW_SHOWN)
+		(*columns)**cellWidth, (*rows)**cellWidth, sdl.WINDOW_SHOWN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
 		os.Exit(1)
