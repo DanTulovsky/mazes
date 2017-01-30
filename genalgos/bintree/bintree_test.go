@@ -5,18 +5,53 @@ import (
 	"testing"
 )
 
+var bintreeapplytests = []struct {
+	config  *grid.Config
+	wantErr bool
+}{
+	{
+		config: &grid.Config{
+			Rows:    10,
+			Columns: 10,
+		},
+		wantErr: false,
+	}, {
+		config: &grid.Config{
+			Rows:    10,
+			Columns: 15,
+		},
+		wantErr: false,
+	},
+}
+
 func TestBinTreeApply(t *testing.T) {
-	rows := 10
-	columns := 10
-	g := grid.NewGrid(rows, columns)
-	Apply(g)
+
+	for _, tt := range bintreeapplytests {
+		g, err := grid.NewGrid(tt.config)
+
+		if err != nil {
+			if !tt.wantErr {
+				t.Errorf("invalid config: %v", err)
+			} else {
+				continue // skip the rest of the tests
+			}
+		}
+
+		Apply(g)
+	}
 }
 
 func BenchmarkBinTreeApply(b *testing.B) {
-	rows := 10
-	columns := 10
+	config := &grid.Config{
+		Rows:    3,
+		Columns: 3,
+	}
+
 	for i := 0; i < b.N; i++ {
-		g := grid.NewGrid(rows, columns)
+		g, err := grid.NewGrid(config)
+		if err != nil {
+			b.Errorf("invalid config: %v", err)
+		}
 		Apply(g)
 	}
 

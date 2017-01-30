@@ -2,21 +2,79 @@ package grid
 
 import "testing"
 
-func TestNewGrid(t *testing.T) {
-	rows := 10
-	columns := 10
-	g := NewGrid(rows, columns)
+var gridcreatetests = []struct {
+	config  *Config
+	wantErr bool
+}{
+	{
+		config: &Config{
+			Rows:    10,
+			Columns: 10,
+		},
+		wantErr: false,
+	}, {
+		config: &Config{
+			Rows:    10,
+			Columns: 15,
+		},
+		wantErr: false,
+	}, {
+		config: &Config{
+			Rows:    55,
+			Columns: 4,
+		},
+		wantErr: false,
+	}, {
+		config: &Config{
+			Rows:    0,
+			Columns: 0,
+		},
+		wantErr: true,
+	}, {
+		config: &Config{
+			Rows:    -3,
+			Columns: -3,
+		},
+		wantErr: true,
+	}, {
+		config:  &Config{},
+		wantErr: true,
+	},
+}
 
-	if g.Size() != rows*columns {
-		t.Errorf("Expected size [%v], but have [%v]", rows*columns, g.Size())
+func TestNewGrid(t *testing.T) {
+
+	for _, tt := range gridcreatetests {
+		g, err := NewGrid(tt.config)
+
+		if err != nil {
+			if !tt.wantErr {
+				t.Errorf("invalid config: %v", err)
+			} else {
+				continue // skip the rest of the tests
+			}
+
+		}
+
+		if g.Size() != tt.config.Rows*tt.config.Columns {
+			t.Errorf("Expected size [%v], but have [%v]", tt.config.Rows*tt.config.Columns, g.Size())
+		}
 	}
 }
 
 func BenchmarkNewGrid(b *testing.B) {
-	rows := 10
-	columns := 10
+	config := &Config{
+		Rows:    10,
+		Columns: 10,
+	}
+
+	_, err := NewGrid(config)
+	if err != nil {
+		b.Errorf("invalid config: %v", err)
+	}
+
 	for i := 0; i < b.N; i++ {
-		NewGrid(rows, columns)
+		NewGrid(config)
 	}
 
 }
