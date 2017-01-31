@@ -409,9 +409,6 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
 func (g *Grid) SetDistanceColors(c *Cell) {
 	// sets the color of the new cell to be slightly darker than the previous
 
-	// always start at white, d is the distance from the source cell
-	// l.bgColor = colors.Darker(colors.GetColor("white"), d)
-
 	// figure out longest possible path through maze if needed, for proper colors
 	g.LongestPath()
 
