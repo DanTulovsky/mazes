@@ -376,6 +376,10 @@ func reverseCells(cells []*Cell) {
 func (g *Grid) SetPath(fromCell, toCell *Cell) {
 	_, path := g.ShortestPath(fromCell, toCell)
 
+	// Set path start and end colors
+	fromCell.bgColor = colors.SetOpacity(fromCell.bgColor, 0)
+	toCell.bgColor = colors.SetOpacity(toCell.bgColor, 255)
+
 	var prev, next *Cell
 	for x := 0; x < len(path); x++ {
 		if x > 0 {

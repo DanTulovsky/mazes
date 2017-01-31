@@ -46,6 +46,13 @@ func OpacityAdjust(c Color, i int) Color {
 	return c
 }
 
+// SetOpacity sets the opacity o on the color
+func SetOpacity(c Color, o uint8) Color {
+	c.A = o
+	c.Name = "custom"
+	return c
+}
+
 // GetColor returns *Color based on the name
 func GetColor(c string) Color {
 	color, ok := ColorMap[c]
