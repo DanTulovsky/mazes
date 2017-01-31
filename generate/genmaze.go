@@ -29,14 +29,14 @@ var (
 		"sidewinder": &sidewinder.Sidewinder{},
 	}
 
-	rows        = flag.Int("r", 30, "number of rows in the maze")
-	columns     = flag.Int("c", 30, "number of rows in the maze")
+	rows        = flag.Int("r", 60, "number of rows in the maze")
+	columns     = flag.Int("c", 60, "number of rows in the maze")
 	bgColor     = flag.String("bgcolor", "white", "background color")
 	wallColor   = flag.String("wall_color", "black", "wall color")
-	borderColor = flag.String("border_color", "red", "border color")
+	borderColor = flag.String("border_color", "black", "border color")
 	pathColor   = flag.String("path_color", "red", "border color")
-	cellWidth   = flag.Int("w", 20, "cell width")
-	wallWidth   = flag.Int("wall_width", 4, "wall width (min of 2 to have walls - half on each side")
+	cellWidth   = flag.Int("w", 10, "cell width")
+	wallWidth   = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	pathWidth   = flag.Int("path_width", 2, "path width")
 	showAscii   = flag.Bool("ascii", false, "show ascii maze")
 	showGUI     = flag.Bool("gui", true, "show gui maze")
@@ -48,9 +48,12 @@ func setupSDL() (*sdl.Window, *sdl.Renderer) {
 	sdl.EnableScreenSaver()
 
 	// window
+	winWidth := (*columns)**cellWidth + *wallWidth*2
+	winHeight := (*rows)**cellWidth + *wallWidth*2
+
 	w, err := sdl.CreateWindow(winTitle, 0, 0,
 		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		(*columns)**cellWidth, (*rows)**cellWidth, sdl.WINDOW_SHOWN)
+		winWidth, winHeight, sdl.WINDOW_SHOWN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
 		os.Exit(1)
@@ -178,7 +181,6 @@ func main() {
 	// gui maze
 	if *showGUI {
 		g.ClearDrawPresent(r)
-		g.DrawPath(r)
 
 		// wait for GUI to be closed
 	L:

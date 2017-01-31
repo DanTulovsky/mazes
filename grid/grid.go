@@ -122,8 +122,9 @@ func (g *Grid) ClearDrawPresent(r *sdl.Renderer) {
 	if r == nil {
 		log.Fatal("trying to render on an uninitialied render, did you pass --gui?")
 	}
-	r.Clear()   // clears buffer
-	g.Draw(r)   // populate buffer
+	r.Clear()     // clears buffer
+	g.DrawMaze(r) // populate buffer
+	g.DrawPath(r)
 	r.Present() // redraw screen
 }
 
@@ -176,8 +177,40 @@ func (g *Grid) String() string {
 	return output
 }
 
+// DrawBorder renders the maze border in memory, display by calling Present
+func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
+	colors.SetDrawColor(g.borderColor, r)
+
+	var bg sdl.Rect
+	var rects []sdl.Rect
+	winWidth := int32(g.columns*g.cellWidth + g.wallWidth*2)
+	winHeight := int32(g.rows*g.cellWidth + g.wallWidth*2)
+	wallWidth := int32(g.wallWidth)
+
+	// top
+	bg = sdl.Rect{0, 0, winWidth, wallWidth}
+	rects = append(rects, bg)
+
+	// left
+	bg = sdl.Rect{0, 0, wallWidth, winHeight}
+	rects = append(rects, bg)
+
+	// bottom
+	bg = sdl.Rect{0, winHeight - wallWidth, winWidth, wallWidth}
+	rects = append(rects, bg)
+
+	// right
+	bg = sdl.Rect{winWidth - wallWidth, 0, wallWidth, winHeight}
+	rects = append(rects, bg)
+
+	if err := r.FillRects(rects); err != nil {
+		Fail(fmt.Errorf("error drawing border: %v", err))
+	}
+	return r
+}
+
 // Draw renders the gui maze in memory, display by calling Present
-func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
+func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 
 	// Each cell draws its background, half the wall and the path, as well as anything inside it
 	for x := 0; x < g.columns; x++ {
@@ -191,22 +224,13 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Draw outside border
-	// TODO(dan): This should be based on wallWidth, and the maze should offset itself away from the outside border
-	colors.SetDrawColor(g.borderColor, r)
-	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
-	if err := r.DrawRect(bg); err != nil {
-		Fail(fmt.Errorf("error drawing border: %v", err))
-	}
+	g.DrawBorder(r)
 
 	return r
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
 func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
-
-	// TODO(dan): Figure out how to animate this
-	r.Clear()
-	g.Draw(r)
 
 	// Each cell draws its background, half the wall and the path, as well as anything inside it
 	for x := 0; x < g.columns; x++ {
@@ -218,16 +242,6 @@ func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 			cell.DrawPath(r)
 		}
 	}
-
-	// Draw outside border
-	// TODO(dan): This should be based on wallWidth, and the maze should offset itself away from the outside border
-	colors.SetDrawColor(g.borderColor, r)
-	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
-	if err := r.DrawRect(bg); err != nil {
-		Fail(fmt.Errorf("error drawing border: %v", err))
-	}
-
-	r.Present()
 
 	return r
 }
@@ -587,7 +601,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// Fill in background color
 	colors.SetDrawColor(c.bgColor, r)
-	bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+	bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 		int32(PixelsPerCell), int32(PixelsPerCell)}
 	r.FillRect(bg)
 
@@ -595,7 +609,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// East
 	if !c.Linked(c.East) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell - c.wallWidth/2), int32(c.row * PixelsPerCell),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
 		r.FillRect(bg)
 	}
@@ -603,7 +617,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// West
 	if !c.Linked(c.West) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
 		r.FillRect(bg)
 	}
@@ -611,7 +625,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// North
 	if !c.Linked(c.North) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 			int32(PixelsPerCell), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
@@ -619,7 +633,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// South
 	if !c.Linked(c.South) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth),
 			int32(PixelsPerCell), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
