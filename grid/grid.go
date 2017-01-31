@@ -72,12 +72,6 @@ type Grid struct {
 	pathColor   colors.Color
 }
 
-var (
-	// set by caller
-	PixelsPerCell int
-	longestPath   int
-)
-
 // Fail fails the process due to an unrecoverable error
 func Fail(err error) {
 	fmt.Println(err)
@@ -106,7 +100,6 @@ func NewGrid(c *Config) (*Grid, error) {
 
 	g.prepareGrid()
 	g.configureCells()
-	PixelsPerCell = c.CellWidth
 
 	return g, nil
 }
@@ -329,24 +322,19 @@ func (g *Grid) Cells() []*Cell {
 // LongestPath returns the longest path through the maze
 func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
 
-	if longestPath > 0 {
-		return longestPath, nil, nil, nil // already done
-	}
+	utils.TimeTrack(time.Now(), "LongestPath")
 
 	// pick random starting point
 	fromCell = g.RandomCell()
 
 	// find furthest point
-	furthest := fromCell.FurthestCell()
+	furthest, _ := fromCell.FurthestCell()
 
 	// now find the furthest point from that
-	toCell = furthest.FurthestCell()
+	toCell, _ = furthest.FurthestCell()
 
 	// now get the path
 	dist, path = g.ShortestPath(furthest, toCell)
-
-	// update longest path for colors
-	longestPath = dist
 
 	return dist, furthest, toCell, path
 }
@@ -378,6 +366,12 @@ func (g *Grid) SetPath(fromCell, toCell *Cell) {
 
 // ShortestPath finds the shortest path from fromCell to toCell
 func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
+	utils.TimeTrack(time.Now(), "ShortestPath")
+
+	if path := fromCell.PathTo(toCell); path != nil {
+		return len(path), path
+	}
+
 	var path []*Cell
 	// Get all distances from this cell
 	d := fromCell.Distances()
@@ -403,18 +397,18 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
 	reverseCells(path)
 	path = append(path, toCell)
 
+	// reocrd path for caching
+	fromCell.SetPathTo(toCell, path)
+
 	return toCellDist, path
 }
 
 // SetDistanceColors colors the graph based on distances from c
 func (g *Grid) SetDistanceColors(c *Cell) {
-	// sets the color of the new cell to be slightly darker than the previous
-
-	// figure out longest possible path through maze if needed, for proper colors
-	g.LongestPath()
-
 	// figure out the distances if needed
 	c.Distances()
+
+	_, longestPath := c.FurthestCell()
 
 	// use alpha blending, works for any color
 	for _, cell := range g.Cells() {
@@ -495,6 +489,9 @@ type Cell struct {
 
 	// keep track of what cells we have a path to
 	pathNorth, pathSouth, pathEast, pathWest bool
+
+	// keep track of paths to specific cells
+	paths map[*Cell][]*Cell
 }
 
 // NewCell initializes a new cell
@@ -509,6 +506,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
+		paths:     make(map[*Cell][]*Cell),
 	}
 	cell.distances = NewDistances(cell)
 
@@ -517,6 +515,18 @@ func NewCell(x, y int, c *Config) *Cell {
 
 func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
+}
+
+// PathTo returns the path to the toCell or nil if not available
+func (c *Cell) PathTo(toCell *Cell) []*Cell {
+	if path, ok := c.paths[toCell]; ok {
+		return path
+	}
+	return nil
+}
+
+func (c *Cell) SetPathTo(toCell *Cell, path []*Cell) {
+	c.paths[toCell] = path
 }
 
 // Location returns the x,y location of the cell
@@ -550,8 +560,8 @@ func (c *Cell) SetPaths(previous, next *Cell) {
 	}
 }
 
-// FurthestCell returns the cell that is furthest from this one
-func (c *Cell) FurthestCell() *Cell {
+// FurthestCell returns the cell and distance of the cell that is furthest from this one
+func (c *Cell) FurthestCell() (*Cell, int) {
 	var furthest *Cell = c // you are the furthest from yourself at the start
 	fromDist := c.Distances()
 
@@ -564,7 +574,7 @@ func (c *Cell) FurthestCell() *Cell {
 		}
 
 	}
-	return furthest
+	return furthest, longest
 }
 
 // Distances finds the distances of all cells to *this* cell
@@ -607,6 +617,7 @@ func (c *Cell) Distances() *Distances {
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	var bg *sdl.Rect
+	PixelsPerCell := c.width
 
 	// Fill in background color
 	colors.SetDrawColor(c.bgColor, r)
@@ -655,6 +666,7 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	var path *sdl.Rect
 	colors.SetDrawColor(c.pathColor, r)
 	pathWidth := c.pathWidth
+	PixelsPerCell := c.width
 
 	if c.pathEast {
 		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),

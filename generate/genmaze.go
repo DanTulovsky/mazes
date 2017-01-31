@@ -104,16 +104,16 @@ func drawShortestPathRandomCells(g *grid.Grid) {
 	// For coloring
 	g.SetDistanceColors(fromCell)
 
-	g.ShortestPath(fromCell, toCell)
+	// calculates and sets the path between cells
 	g.SetPath(fromCell, toCell)
 }
 
 // drawLongestPath draws one possible longest path through the maze
 func drawLongestPath(g *grid.Grid) {
-	_, fromCell, toCell, _ := g.LongestPath()
+	dist, fromCell, toCell, _ := g.LongestPath()
 	g.SetDistanceColors(fromCell)
 	g.SetPath(fromCell, toCell)
-	// log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
+	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
 
 }
 

@@ -54,8 +54,8 @@ func TestApply(t *testing.T) {
 
 func BenchmarkApply(b *testing.B) {
 	config := &grid.Config{
-		Rows:    3,
-		Columns: 3,
+		Rows:    300,
+		Columns: 300,
 	}
 
 	for i := 0; i < b.N; i++ {
