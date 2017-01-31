@@ -15,7 +15,12 @@ import (
 
 	"mazes/genalgos/sidewinder"
 
+	"errors"
+
+	"unsafe"
+
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_image"
 )
 
 // For gui support
@@ -41,6 +46,7 @@ var (
 	showAscii   = flag.Bool("ascii", false, "show ascii maze")
 	showGUI     = flag.Bool("gui", true, "show gui maze")
 	createAlgo  = flag.String("create_algo", "bintree", "algorithm used to create the maze")
+	exportFile  = flag.String("export_file", "", "file to save maze to (does not work yet)")
 )
 
 func setupSDL() (*sdl.Window, *sdl.Renderer) {
@@ -61,6 +67,8 @@ func setupSDL() (*sdl.Window, *sdl.Renderer) {
 
 	// renderer
 	r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
+	// r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_SOFTWARE)
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", err)
 		os.Exit(1)
@@ -103,6 +111,32 @@ func drawLongestPath(g *grid.Grid) {
 	g.SetPath(fromCell, toCell)
 	// log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
 
+}
+
+func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
+	if path == "" {
+		return errors.New("path to file is required!")
+	}
+
+	w, h := window.GetSize()
+	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
+	if err != nil {
+		return err
+	}
+
+	rect := &sdl.Rect{0, 0, int32(w) - 1, int32(h) - 1}
+	pixelFormat, err := window.GetPixelFormat()
+	if err != nil {
+		return err
+	}
+	pixels := s.Pixels()
+	if err := r.ReadPixels(rect, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
+		return err
+	}
+
+	img.SavePNG(s, path)
+	s.Free()
+	return nil
 }
 
 func main() {
@@ -162,10 +196,10 @@ func main() {
 	// Pick ONE!
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// find the longest path in the maze automatically
-	// drawLongestPath(g)
+	drawLongestPath(g)
 
 	// shortest distance between two random cells
-	drawShortestPathRandomCells(g)
+	// drawShortestPathRandomCells(g)
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Pick ONE!
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -181,6 +215,14 @@ func main() {
 	// gui maze
 	if *showGUI {
 		g.ClearDrawPresent(r)
+
+		// Save to file
+		if *exportFile != "" {
+			log.Printf("saving image to: %v", *exportFile)
+			if err := SaveImage(r, w, *exportFile); err != nil {
+				log.Printf("error saving file: %v", err)
+			}
+		}
 
 		// wait for GUI to be closed
 	L:
