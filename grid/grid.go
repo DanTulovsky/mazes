@@ -20,6 +20,13 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano()) // need to initialize the seed
 }
 
+// Fail fails the process due to an unrecoverable error
+func Fail(err error) {
+	fmt.Println(err)
+	os.Exit(1)
+
+}
+
 // Config defines the configuration parameters passed to the Grid
 type Config struct {
 	Rows        int
@@ -70,13 +77,6 @@ type Grid struct {
 	borderColor colors.Color
 	wallColor   colors.Color
 	pathColor   colors.Color
-}
-
-// Fail fails the process due to an unrecoverable error
-func Fail(err error) {
-	fmt.Println(err)
-	os.Exit(1)
-
 }
 
 // NewGrid returns a new grid.
@@ -319,6 +319,33 @@ func (g *Grid) Cells() []*Cell {
 	return cells
 }
 
+// UnvisitedCells returns a list of unvisited cells in the grid
+func (g *Grid) UnvisitedCells() []*Cell {
+	cells := []*Cell{}
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			if !g.cells[x][y].Visited() {
+				cells = append(cells, g.cells[x][y])
+			}
+		}
+	}
+	return cells
+}
+
+// ConnectCells connects the list of cells in order by passageways
+func (g *Grid) ConnectCells(cells []*Cell) {
+
+	for x := 0; x < len(cells)-1; x++ {
+		cell := cells[x]
+		for _, n := range []*Cell{cell.North, cell.South, cell.East, cell.West} {
+			if n == cells[x+1] {
+				cell.Link(n)
+				break
+			}
+		}
+	}
+}
+
 // LongestPath returns the longest path through the maze
 func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
 
@@ -492,6 +519,16 @@ type Cell struct {
 
 	// keep track of paths to specific cells
 	paths map[*Cell][]*Cell
+}
+
+// CellInCellList returns true if cell is in cellList
+func CellInCellList(cell *Cell, cellList []*Cell) bool {
+	for _, c := range cellList {
+		if cell == c {
+			return true
+		}
+	}
+	return false
 }
 
 // NewCell initializes a new cell
@@ -746,4 +783,16 @@ func (c *Cell) Neighbors() []*Cell {
 		}
 	}
 	return n
+}
+
+// RandomNeighbor returns a random neighbor of this cell
+func (c *Cell) RandomNeighbor() *Cell {
+	var n []*Cell
+
+	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
+		if cell != nil {
+			n = append(n, cell)
+		}
+	}
+	return n[utils.Random(0, len(n))]
 }

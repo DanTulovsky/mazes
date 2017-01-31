@@ -21,6 +21,8 @@ import (
 
 	"mazes/genalgos/aldous-broder"
 
+	"mazes/genalgos/wilsons"
+
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 )
@@ -36,6 +38,7 @@ var (
 		"aldous-broder": &aldous_broder.AldousBroder{},
 		"bintree":       &bintree.Bintree{},
 		"sidewinder":    &sidewinder.Sidewinder{},
+		"wilsons":       &wilsons.Wilsons{},
 	}
 
 	rows        = flag.Int("r", 60, "number of rows in the maze")
@@ -184,6 +187,7 @@ func main() {
 		fmt.Printf("invalid config: %v", err)
 		os.Exit(1)
 	}
+
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -197,6 +201,9 @@ func main() {
 	g, err = algo.Apply(g)
 	if err != nil {
 		log.Fatalf(err.Error())
+	}
+	if err := algo.CheckGrid(g); err != nil {
+		log.Fatalf("maze is not valid: %v", err)
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////

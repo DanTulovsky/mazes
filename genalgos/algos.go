@@ -9,6 +9,7 @@ import (
 
 type Algorithmer interface {
 	Apply(*grid.Grid) (*grid.Grid, error)
+	CheckGrid(*grid.Grid) error
 }
 
 type Common struct {

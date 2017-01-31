@@ -1,4 +1,4 @@
-package aldous_broder
+package wilsons
 
 import (
 	"mazes/grid"
@@ -24,8 +24,8 @@ var applytests = []struct {
 	},
 }
 
-func setup() *AldousBroder {
-	return &AldousBroder{}
+func setup() *Wilsons {
+	return &Wilsons{}
 }
 
 func TestApply(t *testing.T) {
