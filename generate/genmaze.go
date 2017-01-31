@@ -35,6 +35,10 @@ var (
 		"sidewinder":    &sidewinder.Sidewinder{},
 		"wilsons":       &wilsons.Wilsons{},
 	}
+	actions map[string]func(*grid.Grid) = map[string]func(*grid.Grid){
+		"longestPath":        drawLongestPath,
+		"shortestRandomPath": drawShortestPathRandomCells,
+	}
 
 	rows        = flag.Int("r", 60, "number of rows in the maze")
 	columns     = flag.Int("c", 60, "number of rows in the maze")
@@ -47,8 +51,10 @@ var (
 	pathWidth   = flag.Int("path_width", 2, "path width")
 	showAscii   = flag.Bool("ascii", false, "show ascii maze")
 	showGUI     = flag.Bool("gui", true, "show gui maze")
+	showStats   = flag.Bool("stats", false, "show maze stats")
 	createAlgo  = flag.String("create_algo", "bintree", "algorithm used to create the maze")
 	exportFile  = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	actionToRun = flag.String("action", "longestPath", "action to run")
 )
 
 func setupSDL() (*sdl.Window, *sdl.Renderer) {
@@ -208,19 +214,17 @@ func main() {
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Pick ONE!
+	// {Predefined actions to run}
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// find the longest path in the maze automatically
-	drawLongestPath(g)
+	if action, ok := actions[*actionToRun]; !ok {
+		log.Fatalf("no such action [%v]", *actionToRun)
+	} else {
+		action(g)
+	}
 
-	// shortest distance between two random cells
-	// drawShortestPathRandomCells(g)
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// End Pick ONE!
-	//////////////////////////////////////////////////////////////////////////////////////////////
-
-	// shows some stats about the maze
-	showMazeStats(g)
+	if *showStats {
+		showMazeStats(g)
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
