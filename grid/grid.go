@@ -451,6 +451,19 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 	}
 }
 
+// DeadEnds returns a list of cells that are deadends (only linked to one neighbor
+func (g *Grid) DeadEnds() []*Cell {
+	var deadends []*Cell
+
+	for _, cell := range g.Cells() {
+		if len(cell.Links()) == 1 {
+			deadends = append(deadends, cell)
+		}
+	}
+
+	return deadends
+}
+
 type Distances struct {
 	root  *Cell         // the root cell
 	cells map[*Cell]int // Distance to this cell

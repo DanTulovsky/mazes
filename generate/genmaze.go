@@ -1,27 +1,21 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"mazes/colors"
 	"mazes/genalgos"
+	"mazes/genalgos/aldous-broder"
 	"mazes/genalgos/bintree"
+	"mazes/genalgos/hint-and-kill"
+	"mazes/genalgos/sidewinder"
+	"mazes/genalgos/wilsons"
 	"mazes/grid"
 	"os"
 	"runtime"
-
-	"log"
-
-	"mazes/colors"
-
-	"mazes/genalgos/sidewinder"
-
-	"errors"
-
 	"unsafe"
-
-	"mazes/genalgos/aldous-broder"
-
-	"mazes/genalgos/wilsons"
 
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
@@ -37,6 +31,7 @@ var (
 	algos    map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
 		"aldous-broder": &aldous_broder.AldousBroder{},
 		"bintree":       &bintree.Bintree{},
+		"hunt-and-kill": &hint_and_kill.HuntAndKill{},
 		"sidewinder":    &sidewinder.Sidewinder{},
 		"wilsons":       &wilsons.Wilsons{},
 	}
@@ -146,6 +141,13 @@ func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
 	return nil
 }
 
+// showMazeStats shows some states about the maze
+func showMazeStats(g *grid.Grid) {
+	x, y := g.Dimensions()
+	log.Printf(">> Dimensions: [%v, %v]", x, y)
+	log.Printf(">> Dead Ends: %v", len(g.DeadEnds()))
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -187,7 +189,6 @@ func main() {
 		fmt.Printf("invalid config: %v", err)
 		os.Exit(1)
 	}
-
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +218,9 @@ func main() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Pick ONE!
 	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	// shows some stats about the maze
+	showMazeStats(g)
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY

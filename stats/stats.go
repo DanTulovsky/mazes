@@ -1,0 +1,128 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"mazes/colors"
+	"mazes/genalgos"
+	"mazes/genalgos/aldous-broder"
+	"mazes/genalgos/bintree"
+	"mazes/genalgos/hint-and-kill"
+	"mazes/genalgos/sidewinder"
+	"mazes/genalgos/wilsons"
+	"mazes/grid"
+	"os"
+
+	"sort"
+
+	"github.com/montanaflynn/stats"
+)
+
+var (
+	algos map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
+		"aldous-broder": &aldous_broder.AldousBroder{},
+		"bintree":       &bintree.Bintree{},
+		"hunt-and-kill": &hint_and_kill.HuntAndKill{},
+		"sidewinder":    &sidewinder.Sidewinder{},
+		"wilsons":       &wilsons.Wilsons{},
+	}
+
+	// alog[stat] = value
+	mazeStats map[string]map[string][]float64 = make(map[string]map[string][]float64)
+
+	rows        = flag.Int("r", 20, "number of rows in the maze")
+	columns     = flag.Int("c", 20, "number of rows in the maze")
+	bgColor     = flag.String("bgcolor", "white", "background color")
+	wallColor   = flag.String("wall_color", "black", "wall color")
+	borderColor = flag.String("border_color", "black", "border color")
+	pathColor   = flag.String("path_color", "red", "border color")
+	cellWidth   = flag.Int("w", 10, "cell width")
+	wallWidth   = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	pathWidth   = flag.Int("path_width", 2, "path width")
+	runs        = flag.Int("runs", 20, "number of runs")
+)
+
+// setMazeStats sets stats about the maze
+func setMazeStats(g *grid.Grid, algo string) {
+	mazeStats[algo]["deadends"] = append(mazeStats[algo]["deadends"], float64(len(g.DeadEnds())))
+}
+
+func showMazeStats() {
+	cells := float64(*rows * *columns)
+
+	// deadends
+	fmt.Println("Deadends (average)")
+	for algo, s := range mazeStats {
+		deadends, _ := stats.Mean(s["deadends"])
+		fmt.Printf("  %-20s : %6.2f / %.0f (%5.2f%%)\n", algo, deadends, cells, deadends/cells*100)
+	}
+}
+
+func keys(m map[string]genalgos.Algorithmer) []string {
+	var keys []string
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func RunAll(config *grid.Config) {
+	// Loop over all algos and collect stats
+	for _, name := range keys(algos) {
+		algo := algos[name]
+
+		if _, ok := mazeStats[name]; !ok {
+			mazeStats[name] = make(map[string][]float64)
+		}
+		log.Printf("running: %v", name)
+
+		g, err := grid.NewGrid(config)
+		if err != nil {
+			fmt.Printf("invalid config: %v", err)
+			os.Exit(1)
+		}
+
+		g, err = algo.Apply(g)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+		if err := algo.CheckGrid(g); err != nil {
+			log.Fatalf("maze is not valid: %v", err)
+		}
+
+		// shows some stats about the maze
+		setMazeStats(g, name)
+	}
+}
+
+func main() {
+	flag.Parse()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Configure new grid
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	config := &grid.Config{
+		Rows:        *rows,
+		Columns:     *columns,
+		CellWidth:   *cellWidth,
+		WallWidth:   *wallWidth,
+		PathWidth:   *pathWidth,
+		BgColor:     colors.GetColor(*bgColor),
+		BorderColor: colors.GetColor(*borderColor),
+		WallColor:   colors.GetColor(*wallColor),
+		PathColor:   colors.GetColor(*pathColor),
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Configure new grid
+	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	for x := 0; x < *runs; x++ {
+		RunAll(config)
+	}
+	showMazeStats()
+
+}
