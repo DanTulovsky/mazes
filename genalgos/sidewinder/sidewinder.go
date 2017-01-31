@@ -9,6 +9,7 @@ import (
 	"mazes/genalgos"
 	"mazes/grid"
 	"mazes/utils"
+	"time"
 )
 
 type Sidewinder struct {
@@ -17,6 +18,8 @@ type Sidewinder struct {
 
 // Apply applies the algorithm to the grid.
 func (a *Sidewinder) Apply(g *grid.Grid) (*grid.Grid, error) {
+	defer utils.TimeTrack(time.Now(), "sidewinder apply")
+
 	gridWidth, _ := g.Dimensions()
 
 	for _, row := range g.Rows() {

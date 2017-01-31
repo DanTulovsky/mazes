@@ -7,15 +7,17 @@ import (
 	"mazes/genalgos"
 	"mazes/grid"
 	"mazes/utils"
+	"time"
 )
 
 type Bintree struct {
 	genalgos.Common
 }
 
-// Apply applies the binary tree algorithm to the grid.
+// Apply applies the binary tree algorithm to generate the maze.
 func (a *Bintree) Apply(g *grid.Grid) (*grid.Grid, error) {
 
+	defer utils.TimeTrack(time.Now(), "bintree apply")
 	for _, cell := range g.Cells() {
 		neighbors := []*grid.Cell{}
 		if cell.North != nil {

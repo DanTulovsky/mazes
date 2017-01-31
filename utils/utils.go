@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 	"math/rand"
+	"time"
 )
 
 // Random returns a random number in [min, max)
@@ -24,4 +25,9 @@ func AffineTransform(x, a, b, c, d float32) int {
 		return int(d)
 	}
 	return int((x-a)*((d-c)/(b-a)) + c)
+}
+
+func TimeTrack(start time.Time, name string) {
+	elapsed := time.Since(start)
+	log.Printf("%s took %s", name, elapsed)
 }

@@ -19,6 +19,8 @@ import (
 
 	"unsafe"
 
+	"mazes/genalgos/aldous-broder"
+
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 )
@@ -26,12 +28,14 @@ import (
 // For gui support
 // brew install sdl2{,_image,_ttf,_mixer}
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
+// if slow compile, run: go install -a mazes/generate
 
 var (
 	winTitle string                          = "Maze"
 	algos    map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
-		"bintree":    &bintree.Bintree{},
-		"sidewinder": &sidewinder.Sidewinder{},
+		"aldous-broder": &aldous_broder.AldousBroder{},
+		"bintree":       &bintree.Bintree{},
+		"sidewinder":    &sidewinder.Sidewinder{},
 	}
 
 	rows        = flag.Int("r", 60, "number of rows in the maze")
@@ -59,7 +63,7 @@ func setupSDL() (*sdl.Window, *sdl.Renderer) {
 
 	w, err := sdl.CreateWindow(winTitle, 0, 0,
 		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		winWidth, winHeight, sdl.WINDOW_SHOWN)
+		winWidth, winHeight, sdl.WINDOW_HIDDEN)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
 		os.Exit(1)
@@ -143,6 +147,9 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	// profiling
+	// defer profile.Start().Stop()
+
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
 
@@ -214,7 +221,10 @@ func main() {
 
 	// gui maze
 	if *showGUI {
-		g.ClearDrawPresent(r)
+		// show window here, otherwise if we just display it, it sits as a white
+		// blob while Apply() runs
+		w.Show()
+		g.ClearDrawPresent(r, w)
 
 		// Save to file
 		if *exportFile != "" {

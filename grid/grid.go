@@ -118,13 +118,14 @@ func (g *Grid) Dimensions() (int, int) {
 }
 
 // ClearDrawPresent clears the buffer, draws the maze in buffer, and displays on the screen
-func (g *Grid) ClearDrawPresent(r *sdl.Renderer) {
+func (g *Grid) ClearDrawPresent(r *sdl.Renderer, w *sdl.Window) {
 	if r == nil {
 		log.Fatal("trying to render on an uninitialied render, did you pass --gui?")
 	}
 	r.Clear()     // clears buffer
 	g.DrawMaze(r) // populate buffer
 	g.DrawPath(r)
+
 	r.Present() // redraw screen
 }
 
@@ -518,8 +519,19 @@ func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
 }
 
+// Location returns the x,y location of the cell
 func (c *Cell) Location() Location {
 	return Location{c.column, c.row}
+}
+
+// Visited returns true if the cell has been visited
+func (c *Cell) Visited() bool {
+	return c.visited
+}
+
+// SetVisited marks the cell as visited
+func (c *Cell) SetVisited() {
+	c.visited = true
 }
 
 // SetPaths sets the paths present in the cell
