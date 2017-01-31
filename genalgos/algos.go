@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"mazes/grid"
+	"mazes/utils"
 )
 
 type Algorithmer interface {
@@ -82,4 +83,19 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 	}
 
 	return nil
+}
+
+// RandomUnvisitedCellFromList returns a random cell from n that has not been visited
+func RandomUnvisitedCellFromList(neighbors []*grid.Cell) *grid.Cell {
+	var allowed []*grid.Cell
+	for _, n := range neighbors {
+		if !n.Visited() {
+			allowed = append(allowed, n)
+		}
+	}
+
+	if len(allowed) == 0 {
+		return nil
+	}
+	return allowed[utils.Random(0, len(allowed))]
 }

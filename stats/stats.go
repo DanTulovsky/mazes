@@ -6,28 +6,17 @@ import (
 	"log"
 	"mazes/colors"
 	"mazes/genalgos"
-	"mazes/genalgos/aldous-broder"
-	"mazes/genalgos/bintree"
-	"mazes/genalgos/hint-and-kill"
-	"mazes/genalgos/sidewinder"
-	"mazes/genalgos/wilsons"
 	"mazes/grid"
 	"os"
 
 	"sort"
 
+	"mazes/algos"
+
 	"github.com/montanaflynn/stats"
 )
 
 var (
-	algos map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
-		"aldous-broder": &aldous_broder.AldousBroder{},
-		"bintree":       &bintree.Bintree{},
-		"hunt-and-kill": &hint_and_kill.HuntAndKill{},
-		"sidewinder":    &sidewinder.Sidewinder{},
-		"wilsons":       &wilsons.Wilsons{},
-	}
-
 	// alog[stat] = value
 	mazeStats map[string]map[string][]float64 = make(map[string]map[string][]float64)
 
@@ -53,9 +42,9 @@ func showMazeStats() {
 
 	// deadends
 	fmt.Println("Deadends (average)")
-	for algo, s := range mazeStats {
-		deadends, _ := stats.Mean(s["deadends"])
-		fmt.Printf("  %-20s : %6.2f / %.0f (%5.2f%%)\n", algo, deadends, cells, deadends/cells*100)
+	for _, name := range keys(algos.Algorithms) {
+		deadends, _ := stats.Mean(mazeStats[name]["deadends"])
+		fmt.Printf("  %-25s : %6.2f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
 	}
 }
 
@@ -70,8 +59,8 @@ func keys(m map[string]genalgos.Algorithmer) []string {
 
 func RunAll(config *grid.Config) {
 	// Loop over all algos and collect stats
-	for _, name := range keys(algos) {
-		algo := algos[name]
+	for _, name := range keys(algos.Algorithms) {
+		algo := algos.Algorithms[name]
 
 		if _, ok := mazeStats[name]; !ok {
 			mazeStats[name] = make(map[string][]float64)

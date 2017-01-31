@@ -5,13 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"mazes/algos"
 	"mazes/colors"
-	"mazes/genalgos"
-	"mazes/genalgos/aldous-broder"
-	"mazes/genalgos/bintree"
-	"mazes/genalgos/hint-and-kill"
-	"mazes/genalgos/sidewinder"
-	"mazes/genalgos/wilsons"
 	"mazes/grid"
 	"os"
 	"runtime"
@@ -27,15 +22,8 @@ import (
 // if slow compile, run: go install -a mazes/generate
 
 var (
-	winTitle string                          = "Maze"
-	algos    map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
-		"aldous-broder": &aldous_broder.AldousBroder{},
-		"bintree":       &bintree.Bintree{},
-		"hunt-and-kill": &hint_and_kill.HuntAndKill{},
-		"sidewinder":    &sidewinder.Sidewinder{},
-		"wilsons":       &wilsons.Wilsons{},
-	}
-	actions map[string]func(*grid.Grid) = map[string]func(*grid.Grid){
+	winTitle string                      = "Maze"
+	actions  map[string]func(*grid.Grid) = map[string]func(*grid.Grid){
 		"longestPath":        drawLongestPath,
 		"shortestRandomPath": drawShortestPathRandomCells,
 	}
@@ -91,7 +79,7 @@ func setupSDL() (*sdl.Window, *sdl.Renderer) {
 
 // checkAlgo makes sure the passed in algorithm is valid
 func checkAlgo(a string) bool {
-	for k := range algos {
+	for k := range algos.Algorithms {
 		if k == a {
 			return true
 		}
@@ -203,7 +191,7 @@ func main() {
 		log.Fatalf("invalid algorithm: %v", *createAlgo)
 	}
 	// apply algorithm
-	algo := algos[*createAlgo]
+	algo := algos.Algorithms[*createAlgo]
 
 	g, err = algo.Apply(g)
 	if err != nil {
