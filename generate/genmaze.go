@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"mazes/genalgos"
 	"mazes/genalgos/bintree"
 	"mazes/grid"
 	"os"
@@ -12,6 +13,8 @@ import (
 
 	"mazes/colors"
 
+	"mazes/genalgos/sidewinder"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -20,18 +23,24 @@ import (
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 
 var (
-	winTitle    string = "Maze"
-	rows               = flag.Int("r", 30, "number of rows in the maze")
-	columns            = flag.Int("c", 30, "number of rows in the maze")
-	bgColor            = flag.String("bgcolor", "white", "background color")
-	wallColor          = flag.String("wall_color", "black", "wall color")
-	borderColor        = flag.String("border_color", "red", "border color")
-	pathColor          = flag.String("path_color", "red", "border color")
-	cellWidth          = flag.Int("w", 20, "cell width")
-	wallWidth          = flag.Int("wall_width", 4, "wall width (min of 2 to have walls - half on each side")
-	pathWidth          = flag.Int("path_width", 2, "path width")
-	showAscii          = flag.Bool("ascii", false, "show ascii maze")
-	showGUI            = flag.Bool("gui", true, "show gui maze")
+	winTitle string                          = "Maze"
+	algos    map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
+		"bintree":    &bintree.Bintree{},
+		"sidewinder": &sidewinder.Sidewinder{},
+	}
+
+	rows        = flag.Int("r", 30, "number of rows in the maze")
+	columns     = flag.Int("c", 30, "number of rows in the maze")
+	bgColor     = flag.String("bgcolor", "white", "background color")
+	wallColor   = flag.String("wall_color", "black", "wall color")
+	borderColor = flag.String("border_color", "red", "border color")
+	pathColor   = flag.String("path_color", "red", "border color")
+	cellWidth   = flag.Int("w", 20, "cell width")
+	wallWidth   = flag.Int("wall_width", 4, "wall width (min of 2 to have walls - half on each side")
+	pathWidth   = flag.Int("path_width", 2, "path width")
+	showAscii   = flag.Bool("ascii", false, "show ascii maze")
+	showGUI     = flag.Bool("gui", true, "show gui maze")
+	createAlgo  = flag.String("create_algo", "bintree", "algorithm used to create the maze")
 )
 
 func setupSDL() (*sdl.Window, *sdl.Renderer) {
@@ -59,6 +68,38 @@ func setupSDL() (*sdl.Window, *sdl.Renderer) {
 	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
 
 	return w, r
+}
+
+// checkAlgo makes sure the passed in algorithm is valid
+func checkAlgo(a string) bool {
+	for k := range algos {
+		if k == a {
+			return true
+		}
+	}
+	return false
+}
+
+// drawShortestPathRandomCells draws the shortest distance between two random cells
+func drawShortestPathRandomCells(g *grid.Grid) {
+	fromCell := g.RandomCell()
+	toCell := g.RandomCell()
+	log.Printf("Finding shortest path: [%v] -> [%v]", fromCell, toCell)
+
+	// For coloring
+	g.SetDistanceColors(fromCell)
+
+	g.ShortestPath(fromCell, toCell)
+	g.SetPath(fromCell, toCell)
+}
+
+// drawLongestPath draws one possible longest path through the maze
+func drawLongestPath(g *grid.Grid) {
+	_, fromCell, toCell, _ := g.LongestPath()
+	g.SetDistanceColors(fromCell)
+	g.SetPath(fromCell, toCell)
+	// log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
+
 }
 
 func main() {
@@ -103,38 +144,28 @@ func main() {
 	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
+	if !checkAlgo(*createAlgo) {
+		log.Fatalf("invalid algorithm: %v", *createAlgo)
+	}
 	// apply algorithm
-	g = bintree.Apply(g)
+	algo := algos[*createAlgo]
 
+	g, err = algo.Apply(g)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Pick ONE!
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	// find the longest path in the maze automatically
-	// dist, fromCell, toCell, _ := g.LongestPath()
-	// g.SetDistanceColors(fromCell)
-	// g.SetPath(fromCell, toCell)
-	/// log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
-
-	//x, y := *rows/2, *columns/2
-	//fromCell, err := g.Cell(x, y)
-	//if err != nil {
-	//	log.Fatalf("error getting cell: %v", err)
-	//}
-	//toCell, err := g.Cell(x+10, y)
-	//if err != nil {
-	//	log.Fatalf("error getting cell: %v", err)
-	//}
-	//// Find shortests distance between fromCell and toCell
-	// dist, path = g.ShortestPath(fromCell, toCell)
-	// log.Printf("Shortest path from [%v]->[%v] = %v > %v", fromCell, toCell, dist, path)
+	drawLongestPath(g)
 
 	// shortest distance between two random cells
-	fromCell := g.RandomCell()
-	toCell := g.RandomCell()
-	log.Printf("[%v] -> [%v]", fromCell, toCell)
-
-	// For coloring
-	g.SetDistanceColors(fromCell)
-
-	g.ShortestPath(fromCell, toCell)
-	g.SetPath(fromCell, toCell)
+	// drawShortestPathRandomCells(g)
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Pick ONE!
+	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY

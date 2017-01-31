@@ -1,4 +1,4 @@
-package bintree
+package sidewinder
 
 import (
 	"mazes/grid"
@@ -24,8 +24,8 @@ var applytests = []struct {
 	},
 }
 
-func setup() *Bintree {
-	return &Bintree{}
+func setup() *Sidewinder {
+	return &Sidewinder{}
 }
 
 func TestApply(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 )
 
+// Random returns a random number in [min, max)
 func Random(min, max int) int {
 	return rand.Intn(max-min) + min
 }

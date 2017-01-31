@@ -42,6 +42,21 @@ func (c *Config) CheckConfig() error {
 	return nil
 }
 
+// Location is x,y coordinate of a cell
+type Location struct {
+	X, Y int
+}
+
+// LocInLocList returns true if lo is in locList
+func LocInLocList(l Location, locList []Location) bool {
+	for _, loc := range locList {
+		if l.X == loc.X && l.Y == loc.Y {
+			return true
+		}
+	}
+	return false
+}
+
 // Grid defines the maze grid
 type Grid struct {
 	config      *Config
@@ -94,6 +109,12 @@ func NewGrid(c *Config) (*Grid, error) {
 	PixelsPerCell = c.CellWidth
 
 	return g, nil
+}
+
+// Dimensions returns the dimensions of the grid.
+func (g *Grid) Dimensions() (int, int) {
+
+	return g.columns, g.rows
 }
 
 // ClearDrawPresent clears the buffer, draws the maze in buffer, and displays on the screen
@@ -254,6 +275,11 @@ func (g *Grid) RandomCell() *Cell {
 	return g.cells[utils.Random(0, g.columns)][utils.Random(0, g.rows)]
 }
 
+// RandomCellFromList returns a random cell from the provided list of cells
+func (g *Grid) RandomCellFromList(cells []*Cell) *Cell {
+	return cells[utils.Random(0, len(cells))]
+}
+
 // Size returns the number of cells in the grid
 func (g *Grid) Size() int {
 	return g.columns * g.rows
@@ -261,7 +287,17 @@ func (g *Grid) Size() int {
 
 // Rows returns a list of rows (essentially the grid
 func (g *Grid) Rows() [][]*Cell {
-	return g.cells
+	rows := [][]*Cell{}
+
+	for y := 0; y < g.rows; y++ {
+		cells := []*Cell{}
+		for x := 0; x < g.columns; x++ {
+			cell, _ := g.Cell(x, y)
+			cells = append(cells, cell)
+		}
+		rows = append(rows, cells)
+	}
+	return rows
 }
 
 // Cells returns a list of cells in the grid
@@ -372,7 +408,8 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 	for _, cell := range g.Cells() {
 		d, err := c.distances.Get(cell)
 		if err != nil {
-			log.Fatalf("failed to get distance from %v to %v", c, cell)
+			log.Printf("failed to get distance from %v to %v", c, cell)
+			return
 		}
 		// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
 		adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
@@ -470,6 +507,10 @@ func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
 }
 
+func (c *Cell) Location() Location {
+	return Location{c.column, c.row}
+}
+
 // SetPaths sets the paths present in the cell
 func (c *Cell) SetPaths(previous, next *Cell) {
 	if c.North == previous || c.North == next {
@@ -488,7 +529,7 @@ func (c *Cell) SetPaths(previous, next *Cell) {
 
 // FurthestCell returns the cell that is furthest from this one
 func (c *Cell) FurthestCell() *Cell {
-	var furthest *Cell
+	var furthest *Cell = c // you are the furthest from yourself at the start
 	fromDist := c.Distances()
 
 	longest := 0
