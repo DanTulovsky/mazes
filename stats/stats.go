@@ -17,8 +17,11 @@ import (
 
 	"mazes/solvealgos"
 
+	"net/http"
+
 	"github.com/montanaflynn/stats"
-	"github.com/pkg/profile"
+
+	_ "net/http/pprof"
 )
 
 var (
@@ -167,7 +170,10 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	defer profile.Start().Stop()
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+	// defer profile.Start().Stop()
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid

@@ -11,6 +11,7 @@ import (
 	"mazes/genalgos/wilsons"
 	"mazes/solvealgos"
 	solve_rb "mazes/solvealgos/recursive_backtracker"
+	"mazes/solvealgos/wall_follower"
 )
 
 var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
@@ -24,4 +25,5 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 
 var SolveAlgorithms map[string]solvealgos.Algorithmer = map[string]solvealgos.Algorithmer{
 	"recursive-backtracker": &solve_rb.RecursiveBacktracker{},
+	"wall-follower":         &wall_follower.WallFollower{},
 }
