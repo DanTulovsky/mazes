@@ -20,6 +20,13 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano()) // need to initialize the seed
 }
 
+// Fail fails the process due to an unrecoverable error
+func Fail(err error) {
+	fmt.Println(err)
+	os.Exit(1)
+
+}
+
 // Config defines the configuration parameters passed to the Grid
 type Config struct {
 	Rows        int
@@ -42,6 +49,21 @@ func (c *Config) CheckConfig() error {
 	return nil
 }
 
+// Location is x,y coordinate of a cell
+type Location struct {
+	X, Y int
+}
+
+// LocInLocList returns true if lo is in locList
+func LocInLocList(l Location, locList []Location) bool {
+	for _, loc := range locList {
+		if l.X == loc.X && l.Y == loc.Y {
+			return true
+		}
+	}
+	return false
+}
+
 // Grid defines the maze grid
 type Grid struct {
 	config      *Config
@@ -55,19 +77,7 @@ type Grid struct {
 	borderColor colors.Color
 	wallColor   colors.Color
 	pathColor   colors.Color
-}
-
-var (
-	// set by caller
-	PixelsPerCell int
-	longestPath   int
-)
-
-// Fail fails the process due to an unrecoverable error
-func Fail(err error) {
-	fmt.Println(err)
-	os.Exit(1)
-
+	createTime  time.Duration // how long it took to apply the algorithm to create the grid
 }
 
 // NewGrid returns a new grid.
@@ -91,18 +101,33 @@ func NewGrid(c *Config) (*Grid, error) {
 
 	g.prepareGrid()
 	g.configureCells()
-	PixelsPerCell = c.CellWidth
 
 	return g, nil
 }
 
+func (g *Grid) SetCreateTime(t time.Duration) {
+	g.createTime = t
+}
+
+func (g *Grid) CreateTime() time.Duration {
+	return g.createTime
+}
+
+// Dimensions returns the dimensions of the grid.
+func (g *Grid) Dimensions() (int, int) {
+
+	return g.columns, g.rows
+}
+
 // ClearDrawPresent clears the buffer, draws the maze in buffer, and displays on the screen
-func (g *Grid) ClearDrawPresent(r *sdl.Renderer) {
+func (g *Grid) ClearDrawPresent(r *sdl.Renderer, w *sdl.Window) {
 	if r == nil {
 		log.Fatal("trying to render on an uninitialied render, did you pass --gui?")
 	}
-	r.Clear()   // clears buffer
-	g.Draw(r)   // populate buffer
+	r.Clear()     // clears buffer
+	g.DrawMaze(r) // populate buffer
+	g.DrawPath(r)
+
 	r.Present() // redraw screen
 }
 
@@ -155,8 +180,40 @@ func (g *Grid) String() string {
 	return output
 }
 
+// DrawBorder renders the maze border in memory, display by calling Present
+func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
+	colors.SetDrawColor(g.borderColor, r)
+
+	var bg sdl.Rect
+	var rects []sdl.Rect
+	winWidth := int32(g.columns*g.cellWidth + g.wallWidth*2)
+	winHeight := int32(g.rows*g.cellWidth + g.wallWidth*2)
+	wallWidth := int32(g.wallWidth)
+
+	// top
+	bg = sdl.Rect{0, 0, winWidth, wallWidth}
+	rects = append(rects, bg)
+
+	// left
+	bg = sdl.Rect{0, 0, wallWidth, winHeight}
+	rects = append(rects, bg)
+
+	// bottom
+	bg = sdl.Rect{0, winHeight - wallWidth, winWidth, wallWidth}
+	rects = append(rects, bg)
+
+	// right
+	bg = sdl.Rect{winWidth - wallWidth, 0, wallWidth, winHeight}
+	rects = append(rects, bg)
+
+	if err := r.FillRects(rects); err != nil {
+		Fail(fmt.Errorf("error drawing border: %v", err))
+	}
+	return r
+}
+
 // Draw renders the gui maze in memory, display by calling Present
-func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
+func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 
 	// Each cell draws its background, half the wall and the path, as well as anything inside it
 	for x := 0; x < g.columns; x++ {
@@ -170,22 +227,13 @@ func (g *Grid) Draw(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Draw outside border
-	// TODO(dan): This should be based on wallWidth, and the maze should offset itself away from the outside border
-	colors.SetDrawColor(g.borderColor, r)
-	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
-	if err := r.DrawRect(bg); err != nil {
-		Fail(fmt.Errorf("error drawing border: %v", err))
-	}
+	g.DrawBorder(r)
 
 	return r
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
 func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
-
-	// TODO(dan): Figure out how to animate this
-	r.Clear()
-	g.Draw(r)
 
 	// Each cell draws its background, half the wall and the path, as well as anything inside it
 	for x := 0; x < g.columns; x++ {
@@ -197,16 +245,6 @@ func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 			cell.DrawPath(r)
 		}
 	}
-
-	// Draw outside border
-	// TODO(dan): This should be based on wallWidth, and the maze should offset itself away from the outside border
-	colors.SetDrawColor(g.borderColor, r)
-	bg := &sdl.Rect{0, 0, int32(g.columns) * int32(PixelsPerCell), int32(g.rows) * int32(PixelsPerCell)}
-	if err := r.DrawRect(bg); err != nil {
-		Fail(fmt.Errorf("error drawing border: %v", err))
-	}
-
-	r.Present()
 
 	return r
 }
@@ -254,6 +292,11 @@ func (g *Grid) RandomCell() *Cell {
 	return g.cells[utils.Random(0, g.columns)][utils.Random(0, g.rows)]
 }
 
+// RandomCellFromList returns a random cell from the provided list of cells
+func (g *Grid) RandomCellFromList(cells []*Cell) *Cell {
+	return cells[utils.Random(0, len(cells))]
+}
+
 // Size returns the number of cells in the grid
 func (g *Grid) Size() int {
 	return g.columns * g.rows
@@ -261,7 +304,17 @@ func (g *Grid) Size() int {
 
 // Rows returns a list of rows (essentially the grid
 func (g *Grid) Rows() [][]*Cell {
-	return g.cells
+	rows := [][]*Cell{}
+
+	for y := 0; y < g.rows; y++ {
+		cells := []*Cell{}
+		for x := 0; x < g.columns; x++ {
+			cell, _ := g.Cell(x, y)
+			cells = append(cells, cell)
+		}
+		rows = append(rows, cells)
+	}
+	return rows
 }
 
 // Cells returns a list of cells in the grid
@@ -275,27 +328,49 @@ func (g *Grid) Cells() []*Cell {
 	return cells
 }
 
+// UnvisitedCells returns a list of unvisited cells in the grid
+func (g *Grid) UnvisitedCells() []*Cell {
+	cells := []*Cell{}
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			if !g.cells[x][y].Visited() {
+				cells = append(cells, g.cells[x][y])
+			}
+		}
+	}
+	return cells
+}
+
+// ConnectCells connects the list of cells in order by passageways
+func (g *Grid) ConnectCells(cells []*Cell) {
+
+	for x := 0; x < len(cells)-1; x++ {
+		cell := cells[x]
+		for _, n := range []*Cell{cell.North, cell.South, cell.East, cell.West} {
+			if n == cells[x+1] {
+				cell.Link(n)
+				break
+			}
+		}
+	}
+}
+
 // LongestPath returns the longest path through the maze
 func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
 
-	if longestPath > 0 {
-		return longestPath, nil, nil, nil // already done
-	}
+	utils.TimeTrack(time.Now(), "LongestPath")
 
 	// pick random starting point
 	fromCell = g.RandomCell()
 
 	// find furthest point
-	furthest := fromCell.FurthestCell()
+	furthest, _ := fromCell.FurthestCell()
 
 	// now find the furthest point from that
-	toCell = furthest.FurthestCell()
+	toCell, _ = furthest.FurthestCell()
 
 	// now get the path
 	dist, path = g.ShortestPath(furthest, toCell)
-
-	// update longest path for colors
-	longestPath = dist
 
 	return dist, furthest, toCell, path
 }
@@ -306,9 +381,37 @@ func reverseCells(cells []*Cell) {
 	}
 }
 
+// SetFromToColors sets the opacity of the from and to cells to be highly visible
+func (g *Grid) SetFromToColors(fromCell, toCell *Cell) {
+	// Set path start and end colors
+	fromCell.bgColor = colors.SetOpacity(fromCell.bgColor, 0)
+	toCell.bgColor = colors.SetOpacity(toCell.bgColor, 255)
+}
+
 // SetPath draws the shortest path from fromCell to toCell
+// TODO(dant): Move this into solver
 func (g *Grid) SetPath(fromCell, toCell *Cell) {
 	_, path := g.ShortestPath(fromCell, toCell)
+	g.SetFromToColors(fromCell, toCell)
+
+	var prev, next *Cell
+	for x := 0; x < len(path); x++ {
+		if x > 0 {
+			prev = path[x-1]
+		} else {
+			prev = path[x]
+		}
+
+		if x < len(path)-1 {
+			next = path[x+1]
+		}
+		path[x].SetPaths(prev, next)
+	}
+}
+
+// SetPathFromTo draws the path from fromCell to toCell
+func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
+	// g.SetFromToColors(fromCell, toCell)
 
 	var prev, next *Cell
 	for x := 0; x < len(path); x++ {
@@ -327,6 +430,12 @@ func (g *Grid) SetPath(fromCell, toCell *Cell) {
 
 // ShortestPath finds the shortest path from fromCell to toCell
 func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
+	utils.TimeTrack(time.Now(), "ShortestPath")
+
+	if path := fromCell.PathTo(toCell); path != nil {
+		return len(path), path
+	}
+
 	var path []*Cell
 	// Get all distances from this cell
 	d := fromCell.Distances()
@@ -352,33 +461,52 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
 	reverseCells(path)
 	path = append(path, toCell)
 
+	// reocrd path for caching
+	fromCell.SetPathTo(toCell, path)
+
 	return toCellDist, path
 }
 
 // SetDistanceColors colors the graph based on distances from c
 func (g *Grid) SetDistanceColors(c *Cell) {
-	// sets the color of the new cell to be slightly darker than the previous
-
-	// always start at white, d is the distance from the source cell
-	// l.bgColor = colors.Darker(colors.GetColor("white"), d)
-
-	// figure out longest possible path through maze if needed, for proper colors
-	g.LongestPath()
-
 	// figure out the distances if needed
 	c.Distances()
+
+	_, longestPath := c.FurthestCell()
 
 	// use alpha blending, works for any color
 	for _, cell := range g.Cells() {
 		d, err := c.distances.Get(cell)
 		if err != nil {
-			log.Fatalf("failed to get distance from %v to %v", c, cell)
+			log.Printf("failed to get distance from %v to %v", c, cell)
+			return
 		}
 		// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
 		adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
 		cell.bgColor = colors.OpacityAdjust(g.bgColor, adjustedColor)
 
 	}
+}
+
+// DeadEnds returns a list of cells that are deadends (only linked to one neighbor
+func (g *Grid) DeadEnds() []*Cell {
+	var deadends []*Cell
+
+	for _, cell := range g.Cells() {
+		if len(cell.Links()) == 1 {
+			deadends = append(deadends, cell)
+		}
+	}
+
+	return deadends
+}
+
+// ResetVisited sets all cells to be unvisited
+func (g *Grid) ResetVisited() {
+	for _, c := range g.Cells() {
+		c.SetUnVisited()
+	}
+
 }
 
 type Distances struct {
@@ -446,6 +574,19 @@ type Cell struct {
 
 	// keep track of what cells we have a path to
 	pathNorth, pathSouth, pathEast, pathWest bool
+
+	// keep track of paths to specific cells
+	paths map[*Cell][]*Cell
+}
+
+// CellInCellList returns true if cell is in cellList
+func CellInCellList(cell *Cell, cellList []*Cell) bool {
+	for _, c := range cellList {
+		if cell == c {
+			return true
+		}
+	}
+	return false
 }
 
 // NewCell initializes a new cell
@@ -460,6 +601,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
+		paths:     make(map[*Cell][]*Cell),
 	}
 	cell.distances = NewDistances(cell)
 
@@ -468,6 +610,44 @@ func NewCell(x, y int, c *Config) *Cell {
 
 func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
+}
+
+// PathTo returns the path to the toCell or nil if not available
+func (c *Cell) PathTo(toCell *Cell) []*Cell {
+	if path, ok := c.paths[toCell]; ok {
+		return path
+	}
+	return nil
+}
+
+// SetPathTo sets the path from this cell to toCell
+func (c *Cell) SetPathTo(toCell *Cell, path []*Cell) {
+	c.paths[toCell] = path
+}
+
+// RemovePathTo removes the path from this cell to toCell
+func (c *Cell) RemovePathTo(toCell *Cell, path []*Cell) {
+	delete(c.paths, toCell)
+}
+
+// Location returns the x,y location of the cell
+func (c *Cell) Location() Location {
+	return Location{c.column, c.row}
+}
+
+// Visited returns true if the cell has been visited
+func (c *Cell) Visited() bool {
+	return c.visited
+}
+
+// SetVisited marks the cell as visited
+func (c *Cell) SetVisited() {
+	c.visited = true
+}
+
+// SetUnVisited marks the cell as unvisited
+func (c *Cell) SetUnVisited() {
+	c.visited = false
 }
 
 // SetPaths sets the paths present in the cell
@@ -486,9 +666,9 @@ func (c *Cell) SetPaths(previous, next *Cell) {
 	}
 }
 
-// FurthestCell returns the cell that is furthest from this one
-func (c *Cell) FurthestCell() *Cell {
-	var furthest *Cell
+// FurthestCell returns the cell and distance of the cell that is furthest from this one
+func (c *Cell) FurthestCell() (*Cell, int) {
+	var furthest *Cell = c // you are the furthest from yourself at the start
 	fromDist := c.Distances()
 
 	longest := 0
@@ -500,7 +680,7 @@ func (c *Cell) FurthestCell() *Cell {
 		}
 
 	}
-	return furthest
+	return furthest, longest
 }
 
 // Distances finds the distances of all cells to *this* cell
@@ -543,10 +723,11 @@ func (c *Cell) Distances() *Distances {
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	var bg *sdl.Rect
+	PixelsPerCell := c.width
 
 	// Fill in background color
 	colors.SetDrawColor(c.bgColor, r)
-	bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+	bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 		int32(PixelsPerCell), int32(PixelsPerCell)}
 	r.FillRect(bg)
 
@@ -554,7 +735,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// East
 	if !c.Linked(c.East) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell - c.wallWidth/2), int32(c.row * PixelsPerCell),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
 		r.FillRect(bg)
 	}
@@ -562,7 +743,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// West
 	if !c.Linked(c.West) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
 		r.FillRect(bg)
 	}
@@ -570,7 +751,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// North
 	if !c.Linked(c.North) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row * PixelsPerCell),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 			int32(PixelsPerCell), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
@@ -578,7 +759,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// South
 	if !c.Linked(c.South) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column * PixelsPerCell), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2),
+		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth),
 			int32(PixelsPerCell), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
@@ -591,6 +772,7 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	var path *sdl.Rect
 	colors.SetDrawColor(c.pathColor, r)
 	pathWidth := c.pathWidth
+	PixelsPerCell := c.width
 
 	if c.pathEast {
 		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
@@ -651,6 +833,31 @@ func (c *Cell) Links() []*Cell {
 	return keys
 }
 
+// RandomLink returns a random cell linked to this one
+func (c *Cell) RandomLink() *Cell {
+	var keys []*Cell
+	for k, linked := range c.links {
+		if linked {
+			keys = append(keys, k)
+		}
+	}
+	return keys[utils.Random(0, len(keys))]
+}
+
+// RandomUnvisitedLink returns a random cell linked to this one that has not been visited
+func (c *Cell) RandomUnvisitedLink() *Cell {
+	var keys []*Cell
+	for k, linked := range c.links {
+		if linked && !k.Visited() {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	return keys[utils.Random(0, len(keys))]
+}
+
 // Linked returns true if the two cells are linked (joined by a passage)
 func (c *Cell) Linked(cell *Cell) bool {
 	linked, ok := c.links[cell]
@@ -670,4 +877,16 @@ func (c *Cell) Neighbors() []*Cell {
 		}
 	}
 	return n
+}
+
+// RandomNeighbor returns a random neighbor of this cell
+func (c *Cell) RandomNeighbor() *Cell {
+	var n []*Cell
+
+	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
+		if cell != nil {
+			n = append(n, cell)
+		}
+	}
+	return n[utils.Random(0, len(n))]
 }

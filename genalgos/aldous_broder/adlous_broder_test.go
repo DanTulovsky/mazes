@@ -1,4 +1,4 @@
-package bintree
+package aldous_broder
 
 import (
 	"mazes/grid"
@@ -24,8 +24,8 @@ var applytests = []struct {
 	},
 }
 
-func setup() *Bintree {
-	return &Bintree{}
+func setup() *AldousBroder {
+	return &AldousBroder{}
 }
 
 func TestApply(t *testing.T) {

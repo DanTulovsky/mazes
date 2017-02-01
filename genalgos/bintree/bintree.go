@@ -1,13 +1,23 @@
+// Package bintree implements the binary tree algorithm for maze generation
+
+// For each cell in the grid, you decide whether to carve a passage north or east.
 package bintree
 
 import (
+	"mazes/genalgos"
 	"mazes/grid"
 	"mazes/utils"
+	"time"
 )
 
-// Apply applies the binary tree algorithm to the grid.
-func Apply(g *grid.Grid) *grid.Grid {
+type Bintree struct {
+	genalgos.Common
+}
 
+// Apply applies the binary tree algorithm to generate the maze.
+func (a *Bintree) Apply(g *grid.Grid) (*grid.Grid, error) {
+
+	defer genalgos.TimeTrack(g, time.Now())
 	for _, cell := range g.Cells() {
 		neighbors := []*grid.Cell{}
 		if cell.North != nil {
@@ -26,5 +36,5 @@ func Apply(g *grid.Grid) *grid.Grid {
 			cell.Link(neighbor)
 		}
 	}
-	return g
+	return g, nil
 }

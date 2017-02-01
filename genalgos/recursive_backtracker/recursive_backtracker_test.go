@@ -1,4 +1,4 @@
-package bintree
+package recursive_backtracker
 
 import (
 	"mazes/grid"
@@ -24,8 +24,8 @@ var applytests = []struct {
 	},
 }
 
-func setup() *Bintree {
-	return &Bintree{}
+func setup() *RecursiveBacktracker {
+	return &RecursiveBacktracker{}
 }
 
 func TestApply(t *testing.T) {

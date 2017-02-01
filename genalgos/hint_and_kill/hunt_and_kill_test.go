@@ -1,4 +1,4 @@
-package bintree
+package hint_and_kill
 
 import (
 	"mazes/grid"
@@ -24,8 +24,8 @@ var applytests = []struct {
 	},
 }
 
-func setup() *Bintree {
-	return &Bintree{}
+func setup() *HuntAndKill {
+	return &HuntAndKill{}
 }
 
 func TestApply(t *testing.T) {
