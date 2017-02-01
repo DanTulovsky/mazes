@@ -77,6 +77,7 @@ type Grid struct {
 	borderColor colors.Color
 	wallColor   colors.Color
 	pathColor   colors.Color
+	createTime  time.Duration // how long it took to apply the algorithm to create the grid
 }
 
 // NewGrid returns a new grid.
@@ -102,6 +103,14 @@ func NewGrid(c *Config) (*Grid, error) {
 	g.configureCells()
 
 	return g, nil
+}
+
+func (g *Grid) SetCreateTime(t time.Duration) {
+	g.createTime = t
+}
+
+func (g *Grid) CreateTime() time.Duration {
+	return g.createTime
 }
 
 // Dimensions returns the dimensions of the grid.

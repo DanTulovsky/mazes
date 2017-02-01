@@ -18,7 +18,7 @@ type Sidewinder struct {
 
 // Apply applies the algorithm to the grid.
 func (a *Sidewinder) Apply(g *grid.Grid) (*grid.Grid, error) {
-	defer utils.TimeTrack(time.Now(), "sidewinder apply")
+	defer genalgos.TimeTrack(g, time.Now())
 
 	gridWidth, _ := g.Dimensions()
 

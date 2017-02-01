@@ -21,7 +21,7 @@ type Wilsons struct {
 // Apply applies wilson's algorithm to generate the maze.
 func (a *Wilsons) Apply(g *grid.Grid) (*grid.Grid, error) {
 
-	defer utils.TimeTrack(time.Now(), "wilson's apply")
+	defer genalgos.TimeTrack(g, time.Now())
 
 	var currentCell *grid.Cell
 	var randomCell *grid.Cell

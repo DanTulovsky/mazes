@@ -9,7 +9,6 @@ package recursive_backtracker
 import (
 	"mazes/genalgos"
 	"mazes/grid"
-	"mazes/utils"
 	"time"
 )
 
@@ -19,7 +18,7 @@ type RecursiveBacktracker struct {
 
 // Apply applies the recursive backtracker algorithm to generate the maze.
 func (a *RecursiveBacktracker) Apply(g *grid.Grid) (*grid.Grid, error) {
-	defer utils.TimeTrack(time.Now(), "recursive-backtracker")
+	defer genalgos.TimeTrack(g, time.Now())
 
 	cells := grid.NewStack()
 	currentCell := g.RandomCell()

@@ -17,7 +17,7 @@ type Bintree struct {
 // Apply applies the binary tree algorithm to generate the maze.
 func (a *Bintree) Apply(g *grid.Grid) (*grid.Grid, error) {
 
-	defer utils.TimeTrack(time.Now(), "bintree apply")
+	defer genalgos.TimeTrack(g, time.Now())
 	for _, cell := range g.Cells() {
 		neighbors := []*grid.Cell{}
 		if cell.North != nil {

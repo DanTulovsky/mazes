@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"mazes/genalgos"
 	"mazes/grid"
-	"mazes/utils"
 	"time"
 )
 
@@ -43,7 +42,7 @@ func Shuffle(cells []*grid.Cell) []*grid.Cell {
 // Apply applies the binary tree algorithm to generate the maze.
 func (a *HuntAndKill) Apply(g *grid.Grid) (*grid.Grid, error) {
 
-	defer utils.TimeTrack(time.Now(), "hunt-and-kill apply")
+	defer genalgos.TimeTrack(g, time.Now())
 
 	currentCell := g.RandomCell()
 

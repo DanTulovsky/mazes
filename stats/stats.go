@@ -13,6 +13,8 @@ import (
 
 	"mazes/algos"
 
+	"time"
+
 	"github.com/montanaflynn/stats"
 )
 
@@ -26,7 +28,7 @@ var (
 	wallColor   = flag.String("wall_color", "black", "wall color")
 	borderColor = flag.String("border_color", "black", "border color")
 	pathColor   = flag.String("path_color", "red", "border color")
-	cellWidth   = flag.Int("w", 10, "cell width")
+	cellWidth   = flag.Int("w", 2, "cell width")
 	wallWidth   = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	pathWidth   = flag.Int("path_width", 2, "path width")
 	runs        = flag.Int("runs", 20, "number of runs")
@@ -35,17 +37,27 @@ var (
 // setMazeStats sets stats about the maze
 func setMazeStats(g *grid.Grid, algo string) {
 	mazeStats[algo]["deadends"] = append(mazeStats[algo]["deadends"], float64(len(g.DeadEnds())))
+	mazeStats[algo]["createtime"] = append(mazeStats[algo]["createtime"], float64(g.CreateTime().Nanoseconds()))
 }
 
 func showMazeStats() {
 	cells := float64(*rows * *columns)
 
+	// create time
+	fmt.Println("\nCreate time (average)")
+	for _, name := range keys(algos.Algorithms) {
+		ctime, _ := stats.Mean(mazeStats[name]["createtime"])
+		t := time.Duration(ctime)
+		fmt.Printf("  %-25s : %6v\n", name, t)
+	}
+
 	// deadends
-	fmt.Println("Deadends (average)")
+	fmt.Println("\nDeadends (average)")
 	for _, name := range keys(algos.Algorithms) {
 		deadends, _ := stats.Mean(mazeStats[name]["deadends"])
 		fmt.Printf("  %-25s : %6.2f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
 	}
+
 }
 
 func keys(m map[string]genalgos.Algorithmer) []string {
@@ -104,7 +116,6 @@ func main() {
 		WallColor:   colors.GetColor(*wallColor),
 		PathColor:   colors.GetColor(*pathColor),
 	}
-
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mazes/grid"
 	"mazes/utils"
+	"time"
 )
 
 type Algorithmer interface {
@@ -83,6 +84,10 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 	}
 
 	return nil
+}
+
+func TimeTrack(g *grid.Grid, start time.Time) {
+	g.SetCreateTime(time.Since(start))
 }
 
 // RandomUnvisitedCellFromList returns a random cell from n that has not been visited

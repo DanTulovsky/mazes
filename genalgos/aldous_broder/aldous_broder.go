@@ -7,7 +7,6 @@ package aldous_broder
 import (
 	"mazes/genalgos"
 	"mazes/grid"
-	"mazes/utils"
 	"time"
 )
 
@@ -18,7 +17,7 @@ type AldousBroder struct {
 // Apply applies the adlous-broder algorithm to generate the maze.
 func (a *AldousBroder) Apply(g *grid.Grid) (*grid.Grid, error) {
 
-	defer utils.TimeTrack(time.Now(), "aldos-broder apply")
+	defer genalgos.TimeTrack(g, time.Now())
 	var visitedCells int
 	currentCell := g.RandomCell()
 
