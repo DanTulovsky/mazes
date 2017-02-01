@@ -235,8 +235,9 @@ func main() {
 		if !checkSolveAlgo(*solveAlgo) {
 			log.Fatalf("invalid solve algorithm: %v", *solveAlgo)
 		}
-		fromCell := g.RandomCell()
-		toCell := g.RandomCell()
+
+		// solve the longest path
+		_, fromCell, toCell, _ := g.LongestPath()
 
 		g.SetDistanceColors(fromCell)
 		g.SetFromToColors(fromCell, toCell)

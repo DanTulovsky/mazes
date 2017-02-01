@@ -409,7 +409,7 @@ func (g *Grid) SetPath(fromCell, toCell *Cell) {
 	}
 }
 
-// SetPathFromTo draws the path from fromCell to toCell
+// SetPathFromTo draws the given path from fromCell to toCell
 func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
 	// g.SetFromToColors(fromCell, toCell)
 
@@ -672,10 +672,10 @@ func (c *Cell) FurthestCell() (*Cell, int) {
 	fromDist := c.Distances()
 
 	longest := 0
-	for _, c := range fromDist.Cells() {
-		dist, _ := fromDist.Get(c)
+	for _, cell := range fromDist.Cells() {
+		dist, _ := fromDist.Get(cell)
 		if dist > longest {
-			furthest = c
+			furthest = cell
 			longest = dist
 		}
 
@@ -774,28 +774,62 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	pathWidth := c.pathWidth
 	PixelsPerCell := c.width
 
+	//// shift the path right, left, up, down, depending on direction moving
+	//var northX, southX, eastY, westY int32
+	//var shift int32 = 30
+	//
+	//switch c.moveNext {
+	//case "north":
+	//	northX = shift
+	//case "south":
+	//	southX = -shift
+	//case "east":
+	//	eastY = shift
+	//case "west":
+	//	westY = -shift
+	//}
+	//
+	//switch c.movePrevious {
+	//case "north":
+	//	northX = -shift
+	//case "south":
+	//	southX = shift
+	//case "east":
+	//	eastY = -shift
+	//case "west":
+	//	westY = shift
+	//}
+
 	if c.pathEast {
-		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell / 2), int32(pathWidth)}
+			int32(PixelsPerCell/2 + c.wallWidth),
+			int32(pathWidth)}
 		r.FillRect(path)
 	}
 	if c.pathWest {
-		path = &sdl.Rect{int32(c.column * PixelsPerCell),
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + c.wallWidth),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell/2 + pathWidth), int32(pathWidth)}
+			int32(PixelsPerCell/2 + pathWidth - c.wallWidth),
+			int32(pathWidth)}
 		r.FillRect(path)
 	}
 	if c.pathNorth {
-		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row * PixelsPerCell),
-			int32(pathWidth), int32(PixelsPerCell / 2)}
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + c.wallWidth),
+			int32(pathWidth),
+			int32(PixelsPerCell/2 - c.wallWidth)}
 		r.FillRect(path)
 	}
 	if c.pathSouth {
-		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(pathWidth), int32(PixelsPerCell / 2)}
+			int32(pathWidth),
+			int32(PixelsPerCell/2 + c.wallWidth)}
 		r.FillRect(path)
 	}
 

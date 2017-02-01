@@ -17,15 +17,34 @@ type WallFollower struct {
 	solvealgos.Common
 }
 
-func pickNextCell(currentCell, previousCell *grid.Cell) *grid.Cell {
-	// always go in this order:  East -> North -> West -> South
-	for _, l := range []*grid.Cell{currentCell.East, currentCell.North, currentCell.West, currentCell.South} {
-		if currentCell.Linked(l) && l != previousCell {
+// getDirections returns the possible directions to move in the proper order based on which way you are "facing"
+func getDirections(c *grid.Cell, facing string) []*grid.Cell {
+
+	switch facing {
+	case "north":
+		return []*grid.Cell{c.East, c.North, c.West, c.South}
+	case "east":
+		return []*grid.Cell{c.South, c.East, c.North, c.West}
+	case "south":
+		return []*grid.Cell{c.West, c.South, c.East, c.North}
+	case "west":
+		return []*grid.Cell{c.North, c.West, c.South, c.East}
+	}
+	return nil
+}
+
+func pickNextCell(currentCell *grid.Cell, facing string) *grid.Cell {
+	// always go in this order: "right", "forward", "left", "back"
+
+	dirs := getDirections(currentCell, facing)
+
+	for _, l := range dirs {
+		if currentCell.Linked(l) {
 			return l
 		}
 	}
-	// only return previousCell if there were no other options
-	return previousCell
+	// backtrack if we can't go anywhere else
+	return nil
 }
 
 func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
@@ -34,15 +53,29 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	var path = grid.NewStack()
 
 	currentCell := fromCell
-	var previousCell *grid.Cell
+	facing := "north"
 
 	log.Printf("%v -> %v", fromCell, toCell)
+
 	for currentCell != toCell {
-		log.Printf("currentCell: %v", currentCell)
 		path.Push(currentCell)
-		if nextCell := pickNextCell(currentCell, previousCell); nextCell != nil {
-			log.Printf("nextCell: %v", nextCell)
-			previousCell = currentCell
+		log.Printf("facing: %v", facing)
+
+		if nextCell := pickNextCell(currentCell, facing); nextCell != nil {
+			if currentCell.North == nextCell {
+				facing = "north"
+			}
+			if currentCell.East == nextCell {
+				facing = "east"
+			}
+			if currentCell.West == nextCell {
+				facing = "west"
+			}
+			if currentCell.South == nextCell {
+				facing = "south"
+			}
+
+			log.Printf("path: %v", path)
 			currentCell = nextCell
 		} else {
 			// this can never happen unless the maze is broken
@@ -52,9 +85,11 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	}
 
 	path.Push(toCell)
+	log.Printf("final path: %v", path)
 	g.SetPathFromTo(fromCell, toCell, path.List())
 	// stats
 	a.SetSolvePath(path.List())
+	a.SetSolveSteps(len(path.List())) // always the same as the actual path
 
 	return g, nil
 }

@@ -82,6 +82,12 @@ func printSolverStats() {
 			key = fmt.Sprintf("%v_solve_path_length", solverName)
 			l, _ := stats.Mean(mazeStats[name][key])
 			fmt.Printf("          %-25s : %6v\n", solverName, l)
+
+			fmt.Println("      Steps to find Solution (average)")
+			key = fmt.Sprintf("%v_solve_steps", solverName)
+			s, _ := stats.Mean(mazeStats[name][key])
+			fmt.Printf("          %-25s : %6v\n", solverName, s)
+
 		}
 	}
 }
@@ -158,6 +164,9 @@ func RunAll(config *grid.Config) {
 
 			key = fmt.Sprintf("%v_solve_path_length", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(len(solver.SolvePath())))
+
+			key = fmt.Sprintf("%v_solve_steps", solverName)
+			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveSteps()))
 
 		}
 

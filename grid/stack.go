@@ -1,5 +1,7 @@
 package grid
 
+import "fmt"
+
 // Stack is a stack of *Cell objects
 type Stack struct {
 	cells []*Cell
@@ -9,6 +11,14 @@ func NewStack() *Stack {
 	return &Stack{
 		cells: make([]*Cell, 0),
 	}
+}
+
+func (s *Stack) String() string {
+	out := ""
+	for _, c := range s.cells {
+		out = fmt.Sprintf("%v %v", out, c)
+	}
+	return out
 }
 
 func (s *Stack) Push(c *Cell) {
