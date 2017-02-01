@@ -246,6 +246,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("error running solver: %v", err)
 		}
+		log.Printf("time to solve: %v", solver.LastSolveTime())
 	}
 
 	///////////////////////////////////////////////////////////////////////////

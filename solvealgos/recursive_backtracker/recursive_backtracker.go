@@ -4,6 +4,7 @@ import (
 	"log"
 	"mazes/grid"
 	"mazes/solvealgos"
+	"time"
 )
 
 type RecursiveBacktracker struct {
@@ -31,7 +32,9 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
 	return false
 }
 
-func (a RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+	defer solvealgos.TimeTrack(a, time.Now())
+
 	var path = grid.NewStack()
 
 	if r := Step(g, fromCell, toCell, path); !r {
