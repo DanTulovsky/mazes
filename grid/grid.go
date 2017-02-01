@@ -381,13 +381,37 @@ func reverseCells(cells []*Cell) {
 	}
 }
 
-// SetPath draws the shortest path from fromCell to toCell
-func (g *Grid) SetPath(fromCell, toCell *Cell) {
-	_, path := g.ShortestPath(fromCell, toCell)
-
+// SetFromToColors sets the opacity of the from and to cells to be highly visible
+func (g *Grid) SetFromToColors(fromCell, toCell *Cell) {
 	// Set path start and end colors
 	fromCell.bgColor = colors.SetOpacity(fromCell.bgColor, 0)
 	toCell.bgColor = colors.SetOpacity(toCell.bgColor, 255)
+}
+
+// SetPath draws the shortest path from fromCell to toCell
+// TODO(dant): Move this into solver
+func (g *Grid) SetPath(fromCell, toCell *Cell) {
+	_, path := g.ShortestPath(fromCell, toCell)
+	g.SetFromToColors(fromCell, toCell)
+
+	var prev, next *Cell
+	for x := 0; x < len(path); x++ {
+		if x > 0 {
+			prev = path[x-1]
+		} else {
+			prev = path[x]
+		}
+
+		if x < len(path)-1 {
+			next = path[x+1]
+		}
+		path[x].SetPaths(prev, next)
+	}
+}
+
+// SetPathFromTo draws the path from fromCell to toCell
+func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
+	// g.SetFromToColors(fromCell, toCell)
 
 	var prev, next *Cell
 	for x := 0; x < len(path); x++ {
@@ -475,6 +499,14 @@ func (g *Grid) DeadEnds() []*Cell {
 	}
 
 	return deadends
+}
+
+// ResetVisited sets all cells to be unvisited
+func (g *Grid) ResetVisited() {
+	for _, c := range g.Cells() {
+		c.SetUnVisited()
+	}
+
 }
 
 type Distances struct {
@@ -588,8 +620,14 @@ func (c *Cell) PathTo(toCell *Cell) []*Cell {
 	return nil
 }
 
+// SetPathTo sets the path from this cell to toCell
 func (c *Cell) SetPathTo(toCell *Cell, path []*Cell) {
 	c.paths[toCell] = path
+}
+
+// RemovePathTo removes the path from this cell to toCell
+func (c *Cell) RemovePathTo(toCell *Cell, path []*Cell) {
+	delete(c.paths, toCell)
 }
 
 // Location returns the x,y location of the cell
@@ -605,6 +643,11 @@ func (c *Cell) Visited() bool {
 // SetVisited marks the cell as visited
 func (c *Cell) SetVisited() {
 	c.visited = true
+}
+
+// SetUnVisited marks the cell as unvisited
+func (c *Cell) SetUnVisited() {
+	c.visited = false
 }
 
 // SetPaths sets the paths present in the cell
@@ -788,6 +831,31 @@ func (c *Cell) Links() []*Cell {
 		}
 	}
 	return keys
+}
+
+// RandomLink returns a random cell linked to this one
+func (c *Cell) RandomLink() *Cell {
+	var keys []*Cell
+	for k, linked := range c.links {
+		if linked {
+			keys = append(keys, k)
+		}
+	}
+	return keys[utils.Random(0, len(keys))]
+}
+
+// RandomUnvisitedLink returns a random cell linked to this one that has not been visited
+func (c *Cell) RandomUnvisitedLink() *Cell {
+	var keys []*Cell
+	for k, linked := range c.links {
+		if linked && !k.Visited() {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	return keys[utils.Random(0, len(keys))]
 }
 
 // Linked returns true if the two cells are linked (joined by a passage)

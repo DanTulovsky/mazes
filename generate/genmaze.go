@@ -42,7 +42,8 @@ var (
 	showStats   = flag.Bool("stats", false, "show maze stats")
 	createAlgo  = flag.String("create_algo", "bintree", "algorithm used to create the maze")
 	exportFile  = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	actionToRun = flag.String("action", "longestPath", "action to run")
+	actionToRun = flag.String("action", "", "action to run")
+	solveAlgo   = flag.String("solve_algo", "", "algorithm to solve the maze")
 )
 
 func setupSDL() (*sdl.Window, *sdl.Renderer) {
@@ -77,9 +78,19 @@ func setupSDL() (*sdl.Window, *sdl.Renderer) {
 	return w, r
 }
 
-// checkAlgo makes sure the passed in algorithm is valid
-func checkAlgo(a string) bool {
+// checkCreateAlgo makes sure the passed in algorithm is valid
+func checkCreateAlgo(a string) bool {
 	for k := range algos.Algorithms {
+		if k == a {
+			return true
+		}
+	}
+	return false
+}
+
+// checkSolveAlgo makes sure the passed in algorithm is valid
+func checkSolveAlgo(a string) bool {
+	for k := range algos.SolveAlgorithms {
 		if k == a {
 			return true
 		}
@@ -187,8 +198,8 @@ func main() {
 	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
-	if !checkAlgo(*createAlgo) {
-		log.Fatalf("invalid algorithm: %v", *createAlgo)
+	if !checkCreateAlgo(*createAlgo) {
+		log.Fatalf("invalid create algorithm: %v", *createAlgo)
 	}
 	// apply algorithm
 	algo := algos.Algorithms[*createAlgo]
@@ -204,14 +215,37 @@ func main() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// {Predefined actions to run}
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	if action, ok := actions[*actionToRun]; !ok {
-		log.Fatalf("no such action [%v]", *actionToRun)
-	} else {
-		action(g)
+	if *actionToRun != "" {
+		if action, ok := actions[*actionToRun]; !ok {
+			log.Fatalf("no such action [%v]", *actionToRun)
+		} else {
+			action(g)
+		}
+
+		if *showStats {
+			showMazeStats(g)
+		}
 	}
 
-	if *showStats {
-		showMazeStats(g)
+	///////////////////////////////////////////////////////////////////////////
+	// Solvers
+	///////////////////////////////////////////////////////////////////////////
+	if *solveAlgo != "" {
+		if !checkSolveAlgo(*solveAlgo) {
+			log.Fatalf("invalid solve algorithm: %v", *solveAlgo)
+		}
+		fromCell := g.RandomCell()
+		toCell := g.RandomCell()
+
+		g.SetDistanceColors(fromCell)
+		g.SetFromToColors(fromCell, toCell)
+		g.ResetVisited()
+
+		solver := algos.SolveAlgorithms[*solveAlgo]
+		g, err = solver.Solve(g, fromCell, toCell)
+		if err != nil {
+			log.Fatalf("error running solver: %v", err)
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////////////
