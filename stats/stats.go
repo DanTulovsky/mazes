@@ -25,16 +25,18 @@ var (
 	// algo[stat] = value
 	mazeStats map[string]map[string][]float64 = make(map[string]map[string][]float64)
 
-	rows        = flag.Int("r", 20, "number of rows in the maze")
-	columns     = flag.Int("c", 20, "number of rows in the maze")
-	bgColor     = flag.String("bgcolor", "white", "background color")
-	wallColor   = flag.String("wall_color", "black", "wall color")
-	borderColor = flag.String("border_color", "black", "border color")
-	pathColor   = flag.String("path_color", "red", "border color")
-	cellWidth   = flag.Int("w", 2, "cell width")
-	wallWidth   = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	pathWidth   = flag.Int("path_width", 2, "path width")
-	runs        = flag.Int("runs", 20, "number of runs")
+	rows            = flag.Int("r", 20, "number of rows in the maze")
+	columns         = flag.Int("c", 20, "number of rows in the maze")
+	bgColor         = flag.String("bgcolor", "white", "background color")
+	wallColor       = flag.String("wall_color", "black", "wall color")
+	borderColor     = flag.String("border_color", "black", "border color")
+	pathColor       = flag.String("path_color", "red", "border color")
+	cellWidth       = flag.Int("w", 2, "cell width")
+	wallWidth       = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	pathWidth       = flag.Int("path_width", 2, "path width")
+	runs            = flag.Int("runs", 20, "number of runs")
+	showGenStats    = flag.Bool("gen_stats", true, "show generator stats")
+	showSolverStats = flag.Bool("solver_stats", true, "show solver stats")
 )
 
 // setMazeStats sets stats about the maze
@@ -43,33 +45,56 @@ func setMazeStats(g *grid.Grid, algo string) {
 	mazeStats[algo]["createtime"] = append(mazeStats[algo]["createtime"], float64(g.CreateTime().Nanoseconds()))
 }
 
-func showMazeStats() {
+func printGenStats() {
 	cells := float64(*rows * *columns)
 
-	// create time
-	fmt.Println("\nCreate time (average)")
-	for _, name := range keys(algos.Algorithms) {
-		ctime, _ := stats.Mean(mazeStats[name]["createtime"])
-		t := time.Duration(ctime)
-		fmt.Printf("  %-25s : %6v\n", name, t)
-	}
-
 	// dead ends
-	fmt.Println("\nDeadends (average)")
+	fmt.Println("\nDead Ends (average)")
 	for _, name := range keys(algos.Algorithms) {
 		deadends, _ := stats.Mean(mazeStats[name]["deadends"])
 		fmt.Printf("  %-25s : %6.2f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
 	}
 
-	// solvers
-	fmt.Println("\nSolvers (average time)")
+	// create time
+	fmt.Println("\nGenerators (average create time)")
 	for _, name := range keys(algos.Algorithms) {
-		fmt.Printf("  %-25s\n", name)
+		ctime, _ := stats.Mean(mazeStats[name]["createtime"])
+		t := time.Duration(ctime)
+		fmt.Printf("  %-25s : %6v\n", name, t)
+	}
+}
+
+func printSolverStats() {
+	// solvers
+	fmt.Println("\nSolver Stats")
+	for _, name := range keys(algos.Algorithms) {
+		fmt.Printf("\n  %-25s\n", name)
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
+			fmt.Println("      Time to Solve (average)")
 			key := fmt.Sprintf("%v_solve_time", solverName)
 			t, _ := stats.Mean(mazeStats[name][key])
-			fmt.Printf("    %-25s : %6v\n", solverName, time.Duration(t))
+			fmt.Printf("          %-25s : %6v\n", solverName, time.Duration(t))
+
+			fmt.Println("      Length of Solution (average)")
+			key = fmt.Sprintf("%v_solve_path_length", solverName)
+			l, _ := stats.Mean(mazeStats[name][key])
+			fmt.Printf("          %-25s : %6v\n", solverName, l)
 		}
+	}
+}
+
+func showMazeStats() {
+	// general stats
+	fmt.Println("\nAbout Maze")
+	fmt.Printf("  Size: %d x %d\n", *rows, *columns)
+	fmt.Printf("  Number of Runs: %d\n", *runs)
+
+	if *showGenStats {
+		printGenStats()
+	}
+
+	if *showSolverStats {
+		printSolverStats()
 	}
 
 }
@@ -126,7 +151,11 @@ func RunAll(config *grid.Config) {
 			g, err = solver.Solve(g, fromCell, toCell)
 
 			key := fmt.Sprintf("%v_solve_time", solverName)
-			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.LastSolveTime().Nanoseconds()))
+			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveTime().Nanoseconds()))
+
+			key = fmt.Sprintf("%v_solve_path_length", solverName)
+			mazeStats[name][key] = append(mazeStats[name][key], float64(len(solver.SolvePath())))
+
 		}
 
 		// shows some stats about the maze

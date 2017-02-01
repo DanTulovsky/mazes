@@ -8,13 +8,17 @@ import (
 )
 
 type Algorithmer interface {
-	LastSolveTime() time.Duration
+	SolvePath() []*grid.Cell
+	SolveTime() time.Duration
+	SetSolvePath(p []*grid.Cell)
 	SetSolveTime(t time.Duration)
 	Solve(*grid.Grid, *grid.Cell, *grid.Cell) (*grid.Grid, error)
 }
 
 type Common struct {
-	solveTime time.Duration // how long the last solve time took
+	solvePath  []*grid.Cell  // path of the final solution
+	solveSteps int           // how many cell visits it tooks (including duplicates)
+	solveTime  time.Duration // how long the last solve time took
 }
 
 // Solve should write the path of the solution to the grid
@@ -26,10 +30,18 @@ func TimeTrack(a Algorithmer, start time.Time) {
 	a.SetSolveTime(time.Since(start))
 }
 
-func (a *Common) LastSolveTime() time.Duration {
+func (a *Common) SolveTime() time.Duration {
 	return a.solveTime
 }
 
 func (a *Common) SetSolveTime(t time.Duration) {
 	a.solveTime = t
+}
+
+func (a *Common) SolvePath() []*grid.Cell {
+	return a.solvePath
+}
+
+func (a *Common) SetSolvePath(p []*grid.Cell) {
+	a.solvePath = p
 }

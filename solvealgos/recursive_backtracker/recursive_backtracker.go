@@ -42,5 +42,8 @@ func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) 
 	}
 
 	g.SetPathFromTo(fromCell, toCell, path.List())
+	// stats
+	a.SetSolvePath(path.List())
+
 	return g, nil
 }
