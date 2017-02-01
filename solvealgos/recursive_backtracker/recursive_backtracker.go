@@ -1,3 +1,5 @@
+// Package recursive_backtracker implements the recursive backtracker  maze solving algorithm
+
 package recursive_backtracker
 
 import (

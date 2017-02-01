@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"unsafe"
 
+	"github.com/pkg/profile"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 )
@@ -158,7 +159,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// profiling
-	// defer profile.Start().Stop()
+	defer profile.Start().Stop()
 
 	// For https://github.com/veandco/go-sdl2#faq
 	runtime.LockOSThread()
@@ -244,9 +245,10 @@ func main() {
 		solver := algos.SolveAlgorithms[*solveAlgo]
 		g, err = solver.Solve(g, fromCell, toCell)
 		if err != nil {
-			log.Fatalf("error running solver: %v", err)
+			log.Printf("error running solver: %v", err)
 		}
-		log.Printf("time to solve: %v", solver.LastSolveTime())
+		log.Printf("time to solve: %v", solver.SolveTime())
+		log.Printf("steps in shortest path: %v", len(solver.SolvePath()))
 	}
 
 	///////////////////////////////////////////////////////////////////////////
