@@ -15,11 +15,14 @@ import (
 
 	"time"
 
+	"mazes/solvealgos"
+
 	"github.com/montanaflynn/stats"
+	"github.com/pkg/profile"
 )
 
 var (
-	// alog[stat] = value
+	// algo[stat] = value
 	mazeStats map[string]map[string][]float64 = make(map[string]map[string][]float64)
 
 	rows        = flag.Int("r", 20, "number of rows in the maze")
@@ -51,16 +54,36 @@ func showMazeStats() {
 		fmt.Printf("  %-25s : %6v\n", name, t)
 	}
 
-	// deadends
+	// dead ends
 	fmt.Println("\nDeadends (average)")
 	for _, name := range keys(algos.Algorithms) {
 		deadends, _ := stats.Mean(mazeStats[name]["deadends"])
 		fmt.Printf("  %-25s : %6.2f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
 	}
 
+	// solvers
+	fmt.Println("\nSolvers (average time)")
+	for _, name := range keys(algos.Algorithms) {
+		fmt.Printf("  %-25s\n", name)
+		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
+			key := fmt.Sprintf("%v_solve_time", solverName)
+			t, _ := stats.Mean(mazeStats[name][key])
+			fmt.Printf("    %-25s : %6v\n", solverName, time.Duration(t))
+		}
+	}
+
 }
 
 func keys(m map[string]genalgos.Algorithmer) []string {
+	var keys []string
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func solveKeys(m map[string]solvealgos.Algorithmer) []string {
 	var keys []string
 	for key := range m {
 		keys = append(keys, key)
@@ -77,7 +100,7 @@ func RunAll(config *grid.Config) {
 		if _, ok := mazeStats[name]; !ok {
 			mazeStats[name] = make(map[string][]float64)
 		}
-		log.Printf("running: %v", name)
+		log.Printf("running (gen): %v", name)
 
 		g, err := grid.NewGrid(config)
 		if err != nil {
@@ -93,6 +116,19 @@ func RunAll(config *grid.Config) {
 			log.Fatalf("maze is not valid: %v", err)
 		}
 
+		// solve using all available solvers, use longest path in maze
+		_, fromCell, toCell, _ := g.LongestPath()
+		g.ResetVisited()
+
+		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
+			solver := algos.SolveAlgorithms[solverName]
+			log.Printf("running (solver): %v", solverName)
+			g, err = solver.Solve(g, fromCell, toCell)
+
+			key := fmt.Sprintf("%v_solve_time", solverName)
+			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.LastSolveTime().Nanoseconds()))
+		}
+
 		// shows some stats about the maze
 		setMazeStats(g, name)
 	}
@@ -101,6 +137,8 @@ func RunAll(config *grid.Config) {
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	defer profile.Start().Stop()
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
