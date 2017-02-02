@@ -29,15 +29,17 @@ func Fail(err error) {
 
 // Config defines the configuration parameters passed to the Grid
 type Config struct {
-	Rows        int
-	Columns     int
-	CellWidth   int // cell width
-	WallWidth   int
-	PathWidth   int
-	BgColor     colors.Color
-	BorderColor colors.Color
-	WallColor   colors.Color
-	PathColor   colors.Color
+	Rows             int
+	Columns          int
+	CellWidth        int // cell width
+	WallWidth        int
+	PathWidth        int
+	MarkVisitedCells bool
+	VisitedCellColor colors.Color
+	BgColor          colors.Color
+	BorderColor      colors.Color
+	WallColor        colors.Color
+	PathColor        colors.Color
 }
 
 // CheckConfig makes sure the config is valid
@@ -409,7 +411,7 @@ func (g *Grid) SetPath(fromCell, toCell *Cell) {
 	}
 }
 
-// SetPathFromTo draws the path from fromCell to toCell
+// SetPathFromTo draws the given path from fromCell to toCell
 func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
 	// g.SetFromToColors(fromCell, toCell)
 
@@ -559,8 +561,8 @@ type Cell struct {
 	links map[*Cell]bool
 	// distances to other cells
 	distances *Distances
-	// Has this cell been visited?
-	visited bool
+	// How many times has this cell been visited?
+	visited int
 	// Background color of the cell
 	bgColor colors.Color
 	// Wall color of the cell
@@ -571,6 +573,9 @@ type Cell struct {
 	width     int
 	wallWidth int
 	pathWidth int
+
+	// config
+	config *Config
 
 	// keep track of what cells we have a path to
 	pathNorth, pathSouth, pathEast, pathWest bool
@@ -602,6 +607,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
 		paths:     make(map[*Cell][]*Cell),
+		config:    c,
 	}
 	cell.distances = NewDistances(cell)
 
@@ -637,17 +643,22 @@ func (c *Cell) Location() Location {
 
 // Visited returns true if the cell has been visited
 func (c *Cell) Visited() bool {
+	return c.visited > 0
+}
+
+// VisitedTimes returns how many times a cell has been visited
+func (c *Cell) VisitedTimes() int {
 	return c.visited
 }
 
 // SetVisited marks the cell as visited
 func (c *Cell) SetVisited() {
-	c.visited = true
+	c.visited++
 }
 
 // SetUnVisited marks the cell as unvisited
 func (c *Cell) SetUnVisited() {
-	c.visited = false
+	c.visited = 0
 }
 
 // SetPaths sets the paths present in the cell
@@ -672,10 +683,10 @@ func (c *Cell) FurthestCell() (*Cell, int) {
 	fromDist := c.Distances()
 
 	longest := 0
-	for _, c := range fromDist.Cells() {
-		dist, _ := fromDist.Get(c)
+	for _, cell := range fromDist.Cells() {
+		dist, _ := fromDist.Get(cell)
 		if dist > longest {
-			furthest = c
+			furthest = cell
 			longest = dist
 		}
 
@@ -764,6 +775,24 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		r.FillRect(bg)
 	}
 
+	if c.config.MarkVisitedCells && c.Visited() {
+		colors.SetDrawColor(c.config.VisitedCellColor, r)
+
+		factor := c.VisitedTimes()
+
+		offset := int32(c.wallWidth/4 + c.wallWidth)
+		h, w := int32(c.width/10+factor), int32(c.width/10+factor)
+
+		if h > int32(PixelsPerCell-c.wallWidth)-offset {
+			h = int32(PixelsPerCell-c.wallWidth) - offset
+			w = int32(PixelsPerCell-c.wallWidth) - offset
+		}
+
+		// draw a small box to mark visited cells
+		box := &sdl.Rect{int32(c.column*PixelsPerCell+c.wallWidth) + offset, int32(c.row*PixelsPerCell+c.wallWidth) + offset, h, w}
+		r.FillRect(box)
+	}
+
 	return r
 }
 
@@ -774,28 +803,62 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	pathWidth := c.pathWidth
 	PixelsPerCell := c.width
 
+	//// shift the path right, left, up, down, depending on direction moving
+	//var northX, southX, eastY, westY int32
+	//var shift int32 = 30
+	//
+	//switch c.moveNext {
+	//case "north":
+	//	northX = shift
+	//case "south":
+	//	southX = -shift
+	//case "east":
+	//	eastY = shift
+	//case "west":
+	//	westY = -shift
+	//}
+	//
+	//switch c.movePrevious {
+	//case "north":
+	//	northX = -shift
+	//case "south":
+	//	southX = shift
+	//case "east":
+	//	eastY = -shift
+	//case "west":
+	//	westY = shift
+	//}
+
 	if c.pathEast {
-		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell / 2), int32(pathWidth)}
+			int32(PixelsPerCell/2 + c.wallWidth),
+			int32(pathWidth)}
 		r.FillRect(path)
 	}
 	if c.pathWest {
-		path = &sdl.Rect{int32(c.column * PixelsPerCell),
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + c.wallWidth),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell/2 + pathWidth), int32(pathWidth)}
+			int32(PixelsPerCell/2 + pathWidth - c.wallWidth),
+			int32(pathWidth)}
 		r.FillRect(path)
 	}
 	if c.pathNorth {
-		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row * PixelsPerCell),
-			int32(pathWidth), int32(PixelsPerCell / 2)}
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + c.wallWidth),
+			int32(pathWidth),
+			int32(PixelsPerCell/2 - c.wallWidth)}
 		r.FillRect(path)
 	}
 	if c.pathSouth {
-		path = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell/2),
+		path = &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(pathWidth), int32(PixelsPerCell / 2)}
+			int32(pathWidth),
+			int32(PixelsPerCell/2 + c.wallWidth)}
 		r.FillRect(path)
 	}
 
@@ -822,7 +885,7 @@ func (c *Cell) UnLink(cell *Cell) {
 	cell.unLinkOneWay(c)
 }
 
-// Links returns a list of all cells linked to this one
+// Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
 	for k, linked := range c.links {

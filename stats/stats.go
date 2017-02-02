@@ -55,15 +55,19 @@ func printGenStats() {
 	fmt.Println("\nDead Ends (average)")
 	for _, name := range keys(algos.Algorithms) {
 		deadends, _ := stats.Mean(mazeStats[name]["deadends"])
-		fmt.Printf("  %-25s : %6.2f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
+		fmt.Printf("  %-25s : %6.0f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
 	}
 
 	// create time
-	fmt.Println("\nGenerators (average create time)")
+	fmt.Println("\nGenerators Create Time (min / avg/ max)")
 	for _, name := range keys(algos.Algorithms) {
-		ctime, _ := stats.Mean(mazeStats[name]["createtime"])
-		t := time.Duration(ctime)
-		fmt.Printf("  %-25s : %6v\n", name, t)
+		minTime, _ := stats.Min(mazeStats[name]["createtime"])
+		meanTime, _ := stats.Mean(mazeStats[name]["createtime"])
+		maxTime, _ := stats.Max(mazeStats[name]["createtime"])
+		fmt.Printf("  %-25s : %12v / %12v / %12v\n", name,
+			time.Duration(minTime),
+			time.Duration(meanTime),
+			time.Duration(maxTime))
 	}
 }
 
@@ -72,16 +76,26 @@ func printSolverStats() {
 	fmt.Println("\nSolver Stats")
 	for _, name := range keys(algos.Algorithms) {
 		fmt.Printf("\n  %-25s\n", name)
+
+		fmt.Println("      Time to Solve (average)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			fmt.Println("      Time to Solve (average)")
 			key := fmt.Sprintf("%v_solve_time", solverName)
 			t, _ := stats.Mean(mazeStats[name][key])
 			fmt.Printf("          %-25s : %6v\n", solverName, time.Duration(t))
+		}
 
-			fmt.Println("      Length of Solution (average)")
-			key = fmt.Sprintf("%v_solve_path_length", solverName)
+		fmt.Println("      Length of Solution (average)")
+		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
+			key := fmt.Sprintf("%v_solve_path_length", solverName)
 			l, _ := stats.Mean(mazeStats[name][key])
 			fmt.Printf("          %-25s : %6v\n", solverName, l)
+		}
+
+		fmt.Println("      Steps to find Solution (average)")
+		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
+			key := fmt.Sprintf("%v_solve_steps", solverName)
+			s, _ := stats.Mean(mazeStats[name][key])
+			fmt.Printf("          %-25s : %6v\n", solverName, s)
 		}
 	}
 }
@@ -146,12 +160,16 @@ func RunAll(config *grid.Config) {
 
 		// solve using all available solvers, use longest path in maze
 		_, fromCell, toCell, _ := g.LongestPath()
-		g.ResetVisited()
 
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
+			g.ResetVisited()
+
 			solver := algos.SolveAlgorithms[solverName]
 			log.Printf("running (solver): %v", solverName)
 			g, err = solver.Solve(g, fromCell, toCell)
+			if err != nil {
+				log.Fatalf("failed to run solver [%v]: %v", solverName, err)
+			}
 
 			key := fmt.Sprintf("%v_solve_time", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveTime().Nanoseconds()))
@@ -159,6 +177,8 @@ func RunAll(config *grid.Config) {
 			key = fmt.Sprintf("%v_solve_path_length", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(len(solver.SolvePath())))
 
+			key = fmt.Sprintf("%v_solve_steps", solverName)
+			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveSteps()))
 		}
 
 		// shows some stats about the maze
@@ -194,6 +214,7 @@ func main() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	for x := 0; x < *runs; x++ {
+		log.Printf("\nRun: %v", x)
 		RunAll(config)
 	}
 	showMazeStats()

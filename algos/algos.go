@@ -10,6 +10,8 @@ import (
 	"mazes/genalgos/sidewinder"
 	"mazes/genalgos/wilsons"
 	"mazes/solvealgos"
+	"mazes/solvealgos/random"
+	"mazes/solvealgos/random_unvisited"
 	solve_rb "mazes/solvealgos/recursive_backtracker"
 	"mazes/solvealgos/wall_follower"
 )
@@ -24,6 +26,8 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 }
 
 var SolveAlgorithms map[string]solvealgos.Algorithmer = map[string]solvealgos.Algorithmer{
+	"random":                &random.Random{},
+	"random-unvisited":      &random_unvisited.RandomUnvisited{},
 	"recursive-backtracker": &solve_rb.RecursiveBacktracker{},
 	"wall-follower":         &wall_follower.WallFollower{},
 }

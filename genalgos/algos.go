@@ -4,6 +4,7 @@ package genalgos
 import (
 	"errors"
 	"fmt"
+	"log"
 	"mazes/grid"
 	"mazes/utils"
 	"time"
@@ -28,15 +29,16 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 
 	for _, cell := range g.Cells() {
 		// each cell must have at least one linked neighbor
-		linksValid := false
-		for _, n := range []*grid.Cell{cell.North, cell.East, cell.South, cell.West} {
+		links := 0
+		log.Printf("cell: %v", cell)
+		for _, n := range cell.Links() {
+			log.Printf("link: %v", n)
 			if n != nil {
-				linksValid = true
-				break // found a neighbor
+				links++
 			}
 		}
-		if !linksValid {
-			return fmt.Errorf("cell %v does not have any open passages", cell)
+		if links < 0 || links > 3 {
+			return fmt.Errorf("cell %v has invalid number of links: %v", cell, links)
 		}
 
 		// and between 2 and 4 total neighbors
