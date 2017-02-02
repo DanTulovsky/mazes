@@ -37,7 +37,7 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 				links++
 			}
 		}
-		if links < 0 || links > 3 {
+		if links < 0 || links > 4 {
 			return fmt.Errorf("cell %v has invalid number of links: %v", cell, links)
 		}
 

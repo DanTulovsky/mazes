@@ -1,10 +1,20 @@
-package aldous_broder
+package wall_follower
 
 import (
 	"mazes/grid"
+	"mazes/genalgos"
 	"testing"
 	"fmt"
+	"mazes/genalgos/aldous_broder"
+	"log"
 )
+
+
+
+func setup() (genalgos.Algorithmer, *WallFollower) {
+
+	return &aldous_broder.AldousBroder{}, &WallFollower{}
+}
 
 var applytests = []struct {
 	config  *grid.Config
@@ -25,15 +35,12 @@ var applytests = []struct {
 	},
 }
 
-func setup() *AldousBroder {
-	return &AldousBroder{}
-}
 
-func TestApply(t *testing.T) {
+func TestSolve(t *testing.T) {
 
 	for _, tt := range applytests {
 		g, err := grid.NewGrid(tt.config)
-		a := setup()
+		gen, solv := setup()
 
 		if err != nil {
 			if !tt.wantErr {
@@ -43,32 +50,20 @@ func TestApply(t *testing.T) {
 			}
 		}
 
-		if g, err = a.Apply(g); err != nil {
+		if g, err = gen.Apply(g); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 
-		if err := a.CheckGrid(g); err != nil {
+		if err := gen.CheckGrid(g); err != nil {
 			fmt.Printf("%v\n", g)
 			t.Fatalf("grid is not valid: %v", err)
 		}
-	}
-}
 
-
-
-func BenchmarkApply(b *testing.B) {
-	config := &grid.Config{
-		Rows:    3,
-		Columns: 3,
-	}
-
-	for i := 0; i < b.N; i++ {
-		g, err := grid.NewGrid(config)
-		if err != nil {
-			b.Errorf("invalid config: %v", err)
+		fromCell := g.RandomCell()
+		toCell := g.RandomCell()
+		if g, err = solv.Solve(g, fromCell, toCell); err != nil {
+			log.Printf("\n%v\n", g)
+			t.Fatalf("failed to solve: %v", err)
 		}
-		a := setup()
-		a.Apply(g)
 	}
-
 }
