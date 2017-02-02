@@ -885,7 +885,7 @@ func (c *Cell) UnLink(cell *Cell) {
 	cell.unLinkOneWay(c)
 }
 
-// Links returns a list of all cells linked to this one
+// Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
 	for k, linked := range c.links {

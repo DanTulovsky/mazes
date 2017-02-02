@@ -50,6 +50,9 @@ var (
 )
 
 func setupSDL() (*sdl.Window, *sdl.Renderer) {
+	if !*showGUI {
+		return nil, nil
+	}
 	sdl.Init(sdl.INIT_EVERYTHING)
 	sdl.EnableScreenSaver()
 
@@ -233,31 +236,6 @@ func main() {
 	}
 
 	///////////////////////////////////////////////////////////////////////////
-	// Solvers
-	///////////////////////////////////////////////////////////////////////////
-	if *solveAlgo != "" {
-		if !checkSolveAlgo(*solveAlgo) {
-			log.Fatalf("invalid solve algorithm: %v", *solveAlgo)
-		}
-
-		// solve the longest path
-		_, fromCell, toCell, _ := g.LongestPath()
-
-		g.SetDistanceColors(fromCell)
-		g.SetFromToColors(fromCell, toCell)
-		g.ResetVisited()
-
-		solver := algos.SolveAlgorithms[*solveAlgo]
-		g, err = solver.Solve(g, fromCell, toCell)
-		if err != nil {
-			log.Printf("error running solver: %v", err)
-		}
-		log.Printf("time to solve: %v", solver.SolveTime())
-		log.Printf("steps taken to solve: %v", solver.SolveSteps())
-		log.Printf("steps in shortest path: %v", len(solver.SolvePath()))
-	}
-
-	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
 	// ascii maze
@@ -280,6 +258,30 @@ func main() {
 			}
 		}
 
+		///////////////////////////////////////////////////////////////////////////
+		// Solvers
+		///////////////////////////////////////////////////////////////////////////
+		if *solveAlgo != "" {
+			if !checkSolveAlgo(*solveAlgo) {
+				log.Fatalf("invalid solve algorithm: %v", *solveAlgo)
+			}
+
+			// solve the longest path
+			_, fromCell, toCell, _ := g.LongestPath()
+
+			g.SetDistanceColors(fromCell)
+			g.SetFromToColors(fromCell, toCell)
+			g.ResetVisited()
+
+			solver := algos.SolveAlgorithms[*solveAlgo]
+			g, err = solver.Solve(g, fromCell, toCell)
+			if err != nil {
+				log.Fatalf("error running solver: %v", err)
+			}
+			log.Printf("time to solve: %v", solver.SolveTime())
+			log.Printf("steps taken to solve: %v", solver.SolveSteps())
+			log.Printf("steps in shortest path: %v", len(solver.SolvePath()))
+		}
 		// wait for GUI to be closed
 	L:
 		for {

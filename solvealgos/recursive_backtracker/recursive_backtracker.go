@@ -3,7 +3,7 @@
 package recursive_backtracker
 
 import (
-	"log"
+	"fmt"
 	"mazes/grid"
 	"mazes/solvealgos"
 	"time"
@@ -49,7 +49,7 @@ func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) 
 	var path = grid.NewStack()
 
 	if r := Step(g, fromCell, toCell, path); !r {
-		log.Printf("failed to find path through maze from %v to %v", fromCell, toCell)
+		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
 	g.SetPathFromTo(fromCell, toCell, path.List())

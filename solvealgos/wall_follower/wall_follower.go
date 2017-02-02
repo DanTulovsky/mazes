@@ -7,6 +7,7 @@ package wall_follower
 
 import (
 	"fmt"
+	"log"
 	"mazes/grid"
 	"mazes/solvealgos"
 	"time"
@@ -36,13 +37,15 @@ func pickNextCell(currentCell *grid.Cell, facing string) *grid.Cell {
 	// always go in this order: "right", "forward", "left", "back"
 
 	dirs := getDirections(currentCell, facing)
+	if dirs == nil {
+		return nil
+	}
 
 	for _, l := range dirs {
 		if currentCell.Linked(l) {
 			return l
 		}
 	}
-	// backtrack if we can't go anywhere else
 	return nil
 }
 
@@ -54,7 +57,10 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	currentCell := fromCell
 	facing := "north"
 
+	log.Printf("%v -> %v", fromCell, toCell)
+
 	for currentCell != toCell {
+		log.Printf("currentCell: %v", currentCell)
 		path.Push(currentCell)
 		currentCell.SetVisited()
 
