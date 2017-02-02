@@ -60,7 +60,6 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	log.Printf("%v -> %v", fromCell, toCell)
 
 	for currentCell != toCell {
-		log.Printf("currentCell: %v", currentCell)
 		path.Push(currentCell)
 		currentCell.SetVisited()
 
@@ -68,6 +67,7 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 			// we are stuck in a loop, fail
 			log.Printf("\n%v\n", g)
 			log.Printf("%v -> %v", fromCell, toCell)
+			log.Printf("path: \n%v", path)
 			return nil, fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell, currentCell.VisitedTimes())
 		}
 
