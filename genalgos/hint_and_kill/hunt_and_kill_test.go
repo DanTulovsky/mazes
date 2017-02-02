@@ -2,6 +2,7 @@ package hint_and_kill
 
 import (
 	"mazes/grid"
+	"mazes/utils"
 	"testing"
 )
 
@@ -11,8 +12,8 @@ var applytests = []struct {
 }{
 	{
 		config: &grid.Config{
-			Rows:    10,
-			Columns: 10,
+			Rows:    utils.Random(5, 40),
+			Columns: utils.Random(5, 40),
 		},
 		wantErr: false,
 	}, {

@@ -1,9 +1,10 @@
 package aldous_broder
 
 import (
-	"mazes/grid"
-	"testing"
 	"fmt"
+	"mazes/grid"
+	"mazes/utils"
+	"testing"
 )
 
 var applytests = []struct {
@@ -12,8 +13,8 @@ var applytests = []struct {
 }{
 	{
 		config: &grid.Config{
-			Rows:    10,
-			Columns: 10,
+			Rows:    utils.Random(5, 40),
+			Columns: utils.Random(5, 40),
 		},
 		wantErr: false,
 	}, {
@@ -53,8 +54,6 @@ func TestApply(t *testing.T) {
 		}
 	}
 }
-
-
 
 func BenchmarkApply(b *testing.B) {
 	config := &grid.Config{

@@ -1,6 +1,9 @@
 package grid
 
-import "testing"
+import (
+	"mazes/utils"
+	"testing"
+)
 
 var gridcreatetests = []struct {
 	config  *Config
@@ -8,8 +11,8 @@ var gridcreatetests = []struct {
 }{
 	{
 		config: &Config{
-			Rows:    10,
-			Columns: 10,
+			Rows:    utils.Random(5, 40),
+			Columns: utils.Random(8, 33),
 		},
 		wantErr: false,
 	}, {
