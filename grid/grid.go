@@ -134,11 +134,12 @@ func (g *Grid) ClearDrawPresent(r *sdl.Renderer, w *sdl.Window) {
 }
 
 func (g *Grid) String() string {
-	output := "  ┌"
+	output := ""
 	for x := 0; x < g.columns; x++ {
-		fmt.Printf("   %v", x)
+		output = fmt.Sprintf("%v   %v", output, x)
 	}
-	fmt.Printf("\n")
+
+	output = fmt.Sprintf("\n%v\n  ┌", output)
 	for x := 0; x < g.columns-1; x++ {
 		output = fmt.Sprintf("%v───┬", output)
 	}
@@ -146,7 +147,7 @@ func (g *Grid) String() string {
 
 	for y := 0; y < g.rows; y++ {
 		top := fmt.Sprintf("%v │", y)
-		bottom := fmt.Sprintf("  ├")
+		bottom := "  ├"
 
 		for x := 0; x < g.columns; x++ {
 			cell, err := g.Cell(x, y)

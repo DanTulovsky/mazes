@@ -28,8 +28,8 @@ var applytests = []struct {
 		wantErr: false,
 	}, {
 		config: &grid.Config{
-			Rows:    10,
-			Columns: 15,
+			Rows:    5,
+			Columns: 5,
 		},
 		wantErr: false,
 	},
