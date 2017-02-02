@@ -64,6 +64,13 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 		path.Push(currentCell)
 		currentCell.SetVisited()
 
+		if currentCell.VisitedTimes() > 4 {
+			// we are stuck in a loop, fail
+			log.Printf("\n%v\n", g)
+			log.Printf("%v -> %v", fromCell, toCell)
+			return nil, fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell, currentCell.VisitedTimes())
+		}
+
 		if nextCell := pickNextCell(currentCell, facing); nextCell != nil {
 			if currentCell.North == nextCell {
 				facing = "north"

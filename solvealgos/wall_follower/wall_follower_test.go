@@ -37,7 +37,6 @@ var applytests = []struct {
 
 
 func TestSolve(t *testing.T) {
-
 	for _, tt := range applytests {
 		g, err := grid.NewGrid(tt.config)
 		gen, solv := setup()
