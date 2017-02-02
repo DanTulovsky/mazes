@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// total steps take during walk of maze
+var totalStep int = 1
+
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
@@ -24,6 +27,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
 
 	for _, nextCell := range currentCell.Links() {
 		if !nextCell.Visited() {
+			totalStep++
 			if Step(g, nextCell, toCell, path) {
 				return true
 			}
@@ -31,6 +35,11 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
 
 	}
 	path.Pop()
+
+	// make sure to count when backtracking
+	totalStep++
+	currentCell.SetVisited()
+
 	return false
 }
 
@@ -46,6 +55,7 @@ func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) 
 	g.SetPathFromTo(fromCell, toCell, path.List())
 	// stats
 	a.SetSolvePath(path.List())
+	a.SetSolveSteps(totalStep)
 
 	return g, nil
 }

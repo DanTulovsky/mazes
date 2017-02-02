@@ -29,15 +29,17 @@ func Fail(err error) {
 
 // Config defines the configuration parameters passed to the Grid
 type Config struct {
-	Rows        int
-	Columns     int
-	CellWidth   int // cell width
-	WallWidth   int
-	PathWidth   int
-	BgColor     colors.Color
-	BorderColor colors.Color
-	WallColor   colors.Color
-	PathColor   colors.Color
+	Rows             int
+	Columns          int
+	CellWidth        int // cell width
+	WallWidth        int
+	PathWidth        int
+	MarkVisitedCells bool
+	VisitedCellColor colors.Color
+	BgColor          colors.Color
+	BorderColor      colors.Color
+	WallColor        colors.Color
+	PathColor        colors.Color
 }
 
 // CheckConfig makes sure the config is valid
@@ -559,8 +561,8 @@ type Cell struct {
 	links map[*Cell]bool
 	// distances to other cells
 	distances *Distances
-	// Has this cell been visited?
-	visited bool
+	// How many times has this cell been visited?
+	visited int
 	// Background color of the cell
 	bgColor colors.Color
 	// Wall color of the cell
@@ -571,6 +573,9 @@ type Cell struct {
 	width     int
 	wallWidth int
 	pathWidth int
+
+	// config
+	config *Config
 
 	// keep track of what cells we have a path to
 	pathNorth, pathSouth, pathEast, pathWest bool
@@ -602,6 +607,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
 		paths:     make(map[*Cell][]*Cell),
+		config:    c,
 	}
 	cell.distances = NewDistances(cell)
 
@@ -637,17 +643,22 @@ func (c *Cell) Location() Location {
 
 // Visited returns true if the cell has been visited
 func (c *Cell) Visited() bool {
+	return c.visited > 0
+}
+
+// VisitedTimes returns how many times a cell has been visited
+func (c *Cell) VisitedTimes() int {
 	return c.visited
 }
 
 // SetVisited marks the cell as visited
 func (c *Cell) SetVisited() {
-	c.visited = true
+	c.visited++
 }
 
 // SetUnVisited marks the cell as unvisited
 func (c *Cell) SetUnVisited() {
-	c.visited = false
+	c.visited = 0
 }
 
 // SetPaths sets the paths present in the cell
@@ -762,6 +773,24 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth),
 			int32(PixelsPerCell), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
+	}
+
+	if c.config.MarkVisitedCells && c.Visited() {
+		colors.SetDrawColor(c.config.VisitedCellColor, r)
+
+		factor := c.VisitedTimes()
+
+		offset := int32(c.wallWidth/4 + c.wallWidth)
+		h, w := int32(c.width/10+factor), int32(c.width/10+factor)
+
+		if h > int32(PixelsPerCell-c.wallWidth)-offset {
+			h = int32(PixelsPerCell-c.wallWidth) - offset
+			w = int32(PixelsPerCell-c.wallWidth) - offset
+		}
+
+		// draw a small box to mark visited cells
+		box := &sdl.Rect{int32(c.column*PixelsPerCell+c.wallWidth) + offset, int32(c.row*PixelsPerCell+c.wallWidth) + offset, h, w}
+		r.FillRect(box)
 	}
 
 	return r

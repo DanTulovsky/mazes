@@ -29,22 +29,24 @@ var (
 		"shortestRandomPath": drawShortestPathRandomCells,
 	}
 
-	rows        = flag.Int("r", 60, "number of rows in the maze")
-	columns     = flag.Int("c", 60, "number of rows in the maze")
-	bgColor     = flag.String("bgcolor", "white", "background color")
-	wallColor   = flag.String("wall_color", "black", "wall color")
-	borderColor = flag.String("border_color", "black", "border color")
-	pathColor   = flag.String("path_color", "red", "border color")
-	cellWidth   = flag.Int("w", 10, "cell width")
-	wallWidth   = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	pathWidth   = flag.Int("path_width", 2, "path width")
-	showAscii   = flag.Bool("ascii", false, "show ascii maze")
-	showGUI     = flag.Bool("gui", true, "show gui maze")
-	showStats   = flag.Bool("stats", false, "show maze stats")
-	createAlgo  = flag.String("create_algo", "bintree", "algorithm used to create the maze")
-	exportFile  = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	actionToRun = flag.String("action", "", "action to run")
-	solveAlgo   = flag.String("solve_algo", "", "algorithm to solve the maze")
+	rows             = flag.Int("r", 60, "number of rows in the maze")
+	columns          = flag.Int("c", 60, "number of rows in the maze")
+	bgColor          = flag.String("bgcolor", "white", "background color")
+	wallColor        = flag.String("wall_color", "black", "wall color")
+	borderColor      = flag.String("border_color", "black", "border color")
+	pathColor        = flag.String("path_color", "red", "border color")
+	visitedCellColor = flag.String("visited_color", "red", "color of visited cell marker")
+	cellWidth        = flag.Int("w", 10, "cell width")
+	wallWidth        = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	pathWidth        = flag.Int("path_width", 2, "path width")
+	showAscii        = flag.Bool("ascii", false, "show ascii maze")
+	showGUI          = flag.Bool("gui", true, "show gui maze")
+	showStats        = flag.Bool("stats", false, "show maze stats")
+	markVisitedCells = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
+	createAlgo       = flag.String("create_algo", "bintree", "algorithm used to create the maze")
+	exportFile       = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	actionToRun      = flag.String("action", "", "action to run")
+	solveAlgo        = flag.String("solve_algo", "", "algorithm to solve the maze")
 )
 
 func setupSDL() (*sdl.Window, *sdl.Renderer) {
@@ -179,15 +181,17 @@ func main() {
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	config := &grid.Config{
-		Rows:        *rows,
-		Columns:     *columns,
-		CellWidth:   *cellWidth,
-		WallWidth:   *wallWidth,
-		PathWidth:   *pathWidth,
-		BgColor:     colors.GetColor(*bgColor),
-		BorderColor: colors.GetColor(*borderColor),
-		WallColor:   colors.GetColor(*wallColor),
-		PathColor:   colors.GetColor(*pathColor),
+		Rows:             *rows,
+		Columns:          *columns,
+		CellWidth:        *cellWidth,
+		WallWidth:        *wallWidth,
+		PathWidth:        *pathWidth,
+		BgColor:          colors.GetColor(*bgColor),
+		BorderColor:      colors.GetColor(*borderColor),
+		WallColor:        colors.GetColor(*wallColor),
+		PathColor:        colors.GetColor(*pathColor),
+		VisitedCellColor: colors.GetColor(*visitedCellColor),
+		MarkVisitedCells: *markVisitedCells,
 	}
 
 	g, err := grid.NewGrid(config)
@@ -249,6 +253,7 @@ func main() {
 			log.Printf("error running solver: %v", err)
 		}
 		log.Printf("time to solve: %v", solver.SolveTime())
+		log.Printf("steps taken to solve: %v", solver.SolveSteps())
 		log.Printf("steps in shortest path: %v", len(solver.SolvePath()))
 	}
 

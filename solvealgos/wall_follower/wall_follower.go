@@ -7,7 +7,6 @@ package wall_follower
 
 import (
 	"fmt"
-	"log"
 	"mazes/grid"
 	"mazes/solvealgos"
 	"time"
@@ -55,11 +54,9 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	currentCell := fromCell
 	facing := "north"
 
-	log.Printf("%v -> %v", fromCell, toCell)
-
 	for currentCell != toCell {
 		path.Push(currentCell)
-		log.Printf("facing: %v", facing)
+		currentCell.SetVisited()
 
 		if nextCell := pickNextCell(currentCell, facing); nextCell != nil {
 			if currentCell.North == nextCell {
@@ -75,7 +72,6 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 				facing = "south"
 			}
 
-			log.Printf("path: %v", path)
 			currentCell = nextCell
 		} else {
 			// this can never happen unless the maze is broken
@@ -85,7 +81,6 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	}
 
 	path.Push(toCell)
-	log.Printf("final path: %v", path)
 	g.SetPathFromTo(fromCell, toCell, path.List())
 	// stats
 	a.SetSolvePath(path.List())

@@ -43,5 +43,6 @@ func (a *RecursiveBacktracker) Apply(g *grid.Grid) (*grid.Grid, error) {
 		currentCell.Link(randomNeighbor)
 		cells.Push(randomNeighbor)
 	}
+
 	return g, nil
 }
