@@ -46,6 +46,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
 func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
+	totalStep = 1
 	var path = grid.NewStack()
 
 	if r := Step(g, fromCell, toCell, path); !r {
