@@ -2,13 +2,12 @@ package wall_follower
 
 import (
 	"mazes/grid"
-	"mazes/genalgos"
 	"testing"
 	"fmt"
 	"mazes/genalgos/aldous_broder"
 	"log"
+	"mazes/genalgos"
 )
-
 
 
 func setup() (genalgos.Algorithmer, *WallFollower) {
@@ -22,8 +21,8 @@ var applytests = []struct {
 }{
 	{
 		config: &grid.Config{
-			Rows:    10,
-			Columns: 10,
+			Rows:    4,
+			Columns: 4,
 		},
 		wantErr: false,
 	}, {
@@ -36,7 +35,7 @@ var applytests = []struct {
 }
 
 
-func TestSolve(t *testing.T) {
+func TestSolveAldousBroder(t *testing.T) {
 	for _, tt := range applytests {
 		g, err := grid.NewGrid(tt.config)
 		gen, solv := setup()
@@ -58,6 +57,7 @@ func TestSolve(t *testing.T) {
 			t.Fatalf("grid is not valid: %v", err)
 		}
 
+		g.ResetVisited()
 		fromCell := g.RandomCell()
 		toCell := g.RandomCell()
 		if g, err = solv.Solve(g, fromCell, toCell); err != nil {

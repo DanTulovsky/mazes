@@ -4,7 +4,6 @@ package genalgos
 import (
 	"errors"
 	"fmt"
-	"log"
 	"mazes/grid"
 	"mazes/utils"
 	"time"
@@ -30,9 +29,7 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 	for _, cell := range g.Cells() {
 		// each cell must have at least one linked neighbor
 		links := 0
-		log.Printf("cell: %v", cell)
 		for _, n := range cell.Links() {
-			log.Printf("link: %v", n)
 			if n != nil {
 				links++
 			}

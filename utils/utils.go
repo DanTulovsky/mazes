@@ -28,8 +28,8 @@ func AffineTransform(x, a, b, c, d float32) int {
 }
 
 func TimeTrack(start time.Time, name string) {
-	elapsed := time.Since(start)
-	log.Printf("%s took %s", name, elapsed)
+	//elapsed := time.Since(start)
+	//log.Printf("%s took %s", name, elapsed)
 }
 
 func SliceIndex(limit int, predicate func(i int) bool) int {
@@ -39,23 +39,4 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 		}
 	}
 	return -1
-}
-
-func RoundDuration(d, r time.Duration) time.Duration {
-	if r <= 0 {
-		return d
-	}
-	neg := d < 0
-	if neg {
-		d = -d
-	}
-	if m := d % r; m+m < r {
-		d = d - m
-	} else {
-		d = d + r - m
-	}
-	if neg {
-		return -d
-	}
-	return d
 }

@@ -16,10 +16,12 @@ type AldousBroder struct {
 
 // Apply applies the adlous-broder algorithm to generate the maze.
 func (a *AldousBroder) Apply(g *grid.Grid) (*grid.Grid, error) {
-
 	defer genalgos.TimeTrack(g, time.Now())
+
 	var visitedCells int
 	currentCell := g.RandomCell()
+	currentCell.SetVisited()
+	visitedCells++
 
 	for visitedCells < len(g.Cells()) {
 		neighbors := currentCell.Neighbors()

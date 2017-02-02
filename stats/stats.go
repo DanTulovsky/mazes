@@ -214,7 +214,7 @@ func main() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	for x := 0; x < *runs; x++ {
-		log.Printf("\nRun: %v", x)
+		log.Printf("Run: %v", x)
 		RunAll(config)
 	}
 	showMazeStats()
