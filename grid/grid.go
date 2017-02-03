@@ -68,18 +68,19 @@ func LocInLocList(l Location, locList []Location) bool {
 
 // Grid defines the maze grid
 type Grid struct {
-	config      *Config
-	rows        int
-	columns     int
-	cells       [][]*Cell
-	cellWidth   int // cell width
-	wallWidth   int
-	pathWidth   int
-	bgColor     colors.Color
-	borderColor colors.Color
-	wallColor   colors.Color
-	pathColor   colors.Color
-	createTime  time.Duration // how long it took to apply the algorithm to create the grid
+	config           *Config
+	rows             int
+	columns          int
+	cells            [][]*Cell
+	cellWidth        int // cell width
+	wallWidth        int
+	pathWidth        int
+	bgColor          colors.Color
+	borderColor      colors.Color
+	wallColor        colors.Color
+	pathColor        colors.Color
+	createTime       time.Duration // how long it took to apply the algorithm to create the grid
+	fromCell, toCell *Cell         // save thse for proper coloring
 }
 
 // NewGrid returns a new grid.
@@ -222,7 +223,18 @@ func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
 // Draw renders the gui maze in memory, display by calling Present
 func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 
-	// Each cell draws its background, half the wall and the path, as well as anything inside it
+	colors.SetDrawColor(g.bgColor, r)
+	rc, gc, bc, ac, _ := r.GetDrawColor()
+	log.Printf("draw color: %v %v %v %v", rc, gc, bc, ac)
+	// If saved, draw distance colors
+	if g.fromCell != nil {
+		g.SetDistanceColors(g.fromCell)
+	}
+	if g.fromCell != nil && g.toCell != nil {
+		g.SetFromToColors(g.fromCell, g.toCell)
+	}
+
+	// Each cell draws its background, half the wall as well as anything inside it
 	for x := 0; x < g.columns; x++ {
 		for y := 0; y < g.rows; y++ {
 			cell, err := g.Cell(x, y)
@@ -240,19 +252,11 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
+func (g *Grid) DrawPath(r *sdl.Renderer, path []*Cell) *sdl.Renderer {
 
-	// Each cell draws its background, half the wall and the path, as well as anything inside it
-	for x := 0; x < g.columns; x++ {
-		for y := 0; y < g.rows; y++ {
-			cell, err := g.Cell(x, y)
-			if err != nil {
-				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
-			}
-			sdl.Do(func() {
-				cell.DrawPath(r)
-			})
-		}
+	for _, cell := range path {
+		cell.DrawPath(r)
+
 	}
 
 	return r
@@ -260,17 +264,13 @@ func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawVisited renders the gui maze visited dots in memory, display by calling Present
 func (g *Grid) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
-
-	// Each cell draws its background, half the wall and the path, as well as anything inside it
 	for x := 0; x < g.columns; x++ {
 		for y := 0; y < g.rows; y++ {
 			cell, err := g.Cell(x, y)
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
-			sdl.Do(func() {
-				cell.DrawVisited(r)
-			})
+			cell.DrawVisited(r)
 		}
 	}
 
@@ -414,6 +414,10 @@ func (g *Grid) SetFromToColors(fromCell, toCell *Cell) {
 	// Set path start and end colors
 	fromCell.bgColor = colors.SetOpacity(fromCell.bgColor, 0)
 	toCell.bgColor = colors.SetOpacity(toCell.bgColor, 255)
+
+	// save thse for coor refresh.
+	g.fromCell = fromCell
+	g.toCell = toCell
 }
 
 // SetPath draws the shortest path from fromCell to toCell
@@ -514,6 +518,8 @@ func (g *Grid) SetDistanceColors(c *Cell) {
 		cell.bgColor = colors.OpacityAdjust(g.bgColor, adjustedColor)
 
 	}
+
+	g.fromCell = c
 }
 
 // DeadEnds returns a list of cells that are deadends (only linked to one neighbor
@@ -764,6 +770,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// Fill in background color
 	colors.SetDrawColor(c.bgColor, r)
+
 	bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
 		int32(PixelsPerCell), int32(PixelsPerCell)}
 	r.FillRect(bg)

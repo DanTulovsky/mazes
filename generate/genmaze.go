@@ -11,6 +11,8 @@ import (
 	"mazes/grid"
 	"os"
 
+	"bufio"
+	"mazes/solvealgos"
 	"sync"
 )
 
@@ -19,6 +21,7 @@ import (
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 // if slow compile, run: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
+// https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
 const (
 	FrameRate = 30
@@ -35,6 +38,8 @@ var (
 	//r            *sdl.Renderer
 	//sdlErr       error
 	runningMutex sync.Mutex
+
+	solver solvealgos.Algorithmer
 
 	rows             = flag.Int("r", 60, "number of rows in the maze")
 	columns          = flag.Int("c", 60, "number of rows in the maze")
@@ -194,7 +199,7 @@ func main() {
 
 func run() int {
 	flag.Parse()
-	// log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// profiling
 	// defer profile.Start().Stop()
@@ -241,9 +246,9 @@ func run() int {
 
 	// Set options
 	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
-	//sdl.Do(func() {
-	//	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-	//})
+	sdl.Do(func() {
+		r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	})
 
 	sdl.Do(func() {
 		r.Clear()
@@ -326,7 +331,7 @@ func run() int {
 		g.SetFromToColors(fromCell, toCell)
 		g.ResetVisited()
 
-		solver := algos.SolveAlgorithms[*solveAlgo]
+		solver = algos.SolveAlgorithms[*solveAlgo]
 		g, err = solver.Solve(g, fromCell, toCell)
 		if err != nil {
 			log.Fatalf("error running solver: %v", err)
@@ -368,6 +373,9 @@ func run() int {
 
 			// Displays the main maze, no paths or other markers
 			sdl.Do(func() {
+				// reset the clear color back to black
+				colors.SetDrawColor(colors.GetColor("black"), r)
+
 				r.Clear()
 				g.DrawMaze(r)
 				// r.Present()
@@ -375,29 +383,30 @@ func run() int {
 			})
 
 			// update display
-			wg := sync.WaitGroup{}
+			// wg := sync.WaitGroup{}
 
 			// make path
-			wg.Add(1)
-			go func() {
-				g.DrawPath(r)
-				wg.Done()
-			}()
+			//wg.Add(1)
+			//go func() {
+			//	sdl.Do(func() {
+			//		g.DrawPath(r, solver.SolvePath())
+			//	})
+			//	wg.Done()
+			//}()
 
-			wg.Add(1)
-			go func() {
-				g.DrawVisited(r)
-				wg.Done()
-			}()
+			sdl.Do(func() {
+				g.DrawPath(r, solver.SolvePath())
+				//g.DrawVisited(r)
+			})
 
-			wg.Wait()
+			// wg.Wait()
 
 			// render path and markers
 			sdl.Do(func() {
-
 				r.Present()
 				sdl.Delay(1000 / FrameRate)
-
+				fmt.Print("Press 'Enter' to continue...")
+				bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
 		}
 
