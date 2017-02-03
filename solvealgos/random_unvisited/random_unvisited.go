@@ -38,6 +38,7 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*gri
 	g.SetPathFromTo(fromCell, toCell, path.List())
 	// stats
 	a.SetSolvePath(path.List())
+	a.SetTravelPath(path.List())
 	a.SetSolveSteps(len(path.List()))
 
 	return g, nil

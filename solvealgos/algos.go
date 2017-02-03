@@ -8,19 +8,21 @@ import (
 )
 
 type Algorithmer interface {
-	SolvePath() []*grid.Cell
+	SolvePath() []*grid.Cell // final path
 	SolveSteps() int
 	SolveTime() time.Duration
 	SetSolvePath(p []*grid.Cell)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	Solve(*grid.Grid, *grid.Cell, *grid.Cell) (*grid.Grid, error)
+	TravelPath() []*grid.Cell // all the cells travelled
 }
 
 type Common struct {
 	solvePath  []*grid.Cell  // path of the final solution
 	solveSteps int           // how many cell visits it tooks (including duplicates)
 	solveTime  time.Duration // how long the last solve time took
+	travelPath []*grid.Cell  // all the cells visited in order
 }
 
 // Solve should write the path of the solution to the grid
@@ -61,4 +63,14 @@ func (a *Common) SolveSteps() int {
 // SetSolveSteps sets the solveSteps
 func (a *Common) SetSolveSteps(s int) {
 	a.solveSteps = s
+}
+
+// TravelPath returns the entire path traveled (often the same as the solution path)
+func (a *Common) TravelPath() []*grid.Cell {
+	return a.travelPath
+}
+
+// SetTravelPath sets the solvePath
+func (a *Common) SetTravelPath(p []*grid.Cell) {
+	a.travelPath = p
 }

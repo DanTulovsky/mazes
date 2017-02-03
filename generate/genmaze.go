@@ -11,7 +11,6 @@ import (
 	"mazes/grid"
 	"os"
 
-	"bufio"
 	"mazes/solvealgos"
 	"sync"
 )
@@ -349,6 +348,7 @@ func run() int {
 		fmt.Printf("%v\n", g)
 	}
 
+	animation := 0
 	// gui maze
 	if *showGUI {
 		running := true
@@ -394,10 +394,21 @@ func run() int {
 			//	wg.Done()
 			//}()
 
+			x := animation
+			if x > len(solver.TravelPath()) {
+				x = len(solver.TravelPath()) - 1
+			}
 			sdl.Do(func() {
-				g.DrawPath(r, solver.SolvePath())
-				//g.DrawVisited(r)
+				g.DrawPath(r, solver.TravelPath()[0:x])
+
 			})
+			animation++
+
+			if x == len(solver.TravelPath())-1 {
+				sdl.Do(func() {
+					g.DrawVisited(r)
+				})
+			}
 
 			// wg.Wait()
 
@@ -405,8 +416,8 @@ func run() int {
 			sdl.Do(func() {
 				r.Present()
 				sdl.Delay(1000 / FrameRate)
-				fmt.Print("Press 'Enter' to continue...")
-				bufio.NewReader(os.Stdin).ReadBytes('\n')
+				// fmt.Print("Press 'Enter' to continue...")
+				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
 		}
 

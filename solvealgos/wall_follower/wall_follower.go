@@ -91,6 +91,7 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 	g.SetPathFromTo(fromCell, toCell, path.List())
 	// stats
 	a.SetSolvePath(path.List())
+	a.SetTravelPath(path.List())
 	a.SetSolveSteps(len(path.List())) // always the same as the actual path
 
 	return g, nil

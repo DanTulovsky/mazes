@@ -80,7 +80,7 @@ type Grid struct {
 	wallColor        colors.Color
 	pathColor        colors.Color
 	createTime       time.Duration // how long it took to apply the algorithm to create the grid
-	fromCell, toCell *Cell         // save thse for proper coloring
+	fromCell, toCell *Cell         // save these for proper coloring
 }
 
 // NewGrid returns a new grid.
@@ -222,10 +222,6 @@ func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
 
 // Draw renders the gui maze in memory, display by calling Present
 func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
-
-	colors.SetDrawColor(g.bgColor, r)
-	rc, gc, bc, ac, _ := r.GetDrawColor()
-	log.Printf("draw color: %v %v %v %v", rc, gc, bc, ac)
 	// If saved, draw distance colors
 	if g.fromCell != nil {
 		g.SetDistanceColors(g.fromCell)
@@ -256,7 +252,6 @@ func (g *Grid) DrawPath(r *sdl.Renderer, path []*Cell) *sdl.Renderer {
 
 	for _, cell := range path {
 		cell.DrawPath(r)
-
 	}
 
 	return r
