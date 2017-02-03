@@ -128,7 +128,7 @@ func (g *Grid) ClearDrawPresent(r *sdl.Renderer, w *sdl.Window) {
 	}
 	r.Clear()     // clears buffer
 	g.DrawMaze(r) // populate buffer
-	g.DrawPath(r)
+	// g.DrawPath(r)
 
 	r.Present() // redraw screen
 }
@@ -249,7 +249,28 @@ func (g *Grid) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
-			cell.DrawPath(r)
+			sdl.Do(func() {
+				cell.DrawPath(r)
+			})
+		}
+	}
+
+	return r
+}
+
+// DrawVisited renders the gui maze visited dots in memory, display by calling Present
+func (g *Grid) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
+
+	// Each cell draws its background, half the wall and the path, as well as anything inside it
+	for x := 0; x < g.columns; x++ {
+		for y := 0; y < g.rows; y++ {
+			cell, err := g.Cell(x, y)
+			if err != nil {
+				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
+			}
+			sdl.Do(func() {
+				cell.DrawVisited(r)
+			})
 		}
 	}
 
@@ -779,6 +800,12 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 			int32(PixelsPerCell), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
+
+	return r
+}
+
+func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
+	PixelsPerCell := c.width
 
 	if c.config.MarkVisitedCells && c.Visited() {
 		colors.SetDrawColor(c.config.VisitedCellColor, r)

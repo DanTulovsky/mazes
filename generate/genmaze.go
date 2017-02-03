@@ -1,7 +1,8 @@
 package main
 
 import (
-	"errors"
+	"github.com/veandco/go-sdl2/sdl"
+
 	"flag"
 	"fmt"
 	"log"
@@ -9,18 +10,19 @@ import (
 	"mazes/colors"
 	"mazes/grid"
 	"os"
-	"runtime"
-	"unsafe"
 
-	"github.com/pkg/profile"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_image"
+	"sync"
 )
 
 // For gui support
 // brew install sdl2{,_image,_ttf,_mixer}
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 // if slow compile, run: go install -a mazes/generate
+// for tests: go get -u gopkg.in/check.v1
+
+const (
+	FrameRate = 30
+)
 
 var (
 	winTitle string                      = "Maze"
@@ -28,6 +30,11 @@ var (
 		"longestPath":        drawLongestPath,
 		"shortestRandomPath": drawShortestPathRandomCells,
 	}
+
+	//w            *sdl.Window
+	//r            *sdl.Renderer
+	//sdlErr       error
+	runningMutex sync.Mutex
 
 	rows             = flag.Int("r", 60, "number of rows in the maze")
 	columns          = flag.Int("c", 60, "number of rows in the maze")
@@ -49,40 +56,48 @@ var (
 	solveAlgo        = flag.String("solve_algo", "", "algorithm to solve the maze")
 )
 
-func setupSDL() (*sdl.Window, *sdl.Renderer) {
-	if !*showGUI {
-		return nil, nil
-	}
-	sdl.Init(sdl.INIT_EVERYTHING)
-	sdl.EnableScreenSaver()
-
-	// window
-	winWidth := (*columns)**cellWidth + *wallWidth*2
-	winHeight := (*rows)**cellWidth + *wallWidth*2
-
-	w, err := sdl.CreateWindow(winTitle, 0, 0,
-		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		winWidth, winHeight, sdl.WINDOW_HIDDEN)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", err)
-		os.Exit(1)
-	}
-
-	// renderer
-	r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
-	// r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_SOFTWARE)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", err)
-		os.Exit(1)
-	}
-
-	// Set options
-	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
-	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-
-	return w, r
-}
+//func setupSDL() {
+//	if !*showGUI {
+//		return
+//	}
+//	sdl.Do(func() {
+//		sdl.Init(sdl.INIT_EVERYTHING)
+//		sdl.EnableScreenSaver()
+//	})
+//
+//	// window
+//	winWidth := (*columns)**cellWidth + *wallWidth*2
+//	winHeight := (*rows)**cellWidth + *wallWidth*2
+//
+//	sdl.Do(func() {
+//		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
+//			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
+//			winWidth, winHeight, sdl.WINDOW_SHOWN)
+//	})
+//	if sdlErr != nil {
+//		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
+//		os.Exit(1)
+//	}
+//
+//	// renderer
+//	sdl.Do(func() {
+//		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
+//	})
+//	if sdlErr != nil {
+//		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", sdlErr)
+//		os.Exit(1)
+//	}
+//
+//	// Set options
+//	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
+//	sdl.Do(func() {
+//		r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+//	})
+//
+//	sdl.Do(func() {
+//		r.Clear()
+//	})
+//}
 
 // checkCreateAlgo makes sure the passed in algorithm is valid
 func checkCreateAlgo(a string) bool {
@@ -126,31 +141,31 @@ func drawLongestPath(g *grid.Grid) {
 
 }
 
-func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
-	if path == "" {
-		return errors.New("path to file is required!")
-	}
-
-	w, h := window.GetSize()
-	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
-	if err != nil {
-		return err
-	}
-
-	rect := &sdl.Rect{0, 0, int32(w) - 1, int32(h) - 1}
-	pixelFormat, err := window.GetPixelFormat()
-	if err != nil {
-		return err
-	}
-	pixels := s.Pixels()
-	if err := r.ReadPixels(rect, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
-		return err
-	}
-
-	img.SavePNG(s, path)
-	s.Free()
-	return nil
-}
+//func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
+//	if path == "" {
+//		return errors.New("path to file is required!")
+//	}
+//
+//	w, h := window.GetSize()
+//	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
+//	if err != nil {
+//		return err
+//	}
+//
+//	rect := &sdl.Rect{0, 0, int32(w) - 1, int32(h) - 1}
+//	pixelFormat, err := window.GetPixelFormat()
+//	if err != nil {
+//		return err
+//	}
+//	pixels := s.Pixels()
+//	if err := r.ReadPixels(rect, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
+//		return err
+//	}
+//
+//	img.SavePNG(s, path)
+//	s.Free()
+//	return nil
+//}
 
 // showMazeStats shows some states about the maze
 func showMazeStats(g *grid.Grid) {
@@ -159,22 +174,83 @@ func showMazeStats(g *grid.Grid) {
 	log.Printf(">> Dead Ends: %v", len(g.DeadEnds()))
 }
 
+func waitGUI() {
+L:
+	for {
+		event := sdl.WaitEvent()
+		switch event.(type) {
+		case *sdl.QuitEvent:
+			break L
+		}
+
+	}
+
+	sdl.Quit()
+}
+
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	flag.Parse()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// profiling
-	defer profile.Start().Stop()
+	// defer profile.Start().Stop()
 
 	// For https://github.com/veandco/go-sdl2#faq
-	runtime.LockOSThread()
+	// runtime.LockOSThread()
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	w, r := setupSDL()
-	defer w.Destroy()
-	defer r.Destroy()
+
+	// setupSDL()
+	//sdl.Do(func() {
+	//	sdl.Init(sdl.INIT_EVERYTHING)
+	//	sdl.EnableScreenSaver()
+	//})
+
+	var w *sdl.Window
+	var r *sdl.Renderer
+	var sdlErr error
+
+	// window
+	winWidth := (*columns)**cellWidth + *wallWidth*2
+	winHeight := (*rows)**cellWidth + *wallWidth*2
+
+	sdl.Do(func() {
+		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
+		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
+			winWidth, winHeight, sdl.WINDOW_SHOWN)
+	})
+	if sdlErr != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
+		os.Exit(1)
+	}
+
+	// renderer
+	sdl.Do(func() {
+		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
+	})
+	if sdlErr != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", sdlErr)
+		os.Exit(1)
+	}
+
+	// Set options
+	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
+	//sdl.Do(func() {
+	//	r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	//})
+
+	sdl.Do(func() {
+		r.Clear()
+	})
+
+	defer func() { sdl.Do(func() { w.Destroy() }) }()
+	defer func() { sdl.Do(func() { r.Destroy() }) }()
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
@@ -270,31 +346,69 @@ func main() {
 
 	// gui maze
 	if *showGUI {
-		// show window here, otherwise if we just display it, it sits as a white
-		// blob while Apply() runs
-		w.Show()
-		g.ClearDrawPresent(r, w)
-
-		// Save to file
-		if *exportFile != "" {
-			log.Printf("saving image to: %v", *exportFile)
-			if err := SaveImage(r, w, *exportFile); err != nil {
-				log.Printf("error saving file: %v", err)
-			}
-		}
+		running := true
 
 		// wait for GUI to be closed
-	L:
-		for {
-			event := sdl.WaitEvent()
-			switch event.(type) {
-			case *sdl.QuitEvent:
-				break L
-			}
+		// go sdl.Do(waitGUI)
 
+		for running {
+			// show window here, otherwise if we just display it, it sits as a white
+			// blob while Apply() runs
+			//sdl.Do(w.Show)
+
+			//sdl.Do(func() {
+			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			//		switch event.(type) {
+			//		case *sdl.QuitEvent:
+			//			runningMutex.Lock()
+			//			running = false
+			//			runningMutex.Unlock()
+			//		}
+			//	}
+
+			// Displays the main maze, no paths or other markers
+			sdl.Do(func() {
+				r.Clear()
+				g.DrawMaze(r)
+				// r.Present()
+				// g.ClearDrawPresent(r, w)
+			})
+
+			// update display
+			wg := sync.WaitGroup{}
+
+			// make path
+			wg.Add(1)
+			go func() {
+				g.DrawPath(r)
+				wg.Done()
+			}()
+
+			wg.Add(1)
+			go func() {
+				g.DrawVisited(r)
+				wg.Done()
+			}()
+
+			wg.Wait()
+
+			// render path and markers
+			sdl.Do(func() {
+
+				r.Present()
+				sdl.Delay(1000 / FrameRate)
+
+			})
 		}
 
-		sdl.Quit()
 	}
-
+	return 0
 }
+
+//// Save to file
+//if *exportFile != "" {
+//	log.Printf("saving image to: %v", *exportFile)
+//	if err := SaveImage(r, w, *exportFile); err != nil {
+//		log.Printf("error saving file: %v", err)
+//	}
+//}
