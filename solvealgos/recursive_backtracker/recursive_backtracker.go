@@ -10,11 +10,9 @@ import (
 	"time"
 )
 
-// total steps take during walk of maze
-var totalStep int = 1
-var travelPath *grid.Path = grid.NewPath()
+var travelPath *grid.Path
 var facing string = "north"
-var fromCell *grid.Cell
+var startCell *grid.Cell
 
 type RecursiveBacktracker struct {
 	solvealgos.Common
@@ -28,9 +26,10 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay t
 	var nextCell *grid.Cell
 	currentCell.SetVisited()
 
-	path.AddSegement(grid.NewSegment(currentCell, facing))
-	travelPath.AddSegement(grid.NewSegment(currentCell, facing))
-	g.SetPathFromTo(fromCell, currentCell, path.ListCells())
+	segment := grid.NewSegment(currentCell, facing)
+	path.AddSegement(segment)
+	travelPath.AddSegement(segment)
+	g.SetPathFromTo(startCell, currentCell, travelPath.ListCells())
 
 	if currentCell == toCell {
 		return true
@@ -39,40 +38,47 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay t
 	for _, nextCell = range currentCell.Links() {
 		if !nextCell.Visited() {
 			facing = currentCell.GetFacingDirection(nextCell)
-			totalStep++
+			segment.UpdateFacingDirection(facing)
 			if Step(g, nextCell, toCell, path, delay) {
 				return true
 			}
 		}
 
+		facing = nextCell.GetFacingDirection(currentCell)
+
+		// don't add the same segment if it's already the last one
+		if travelPath.LastSegment().Cell() == currentCell {
+			continue
+		}
+
+		segmentReturn := grid.NewSegment(currentCell, facing)
+		travelPath.AddSegement(segmentReturn)
+		currentCell.SetVisited()
+		g.SetPathFromTo(startCell, currentCell, travelPath.ListCells())
+
 	}
 	path.DelSegement()
-
-	// make sure to count when backtracking
-	totalStep++
-	currentCell.SetVisited()
-
-	facing = nextCell.GetFacingDirection(currentCell)
-	travelPath.AddSegement(grid.NewSegment(currentCell, facing))
+	time.Sleep(delay)
 
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(g *grid.Grid, fCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
+func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	totalStep = 1
-	var path = g.TravelPath
-	fromCell = fCell
+	var path = g.SolvePath
+	travelPath = g.TravelPath
+	startCell = fromCell
 
 	if r := Step(g, fromCell, toCell, path, delay); !r {
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
 	g.SetPathFromTo(fromCell, toCell, path.ListCells())
+
 	// stats
 	a.SetSolvePath(path)
-	a.SetSolveSteps(totalStep)
+	a.SetSolveSteps(len(travelPath.ListCells()))
 	a.SetTravelPath(travelPath)
 
 	return g, nil

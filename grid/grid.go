@@ -252,14 +252,17 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	g.DrawBorder(r)
 
 	// Draw the path so far
-	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells)
+	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells, false)
+
+	// Draw the final path
+	g.DrawPath(r, g.SolvePath, false, true)
 
 	return r
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
 // This is drawing g.TravelPath if path == nil
-func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
+func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited, isSolution bool) *sdl.Renderer {
 
 	if path == nil {
 		path = g.TravelPath
@@ -272,7 +275,7 @@ func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 			isLast = true // last segment is drawn slightly different
 		}
 
-		segment.DrawPath(r, isLast)
+		segment.DrawPath(r, g, isLast, isSolution) // solution is colored by a different color
 		if markVisited {
 			segment.Cell().DrawVisited(r)
 		}
@@ -474,13 +477,12 @@ func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
 	for x := 0; x < len(path); x++ {
 		if x > 0 {
 			prev = path[x-1]
-		} else {
-			prev = path[x]
 		}
 
 		if x < len(path)-1 {
 			next = path[x+1]
 		}
+
 		path[x].SetPaths(prev, next)
 	}
 }
@@ -1102,63 +1104,113 @@ func (ps *PathSegment) Facing() string {
 	return ps.facing
 }
 
+func (ps *PathSegment) UpdateFacingDirection(f string) {
+	ps.facing = f
+}
+
 // DrawPath draws the path as present in the cells
-func (c *PathSegment) DrawPath(r *sdl.Renderer, isLast bool) *sdl.Renderer {
-	colors.SetDrawColor(c.Cell().pathColor, r)
+func (c *PathSegment) DrawPath(r *sdl.Renderer, g *Grid, isLast, isSolution bool) *sdl.Renderer {
 	pathWidth := c.Cell().pathWidth
 	PixelsPerCell := c.Cell().width
 
-	// these are the path segments from the middle towards the given direction
-	paths := map[string]*sdl.Rect{
-		"east": &sdl.Rect{
-			int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell/2 + c.Cell().wallWidth),
-			int32(pathWidth)},
-		"west": &sdl.Rect{
-			int32(c.Cell().column*PixelsPerCell + c.Cell().wallWidth),
-			int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell/2 + pathWidth - c.Cell().wallWidth),
-			int32(pathWidth)},
-		"north": &sdl.Rect{
-			int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.Cell().row*PixelsPerCell + c.Cell().wallWidth),
-			int32(pathWidth),
-			int32(PixelsPerCell/2 - c.Cell().wallWidth)},
-		"south": &sdl.Rect{
-			int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
-			int32(pathWidth),
-			int32(PixelsPerCell/2 + c.Cell().wallWidth)},
+	getPathRect := func(d string, inSolution bool) *sdl.Rect {
+		if !inSolution {
+			pathWidth = c.Cell().pathWidth / 2
+		} else {
+			pathWidth = c.Cell().pathWidth
+		}
+		// these are the path segments from the middle towards the given direction
+		paths := map[string]*sdl.Rect{
+			"east": {
+				int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
+				int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
+				int32(PixelsPerCell/2 + c.Cell().wallWidth),
+				int32(pathWidth)},
+			"west": {
+				int32(c.Cell().column*PixelsPerCell + c.Cell().wallWidth),
+				int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
+				int32(PixelsPerCell/2 + pathWidth - c.Cell().wallWidth),
+				int32(pathWidth)},
+			"north": {
+				int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
+				int32(c.Cell().row*PixelsPerCell + c.Cell().wallWidth),
+				int32(pathWidth),
+				int32(PixelsPerCell/2 - c.Cell().wallWidth)},
+			"south": {
+				int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
+				int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
+				int32(pathWidth),
+				int32(PixelsPerCell/2 + c.Cell().wallWidth)},
+		}
+		return paths[d]
 	}
 
-	if isLast {
+	pathColor := c.Cell().pathColor
+	if isSolution {
+		pathColor = colors.SetOpacity(pathColor, 255) // solution is fully visible
+	} else {
+		pathColor = colors.SetOpacity(pathColor, 60) // travel path is less visible
+	}
+
+	colors.SetDrawColor(pathColor, r)
+	currentCellInSolution := CellInCellList(c.Cell(), g.SolvePath.ListCells())
+
+	if isLast && !c.Cell().Visited() {
 		switch c.Facing() {
 		case "east":
-			r.FillRect(paths["west"])
+			r.FillRect(getPathRect("west", currentCellInSolution))
 		case "west":
-			r.FillRect(paths["east"])
+			r.FillRect(getPathRect("east", currentCellInSolution))
 		case "north":
-			r.FillRect(paths["south"])
+			r.FillRect(getPathRect("south", currentCellInSolution))
 		case "south":
-			r.FillRect(paths["north"])
+			r.FillRect(getPathRect("north", currentCellInSolution))
 		}
 
 	} else {
-		if c.Cell().pathEast {
-			r.FillRect(paths["east"])
+		if c.Cell().pathEast && c.Cell().East != nil {
+			// if current cell and neighbor is in the solution, solid color.
+			eastInSolution := CellInCellList(c.Cell().East, g.SolvePath.ListCells())
+			if eastInSolution && currentCellInSolution {
+				pathColor = colors.SetOpacity(pathColor, 255)
+			} else {
+				pathColor = colors.SetOpacity(pathColor, 60)
+			}
+			colors.SetDrawColor(pathColor, r)
+			r.FillRect(getPathRect("east", eastInSolution && currentCellInSolution))
 
 		}
-		if c.Cell().pathWest {
-			r.FillRect(paths["west"])
+		if c.Cell().pathWest && c.Cell().West != nil {
+			westInSolution := CellInCellList(c.Cell().West, g.SolvePath.ListCells())
+			if westInSolution && currentCellInSolution {
+				pathColor = colors.SetOpacity(pathColor, 255)
+			} else {
+				pathColor = colors.SetOpacity(pathColor, 60)
+			}
+			colors.SetDrawColor(pathColor, r)
+			r.FillRect(getPathRect("west", westInSolution && currentCellInSolution))
 
 		}
-		if c.Cell().pathNorth {
-			r.FillRect(paths["north"])
+		if c.Cell().pathNorth && c.Cell().North != nil {
+			northInSolution := CellInCellList(c.Cell().North, g.SolvePath.ListCells())
+			if northInSolution && currentCellInSolution {
+				pathColor = colors.SetOpacity(pathColor, 255)
+			} else {
+				pathColor = colors.SetOpacity(pathColor, 60)
+			}
+			colors.SetDrawColor(pathColor, r)
+			r.FillRect(getPathRect("north", northInSolution && currentCellInSolution))
 
 		}
-		if c.Cell().pathSouth {
-			r.FillRect(paths["south"])
+		if c.Cell().pathSouth && c.Cell().South != nil {
+			southInSolution := CellInCellList(c.Cell().South, g.SolvePath.ListCells())
+			if southInSolution && currentCellInSolution {
+				pathColor = colors.SetOpacity(pathColor, 255)
+			} else {
+				pathColor = colors.SetOpacity(pathColor, 60)
+			}
+			colors.SetDrawColor(pathColor, r)
+			r.FillRect(getPathRect("south", southInSolution && currentCellInSolution))
 
 		}
 	}
@@ -1177,9 +1229,13 @@ func (p *Path) AddSegements(s []*PathSegment) {
 	}
 }
 
+func (p *Path) LastSegment() *PathSegment {
+	return p.segments[len(p.segments)-1]
+}
+
 // DelSegement removes the last segment from the path
 func (p *Path) DelSegement() {
-	p.segments = p.segments[:len(p.segments)]
+	p.segments = p.segments[:len(p.segments)-1]
 }
 
 func (p *Path) List() []*PathSegment {

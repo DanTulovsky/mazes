@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"mazes/solvealgos"
-	"sync"
 	"time"
 )
 
@@ -31,10 +30,10 @@ var (
 	}
 	fromCell, toCell *grid.Cell
 
-	w            *sdl.Window
-	r            *sdl.Renderer
-	sdlErr       error
-	runningMutex sync.Mutex
+	w      *sdl.Window
+	r      *sdl.Renderer
+	sdlErr error
+	// runningMutex sync.Mutex
 
 	solver solvealgos.Algorithmer
 
@@ -54,11 +53,11 @@ var (
 	showStats            = flag.Bool("stats", false, "show maze stats")
 	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
-	exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	actionToRun          = flag.String("action", "", "action to run")
-	solveAlgo            = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
-	frameRate            = flag.Uint("frame_rate", 60, "frame rate for animation")
-	solveDelay           = flag.String("draw_delay", "100ms", "solver delay per step, used for animation")
+	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	actionToRun = flag.String("action", "", "action to run")
+	solveAlgo   = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
+	frameRate   = flag.Uint("frame_rate", 60, "frame rate for animation")
+	solveDelay  = flag.String("draw_delay", "100ms", "solver delay per step, used for animation")
 )
 
 func setupSDL() {
@@ -180,19 +179,19 @@ func showMazeStats(g *grid.Grid) {
 	log.Printf(">> Dead Ends: %v", len(g.DeadEnds()))
 }
 
-func waitGUI() {
-L:
-	for {
-		event := sdl.WaitEvent()
-		switch event.(type) {
-		case *sdl.QuitEvent:
-			break L
-		}
-
-	}
-
-	sdl.Quit()
-}
+//func waitGUI() {
+//L:
+//	for {
+//		event := sdl.WaitEvent()
+//		switch event.(type) {
+//		case *sdl.QuitEvent:
+//			break L
+//		}
+//
+//	}
+//
+//	sdl.Quit()
+//}
 
 // Solve runs the solvers against the grid.
 func Solve(g *grid.Grid) (solvealgos.Algorithmer, error) {
@@ -206,7 +205,7 @@ func Solve(g *grid.Grid) (solvealgos.Algorithmer, error) {
 
 	// solve the longest path
 	if fromCell == nil || toCell == nil {
-		log.Printf("No fromCella and toCell set, defaulting to longestPath.")
+		log.Print("No fromCella and toCell set, defaulting to longestPath.")
 		_, fromCell, toCell, _ = g.LongestPath()
 	}
 
@@ -224,7 +223,7 @@ func Solve(g *grid.Grid) (solvealgos.Algorithmer, error) {
 		return nil, fmt.Errorf("error running solver: %v", err)
 	}
 	log.Printf("time to solve: %v", solver.SolveTime())
-	log.Printf("steps taken to solve: %v", solver.SolveSteps())
+	log.Printf("steps taken to solve:   %v", solver.SolveSteps())
 	log.Printf("steps in shortest path: %v", len(solver.SolvePath().List()))
 
 	return solver, nil
