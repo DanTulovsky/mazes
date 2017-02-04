@@ -16,7 +16,8 @@ type Random struct {
 func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = g.TravelPath
+	var travelPath = g.TravelPath
+	var solvePath = g.SolvePath
 	currentCell := fromCell
 	facing := "north" // arbitrary
 
@@ -26,8 +27,10 @@ func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Dur
 
 		currentCell.SetVisited()
 
-		path.AddSegement(grid.NewSegment(currentCell, facing))
-		g.SetPathFromTo(fromCell, currentCell, path.ListCells())
+		segment := grid.NewSegment(currentCell, facing)
+		travelPath.AddSegement(segment)
+		solvePath.AddSegement(segment)
+		g.SetPathFromTo(fromCell, currentCell, travelPath.ListCells())
 
 		nextCell := currentCell.RandomLink()
 		facing = currentCell.GetFacingDirection(nextCell)
@@ -36,13 +39,15 @@ func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Dur
 
 	// add the last cell
 	facing = currentCell.GetFacingDirection(toCell)
-	path.AddSegement(grid.NewSegment(toCell, facing))
-	g.SetPathFromTo(fromCell, toCell, path.ListCells())
+	segment := grid.NewSegment(toCell, facing)
+	travelPath.AddSegement(segment)
+	solvePath.AddSegement(segment)
+	g.SetPathFromTo(fromCell, toCell, travelPath.ListCells())
 
 	// stats
-	a.SetSolvePath(path)
-	a.SetTravelPath(path)
-	a.SetSolveSteps(len(path.ListCells()))
+	a.SetSolvePath(solvePath)
+	a.SetTravelPath(travelPath)
+	a.SetSolveSteps(len(solvePath.ListCells()))
 
 	return g, nil
 }

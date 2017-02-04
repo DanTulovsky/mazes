@@ -51,7 +51,8 @@ func pickNextCell(currentCell *grid.Cell, facing string) *grid.Cell {
 func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = g.TravelPath
+	var travelPath = g.TravelPath
+	var solvePath = g.SolvePath
 
 	currentCell := fromCell
 	facing := "north"
@@ -62,8 +63,10 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 
 		currentCell.SetVisited()
 
-		path.AddSegement(grid.NewSegment(currentCell, facing))
-		g.SetPathFromTo(fromCell, currentCell, path.ListCells())
+		segment := grid.NewSegment(currentCell, facing)
+		travelPath.AddSegement(segment)
+		solvePath.AddSegement(segment)
+		g.SetPathFromTo(fromCell, currentCell, travelPath.ListCells())
 
 		if currentCell.VisitedTimes() > 4 {
 			// we are stuck in a loop, fail
@@ -93,12 +96,12 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 	}
 
 	// last cell
-	path.AddSegement(grid.NewSegment(toCell, facing))
-	g.SetPathFromTo(fromCell, toCell, path.ListCells())
+	travelPath.AddSegement(grid.NewSegment(toCell, facing))
+	g.SetPathFromTo(fromCell, toCell, solvePath.ListCells())
 	// stats
-	a.SetSolvePath(path)
-	a.SetTravelPath(path)
-	a.SetSolveSteps(len(path.List())) // always the same as the actual path
+	a.SetSolvePath(solvePath)
+	a.SetTravelPath(travelPath)
+	a.SetSolveSteps(len(solvePath.List())) // always the same as the actual path
 
 	return g, nil
 }

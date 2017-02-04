@@ -45,7 +45,7 @@ var (
 	currentLocationColor = flag.String("location_color", "yellow", "border color")
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
-	cellWidth            = flag.Int("w", 10, "cell width")
+	cellWidth            = flag.Int("w", 10, "cell width (best as multiple of 2)")
 	wallWidth            = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	pathWidth            = flag.Int("path_width", 2, "path width")
 	showAscii            = flag.Bool("ascii", false, "show ascii maze")
@@ -57,7 +57,7 @@ var (
 	actionToRun = flag.String("action", "", "action to run")
 	solveAlgo   = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate   = flag.Uint("frame_rate", 60, "frame rate for animation")
-	solveDelay  = flag.String("draw_delay", "100ms", "solver delay per step, used for animation")
+	solveDelay  = flag.String("draw_delay", "50ms", "solver delay per step, used for animation")
 )
 
 func setupSDL() {
