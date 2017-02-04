@@ -48,16 +48,22 @@ func pickNextCell(currentCell *grid.Cell, facing string) *grid.Cell {
 	return nil
 }
 
-func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = grid.NewPath()
+	var path = g.TravelPath
 
 	currentCell := fromCell
 	facing := "north"
 
 	for currentCell != toCell {
+		// animation delay
+		time.Sleep(delay)
+
+		currentCell.SetVisited()
+
 		path.AddSegement(grid.NewSegment(currentCell, facing))
+		g.SetPathFromTo(fromCell, currentCell, path.ListCells())
 
 		if currentCell.VisitedTimes() > 4 {
 			// we are stuck in a loop, fail
@@ -79,7 +85,6 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.G
 			}
 
 			currentCell = nextCell
-			currentCell.SetVisited()
 		} else {
 			// this can never happen unless the maze is broken
 			return nil, fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)

@@ -13,21 +13,26 @@ type RandomUnvisited struct {
 	solvealgos.Common
 }
 
-func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = grid.NewPath()
-	var facing = "north"
-
+	var path = g.TravelPath
 	currentCell := fromCell
+	facing := "north"
 
 	for currentCell != toCell {
-		facing = currentCell.GetFacingDirection(toCell)
-		path.AddSegement(grid.NewSegment(toCell, facing))
+		// animation delay
+		time.Sleep(delay)
+
 		currentCell.SetVisited()
+
+		path.AddSegement(grid.NewSegment(currentCell, facing))
+		g.SetPathFromTo(fromCell, currentCell, path.ListCells())
 
 		// prefer unvisited first
 		nextCell := currentCell.RandomUnvisitedLink()
+		facing = currentCell.GetFacingDirection(nextCell)
+
 		if nextCell == nil {
 			nextCell = currentCell.RandomLink()
 		}
@@ -38,8 +43,8 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*gri
 
 	facing = currentCell.GetFacingDirection(toCell)
 	path.AddSegement(grid.NewSegment(toCell, facing))
-
 	g.SetPathFromTo(fromCell, toCell, path.ListCells())
+
 	// stats
 	a.SetSolvePath(path)
 	a.SetTravelPath(path)

@@ -13,16 +13,21 @@ type Random struct {
 	solvealgos.Common
 }
 
-func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = grid.NewPath()
+	var path = g.TravelPath
 	currentCell := fromCell
 	facing := "north" // arbitrary
 
 	for currentCell != toCell {
-		path.AddSegement(grid.NewSegment(currentCell, facing))
+		// animation delay
+		time.Sleep(delay)
+
 		currentCell.SetVisited()
+
+		path.AddSegement(grid.NewSegment(currentCell, facing))
+		g.SetPathFromTo(fromCell, currentCell, path.ListCells())
 
 		nextCell := currentCell.RandomLink()
 		facing = currentCell.GetFacingDirection(nextCell)

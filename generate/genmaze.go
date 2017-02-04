@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-
 	"github.com/veandco/go-sdl2/sdl"
 
 	"flag"
@@ -15,6 +13,7 @@ import (
 
 	"mazes/solvealgos"
 	"sync"
+	"time"
 )
 
 // For gui support
@@ -59,6 +58,7 @@ var (
 	actionToRun          = flag.String("action", "", "action to run")
 	solveAlgo            = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate            = flag.Uint("frame_rate", 60, "frame rate for animation")
+	solveDelay           = flag.String("draw_delay", "100ms", "solver delay per step, used for animation")
 )
 
 func setupSDL() {
@@ -194,6 +194,43 @@ L:
 	sdl.Quit()
 }
 
+// Solve runs the solvers against the grid.
+func Solve(g *grid.Grid) (solvealgos.Algorithmer, error) {
+	var err error
+
+	if !checkSolveAlgo(*solveAlgo) {
+		return nil, fmt.Errorf("invalid solve algorithm: %v", *solveAlgo)
+	}
+
+	log.Printf("running solver %v", *solveAlgo)
+
+	// solve the longest path
+	if fromCell == nil || toCell == nil {
+		log.Printf("No fromCella and toCell set, defaulting to longestPath.")
+		_, fromCell, toCell, _ = g.LongestPath()
+	}
+
+	g.SetDistanceColors(fromCell)
+	g.SetFromToColors(fromCell, toCell)
+	g.ResetVisited()
+
+	solver = algos.SolveAlgorithms[*solveAlgo]
+	duration, err := time.ParseDuration(*solveDelay)
+	if err != nil {
+		return nil, err
+	}
+	g, err = solver.Solve(g, fromCell, toCell, duration)
+	if err != nil {
+		return nil, fmt.Errorf("error running solver: %v", err)
+	}
+	log.Printf("time to solve: %v", solver.SolveTime())
+	log.Printf("steps taken to solve: %v", solver.SolveSteps())
+	log.Printf("steps in shortest path: %v", len(solver.SolvePath().List()))
+
+	return solver, nil
+
+}
+
 func main() {
 	os.Exit(run())
 }
@@ -276,28 +313,14 @@ func run() int {
 	// Solvers
 	///////////////////////////////////////////////////////////////////////////
 	if *solveAlgo != "" {
-		if !checkSolveAlgo(*solveAlgo) {
-			log.Fatalf("invalid solve algorithm: %v", *solveAlgo)
-		}
-
-		// solve the longest path
-		if fromCell == nil || toCell == nil {
-			log.Printf("No fromCella and toCell set, defaulting to longestPath.")
-			_, fromCell, toCell, _ = g.LongestPath()
-		}
-
-		g.SetDistanceColors(fromCell)
-		g.SetFromToColors(fromCell, toCell)
-		g.ResetVisited()
-
-		solver = algos.SolveAlgorithms[*solveAlgo]
-		g, err = solver.Solve(g, fromCell, toCell)
-		if err != nil {
-			log.Fatalf("error running solver: %v", err)
-		}
-		log.Printf("time to solve: %v", solver.SolveTime())
-		log.Printf("steps taken to solve: %v", solver.SolveSteps())
-		log.Printf("steps in shortest path: %v", len(solver.SolvePath().List()))
+		go func() {
+			// sleep to allow grid to be drawn
+			time.Sleep(time.Second * 2)
+			solver, err = Solve(g)
+			if err != nil {
+				log.Print(err)
+			}
+		}()
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -308,13 +331,12 @@ func run() int {
 		fmt.Printf("%v\n", g)
 	}
 
-	animation := 0
+	// animation := 0
 	// gui maze
 	if *showGUI {
 		running := true
 
 		for running {
-
 			//sdl.Do(func() {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			//		switch event.(type) {
@@ -335,32 +357,31 @@ func run() int {
 			})
 
 			// For solvers, to animate the path.
-			if *solveAlgo != "" {
-				// update display
-				// wg := sync.WaitGroup{}
-				// wg.Add(1)
-
-				// used to draw only a part of the path
-				x := animation
-				if x > len(solver.TravelPath().List()) {
-					x = len(solver.TravelPath().List()) - 1
-				}
-				sdl.Do(func() {
-					path := grid.NewPath()
-					path.AddSegements(solver.TravelPath().List()[0:x])
-					g.DrawPath(r, path, *markVisitedCells)
-				})
-				animation++
-
-				// wg.Wait()
-
-			}
+			//if solver != nil {
+			//	// update display
+			//	// wg := sync.WaitGroup{}
+			//	// wg.Add(1)
+			//
+			//	// used to draw only a part of the path
+			//	x := animation
+			//	if x > len(solver.TravelPath().List()) {
+			//		x = len(solver.TravelPath().List()) - 1
+			//	}
+			//	sdl.Do(func() {
+			//		path := grid.NewPath()
+			//		path.AddSegements(solver.TravelPath().List()[0:x])
+			//		g.DrawPath(r, path, *markVisitedCells)
+			//	})
+			//	animation++
+			//
+			//	// wg.Wait()
+			//}
 
 			sdl.Do(func() {
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
 				// fmt.Print("Press 'Enter' to continue...")
-				bufio.NewReader(os.Stdin).ReadBytes('\n')
+				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
 		}
 

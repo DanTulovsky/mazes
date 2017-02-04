@@ -82,6 +82,9 @@ type Grid struct {
 	pathColor        colors.Color
 	createTime       time.Duration // how long it took to apply the algorithm to create the grid
 	fromCell, toCell *Cell         // save these for proper coloring
+
+	SolvePath  *Path // the final solve path of the solver
+	TravelPath *Path // the travel path of the solver, update in real time
 }
 
 // NewGrid returns a new grid.
@@ -101,6 +104,9 @@ func NewGrid(c *Config) (*Grid, error) {
 		wallColor:   c.WallColor,
 		pathColor:   c.PathColor,
 		config:      c,
+
+		SolvePath:  NewPath(),
+		TravelPath: NewPath(),
 	}
 
 	g.prepareGrid()
@@ -245,25 +251,30 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// Draw outside border
 	g.DrawBorder(r)
 
+	// Draw the path so far
+	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells)
+
 	return r
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
+// This is drawing g.TravelPath if path == nil
 func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
 
-	// keep track of how many times we've seen this cell, used for animating visit boxes
-	visitMap := make(map[*Cell]int)
+	if path == nil {
+		path = g.TravelPath
+	}
+
 	var isLast bool
 
 	for x, segment := range path.segments {
 		if x == len(path.segments)-1 {
 			isLast = true // last segment is drawn slightly different
 		}
-		visitMap[segment.Cell()]++
 
 		segment.DrawPath(r, isLast)
 		if markVisited {
-			segment.Cell().DrawVisited(r, visitMap[segment.Cell()])
+			segment.Cell().DrawVisited(r)
 		}
 
 		if isLast {
@@ -284,7 +295,7 @@ func (g *Grid) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
-			cell.DrawVisited(r, 0) // 0 means use the visited times from the cell itself
+			cell.DrawVisited(r)
 		}
 	}
 
@@ -846,17 +857,13 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawVisited draws the visited marker. If num is supplied and is not 0, use that as the times visited. Used for animation.
-func (c *Cell) DrawVisited(r *sdl.Renderer, num int) *sdl.Renderer {
+func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 	PixelsPerCell := c.width
 
 	if c.config.MarkVisitedCells && c.Visited() {
 		colors.SetDrawColor(c.config.VisitedCellColor, r)
 
 		times := c.VisitedTimes()
-		if num != 0 {
-			times = num
-		}
-
 		factor := times * 3
 
 		offset := int32(c.wallWidth/4 + c.wallWidth)
@@ -1126,7 +1133,6 @@ func (c *PathSegment) DrawPath(r *sdl.Renderer, isLast bool) *sdl.Renderer {
 	}
 
 	if isLast {
-		log.Printf("facing: %v", c.facing)
 		switch c.Facing() {
 		case "east":
 			r.FillRect(paths["west"])

@@ -14,7 +14,8 @@ type Algorithmer interface {
 	SetSolvePath(p *grid.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
-	Solve(*grid.Grid, *grid.Cell, *grid.Cell) (*grid.Grid, error)
+	// delay is ms for animation
+	Solve(g *grid.Grid, fromCell *grid.Cell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error)
 	TravelPath() *grid.Path // all the cells travelled
 }
 

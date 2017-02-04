@@ -1,5 +1,6 @@
 // Package recursive_backtracker implements the recursive backtracker  maze solving algorithm
 
+// TODO(dant): Fix me!
 package recursive_backtracker
 
 import (
@@ -13,18 +14,23 @@ import (
 var totalStep int = 1
 var travelPath *grid.Path = grid.NewPath()
 var facing string = "north"
+var fromCell *grid.Cell
 
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path) bool {
+func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay time.Duration) bool {
+	// animation delay
+	time.Sleep(delay)
+
 	var nextCell *grid.Cell
 	currentCell.SetVisited()
 
 	path.AddSegement(grid.NewSegment(currentCell, facing))
 	travelPath.AddSegement(grid.NewSegment(currentCell, facing))
+	g.SetPathFromTo(fromCell, currentCell, path.ListCells())
 
 	if currentCell == toCell {
 		return true
@@ -34,7 +40,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path) bool {
 		if !nextCell.Visited() {
 			facing = currentCell.GetFacingDirection(nextCell)
 			totalStep++
-			if Step(g, nextCell, toCell, path) {
+			if Step(g, nextCell, toCell, path, delay) {
 				return true
 			}
 		}
@@ -52,13 +58,14 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path) bool {
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+func (a *RecursiveBacktracker) Solve(g *grid.Grid, fCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	totalStep = 1
-	var path = grid.NewPath()
+	var path = g.TravelPath
+	fromCell = fCell
 
-	if r := Step(g, fromCell, toCell, path); !r {
+	if r := Step(g, fromCell, toCell, path, delay); !r {
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
