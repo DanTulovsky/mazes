@@ -16,24 +16,28 @@ type Random struct {
 func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = grid.NewStack()
-
+	var path = grid.NewPath()
 	currentCell := fromCell
+	facing := "north" // arbitrary
 
 	for currentCell != toCell {
-		path.Push(currentCell)
+		path.AddSegement(grid.NewSegment(currentCell, facing))
 		currentCell.SetVisited()
 
 		nextCell := currentCell.RandomLink()
+		facing = currentCell.GetFacingDirection(nextCell)
 		currentCell = nextCell
 	}
 
-	path.Push(toCell)
-	g.SetPathFromTo(fromCell, toCell, path.List())
+	// add the last cell
+	facing = currentCell.GetFacingDirection(toCell)
+	path.AddSegement(grid.NewSegment(toCell, facing))
+	g.SetPathFromTo(fromCell, toCell, path.ListCells())
+
 	// stats
-	a.SetSolvePath(path.List())
-	a.SetTravelPath(path.List())
-	a.SetSolveSteps(len(path.List()))
+	a.SetSolvePath(path)
+	a.SetTravelPath(path)
+	a.SetSolveSteps(len(path.ListCells()))
 
 	return g, nil
 }

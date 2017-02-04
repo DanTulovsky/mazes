@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+
 	"github.com/veandco/go-sdl2/sdl"
 
 	"flag"
@@ -28,6 +30,7 @@ var (
 		"longestPath":        drawLongestPath,
 		"shortestRandomPath": drawShortestPathRandomCells,
 	}
+	fromCell, toCell *grid.Cell
 
 	w            *sdl.Window
 	r            *sdl.Renderer
@@ -54,7 +57,7 @@ var (
 	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
 	exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	actionToRun          = flag.String("action", "", "action to run")
-	solveAlgo            = flag.String("solve_algo", "", "algorithm to solve the maze")
+	solveAlgo            = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate            = flag.Uint("frame_rate", 60, "frame rate for animation")
 )
 
@@ -123,8 +126,8 @@ func checkSolveAlgo(a string) bool {
 
 // drawShortestPathRandomCells draws the shortest distance between two random cells
 func drawShortestPathRandomCells(g *grid.Grid) {
-	fromCell := g.RandomCell()
-	toCell := g.RandomCell()
+	fromCell = g.RandomCell()
+	toCell = g.RandomCell()
 	log.Printf("Finding shortest path: [%v] -> [%v]", fromCell, toCell)
 
 	// For coloring
@@ -136,7 +139,8 @@ func drawShortestPathRandomCells(g *grid.Grid) {
 
 // drawLongestPath draws one possible longest path through the maze
 func drawLongestPath(g *grid.Grid) {
-	dist, fromCell, toCell, _ := g.LongestPath()
+	var dist int
+	dist, fromCell, toCell, _ = g.LongestPath()
 	g.SetDistanceColors(fromCell)
 	g.SetPath(fromCell, toCell)
 	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
@@ -277,7 +281,10 @@ func run() int {
 		}
 
 		// solve the longest path
-		_, fromCell, toCell, _ := g.LongestPath()
+		if fromCell == nil || toCell == nil {
+			log.Printf("No fromCella and toCell set, defaulting to longestPath.")
+			_, fromCell, toCell, _ = g.LongestPath()
+		}
 
 		g.SetDistanceColors(fromCell)
 		g.SetFromToColors(fromCell, toCell)
@@ -290,7 +297,7 @@ func run() int {
 		}
 		log.Printf("time to solve: %v", solver.SolveTime())
 		log.Printf("steps taken to solve: %v", solver.SolveSteps())
-		log.Printf("steps in shortest path: %v", len(solver.SolvePath()))
+		log.Printf("steps in shortest path: %v", len(solver.SolvePath().List()))
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -306,13 +313,7 @@ func run() int {
 	if *showGUI {
 		running := true
 
-		// wait for GUI to be closed
-		// go sdl.Do(waitGUI)
-
 		for running {
-			// show window here, otherwise if we just display it, it sits as a white
-			// blob while Apply() runs
-			//sdl.Do(w.Show)
 
 			//sdl.Do(func() {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -331,33 +332,35 @@ func run() int {
 
 				r.Clear()
 				g.DrawMaze(r)
-				// r.Present()
-				// g.ClearDrawPresent(r, w)
 			})
 
-			// update display
-			// wg := sync.WaitGroup{}
-			// wg.Add(1)
+			// For solvers, to animate the path.
+			if *solveAlgo != "" {
+				// update display
+				// wg := sync.WaitGroup{}
+				// wg.Add(1)
 
-			// used to draw only a part of the path
-			x := animation
-			if x > len(solver.TravelPath()) {
-				x = len(solver.TravelPath()) - 1
+				// used to draw only a part of the path
+				x := animation
+				if x > len(solver.TravelPath().List()) {
+					x = len(solver.TravelPath().List()) - 1
+				}
+				sdl.Do(func() {
+					path := grid.NewPath()
+					path.AddSegements(solver.TravelPath().List()[0:x])
+					g.DrawPath(r, path, *markVisitedCells)
+				})
+				animation++
+
+				// wg.Wait()
+
 			}
-			sdl.Do(func() {
-				g.DrawPath(r, solver.TravelPath()[0:x], *markVisitedCells)
 
-			})
-			animation++
-
-			// wg.Wait()
-
-			// render path and markers
 			sdl.Do(func() {
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
 				// fmt.Print("Press 'Enter' to continue...")
-				// bufio.NewReader(os.Stdin).ReadBytes('\n')
+				bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
 		}
 

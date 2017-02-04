@@ -16,12 +16,14 @@ type RandomUnvisited struct {
 func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = grid.NewStack()
+	var path = grid.NewPath()
+	var facing = "north"
 
 	currentCell := fromCell
 
 	for currentCell != toCell {
-		path.Push(currentCell)
+		facing = currentCell.GetFacingDirection(toCell)
+		path.AddSegement(grid.NewSegment(toCell, facing))
 		currentCell.SetVisited()
 
 		// prefer unvisited first
@@ -34,12 +36,14 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*gri
 
 	}
 
-	path.Push(toCell)
-	g.SetPathFromTo(fromCell, toCell, path.List())
+	facing = currentCell.GetFacingDirection(toCell)
+	path.AddSegement(grid.NewSegment(toCell, facing))
+
+	g.SetPathFromTo(fromCell, toCell, path.ListCells())
 	// stats
-	a.SetSolvePath(path.List())
-	a.SetTravelPath(path.List())
-	a.SetSolveSteps(len(path.List()))
+	a.SetSolvePath(path)
+	a.SetTravelPath(path)
+	a.SetSolveSteps(len(path.ListCells()))
 
 	return g, nil
 }

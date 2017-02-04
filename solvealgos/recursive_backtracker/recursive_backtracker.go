@@ -11,24 +11,28 @@ import (
 
 // total steps take during walk of maze
 var totalStep int = 1
-var travelPath []*grid.Cell
+var travelPath *grid.Path = grid.NewPath()
+var facing string = "north"
 
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
+func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path) bool {
+	var nextCell *grid.Cell
 	currentCell.SetVisited()
-	path.Push(currentCell)
-	travelPath = append(travelPath, currentCell)
+
+	path.AddSegement(grid.NewSegment(currentCell, facing))
+	travelPath.AddSegement(grid.NewSegment(currentCell, facing))
 
 	if currentCell == toCell {
 		return true
 	}
 
-	for _, nextCell := range currentCell.Links() {
+	for _, nextCell = range currentCell.Links() {
 		if !nextCell.Visited() {
+			facing = currentCell.GetFacingDirection(nextCell)
 			totalStep++
 			if Step(g, nextCell, toCell, path) {
 				return true
@@ -36,12 +40,14 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
 		}
 
 	}
-	path.Pop()
+	path.DelSegement()
 
 	// make sure to count when backtracking
 	totalStep++
 	currentCell.SetVisited()
-	travelPath = append(travelPath, currentCell)
+
+	facing = nextCell.GetFacingDirection(currentCell)
+	travelPath.AddSegement(grid.NewSegment(currentCell, facing))
 
 	return false
 }
@@ -50,15 +56,15 @@ func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) 
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	totalStep = 1
-	var path = grid.NewStack()
+	var path = grid.NewPath()
 
 	if r := Step(g, fromCell, toCell, path); !r {
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
-	g.SetPathFromTo(fromCell, toCell, path.List())
+	g.SetPathFromTo(fromCell, toCell, path.ListCells())
 	// stats
-	a.SetSolvePath(path.List())
+	a.SetSolvePath(path)
 	a.SetSolveSteps(totalStep)
 	a.SetTravelPath(travelPath)
 

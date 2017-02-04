@@ -249,21 +249,25 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-func (g *Grid) DrawPath(r *sdl.Renderer, path []*Cell, markVisited bool) *sdl.Renderer {
+func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
 
-	// keep trakc of how many times we've seen this cell, used for animating visit boxes
+	// keep track of how many times we've seen this cell, used for animating visit boxes
 	visitMap := make(map[*Cell]int)
+	var isLast bool
 
-	for x, cell := range path {
-		visitMap[cell]++
+	for x, segment := range path.segments {
+		if x == len(path.segments)-1 {
+			isLast = true // last segment is drawn slightly different
+		}
+		visitMap[segment.Cell()]++
 
-		cell.DrawPath(r)
+		segment.DrawPath(r, isLast)
 		if markVisited {
-			cell.DrawVisited(r, visitMap[cell])
+			segment.Cell().DrawVisited(r, visitMap[segment.Cell()])
 		}
 
-		if x == len(path)-1 {
-			cell.DrawCurrentLocation(r)
+		if isLast {
+			segment.Cell().DrawCurrentLocation(r)
 		}
 
 	}
@@ -551,6 +555,26 @@ func (g *Grid) ResetVisited() {
 		c.SetUnVisited()
 	}
 
+}
+
+// GetFacingDirection returns the direction walker was facing when moving fromCell -> toCell
+// north, south, east, west
+func (g *Grid) GetFacingDirection(fromCell, toCell *Cell) string {
+	facing := ""
+
+	if fromCell.North == toCell {
+		facing = "north"
+	}
+	if fromCell.East == toCell {
+		facing = "east"
+	}
+	if fromCell.West == toCell {
+		facing = "west"
+	}
+	if fromCell.South == toCell {
+		facing = "south"
+	}
+	return facing
 }
 
 type Distances struct {
@@ -1022,4 +1046,144 @@ func (c *Cell) RandomNeighbor() *Cell {
 		}
 	}
 	return n[utils.Random(0, len(n))]
+}
+
+// GetFacingDirection returns the direction walker was facing when moving to toCell from this cell
+// north, south, east, west
+func (c *Cell) GetFacingDirection(toCell *Cell) string {
+	facing := ""
+
+	if c.North == toCell {
+		facing = "north"
+	}
+	if c.East == toCell {
+		facing = "east"
+	}
+	if c.West == toCell {
+		facing = "west"
+	}
+	if c.South == toCell {
+		facing = "south"
+	}
+	return facing
+}
+
+// Path is a path (ordered collection of cells) through the maze
+type Path struct {
+	segments []*PathSegment
+}
+
+func NewPath() *Path {
+	return &Path{segments: make([]*PathSegment, 0)}
+}
+
+// PathSegment is one segement of a path. A cell, and metadata.
+type PathSegment struct {
+	cell   *Cell
+	facing string // when you came in, which way were you facing (north, south, east, west)
+}
+
+func NewSegment(c *Cell, f string) *PathSegment {
+	return &PathSegment{cell: c, facing: f}
+}
+
+func (ps *PathSegment) Cell() *Cell {
+	return ps.cell
+}
+
+func (ps *PathSegment) Facing() string {
+	return ps.facing
+}
+
+// DrawPath draws the path as present in the cells
+func (c *PathSegment) DrawPath(r *sdl.Renderer, isLast bool) *sdl.Renderer {
+	colors.SetDrawColor(c.Cell().pathColor, r)
+	pathWidth := c.Cell().pathWidth
+	PixelsPerCell := c.Cell().width
+
+	// these are the path segments from the middle towards the given direction
+	paths := map[string]*sdl.Rect{
+		"east": &sdl.Rect{
+			int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
+			int32(PixelsPerCell/2 + c.Cell().wallWidth),
+			int32(pathWidth)},
+		"west": &sdl.Rect{
+			int32(c.Cell().column*PixelsPerCell + c.Cell().wallWidth),
+			int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
+			int32(PixelsPerCell/2 + pathWidth - c.Cell().wallWidth),
+			int32(pathWidth)},
+		"north": &sdl.Rect{
+			int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.Cell().row*PixelsPerCell + c.Cell().wallWidth),
+			int32(pathWidth),
+			int32(PixelsPerCell/2 - c.Cell().wallWidth)},
+		"south": &sdl.Rect{
+			int32(c.Cell().column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.Cell().row*PixelsPerCell + PixelsPerCell/2),
+			int32(pathWidth),
+			int32(PixelsPerCell/2 + c.Cell().wallWidth)},
+	}
+
+	if isLast {
+		log.Printf("facing: %v", c.facing)
+		switch c.Facing() {
+		case "east":
+			r.FillRect(paths["west"])
+		case "west":
+			r.FillRect(paths["east"])
+		case "north":
+			r.FillRect(paths["south"])
+		case "south":
+			r.FillRect(paths["north"])
+		}
+
+	} else {
+		if c.Cell().pathEast {
+			r.FillRect(paths["east"])
+
+		}
+		if c.Cell().pathWest {
+			r.FillRect(paths["west"])
+
+		}
+		if c.Cell().pathNorth {
+			r.FillRect(paths["north"])
+
+		}
+		if c.Cell().pathSouth {
+			r.FillRect(paths["south"])
+
+		}
+	}
+
+	return r
+}
+
+func (p *Path) AddSegement(s *PathSegment) {
+	p.segments = append(p.segments, s)
+
+}
+
+func (p *Path) AddSegements(s []*PathSegment) {
+	for _, seg := range s {
+		p.segments = append(p.segments, seg)
+	}
+}
+
+// DelSegement removes the last segment from the path
+func (p *Path) DelSegement() {
+	p.segments = p.segments[:len(p.segments)]
+}
+
+func (p *Path) List() []*PathSegment {
+	return p.segments
+}
+
+func (p *Path) ListCells() []*Cell {
+	var cells []*Cell
+	for _, s := range p.segments {
+		cells = append(cells, s.Cell())
+	}
+	return cells
 }
