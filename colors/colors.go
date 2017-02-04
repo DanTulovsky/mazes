@@ -22,6 +22,7 @@ var (
 		"maroon":   {R: 128, G: 0, B: 0, A: 255, Name: "maroon"},
 		"navy":     {R: 0, G: 0, B: 128, A: 255, Name: "navy"},
 		"olive":    {R: 128, G: 128, B: 0, A: 255, Name: "olive"},
+		"pink":     {R: 255, G: 192, B: 203, A: 255, Name: "pink"},
 		"purple":   {R: 128, G: 0, B: 128, A: 255, Name: "purple"},
 		"red":      {R: 255, G: 0, B: 0, A: 255, Name: "red"},
 		"silver":   {R: 192, G: 192, B: 192, A: 255, Name: "silver"},

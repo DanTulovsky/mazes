@@ -31,12 +31,12 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay
 
 		// prefer unvisited first
 		nextCell := currentCell.RandomUnvisitedLink()
-		facing = currentCell.GetFacingDirection(nextCell)
 
 		if nextCell == nil {
 			nextCell = currentCell.RandomLink()
 		}
 
+		facing = currentCell.GetFacingDirection(nextCell)
 		currentCell = nextCell
 
 	}
