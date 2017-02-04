@@ -96,8 +96,11 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 	}
 
 	// last cell
-	travelPath.AddSegement(grid.NewSegment(toCell, facing))
+	segment := grid.NewSegment(toCell, facing)
+	travelPath.AddSegement(segment)
+	solvePath.AddSegement(segment)
 	g.SetPathFromTo(fromCell, toCell, solvePath.ListCells())
+
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
