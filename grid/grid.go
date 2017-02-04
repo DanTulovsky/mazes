@@ -29,17 +29,18 @@ func Fail(err error) {
 
 // Config defines the configuration parameters passed to the Grid
 type Config struct {
-	Rows             int
-	Columns          int
-	CellWidth        int // cell width
-	WallWidth        int
-	PathWidth        int
-	MarkVisitedCells bool
-	VisitedCellColor colors.Color
-	BgColor          colors.Color
-	BorderColor      colors.Color
-	WallColor        colors.Color
-	PathColor        colors.Color
+	Rows                 int
+	Columns              int
+	CellWidth            int // cell width
+	WallWidth            int
+	PathWidth            int
+	MarkVisitedCells     bool
+	VisitedCellColor     colors.Color
+	BgColor              colors.Color
+	BorderColor          colors.Color
+	WallColor            colors.Color
+	PathColor            colors.Color
+	CurrentLocationColor colors.Color
 }
 
 // CheckConfig makes sure the config is valid
@@ -248,16 +249,30 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-func (g *Grid) DrawPath(r *sdl.Renderer, path []*Cell) *sdl.Renderer {
+func (g *Grid) DrawPath(r *sdl.Renderer, path []*Cell, markVisited bool) *sdl.Renderer {
 
-	for _, cell := range path {
+	// keep trakc of how many times we've seen this cell, used for animating visit boxes
+	visitMap := make(map[*Cell]int)
+
+	for x, cell := range path {
+		visitMap[cell]++
+
 		cell.DrawPath(r)
+		if markVisited {
+			cell.DrawVisited(r, visitMap[cell])
+		}
+
+		if x == len(path)-1 {
+			cell.DrawCurrentLocation(r)
+		}
+
 	}
 
 	return r
 }
 
 // DrawVisited renders the gui maze visited dots in memory, display by calling Present
+// This function draws the entire path at once
 func (g *Grid) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 	for x := 0; x < g.columns; x++ {
 		for y := 0; y < g.rows; y++ {
@@ -265,7 +280,7 @@ func (g *Grid) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
-			cell.DrawVisited(r)
+			cell.DrawVisited(r, 0) // 0 means use the visited times from the cell itself
 		}
 	}
 
@@ -806,13 +821,19 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
-func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
+// DrawVisited draws the visited marker. If num is supplied and is not 0, use that as the times visited. Used for animation.
+func (c *Cell) DrawVisited(r *sdl.Renderer, num int) *sdl.Renderer {
 	PixelsPerCell := c.width
 
 	if c.config.MarkVisitedCells && c.Visited() {
 		colors.SetDrawColor(c.config.VisitedCellColor, r)
 
-		factor := c.VisitedTimes()
+		times := c.VisitedTimes()
+		if num != 0 {
+			times = num
+		}
+
+		factor := times * 3
 
 		offset := int32(c.wallWidth/4 + c.wallWidth)
 		h, w := int32(c.width/10+factor), int32(c.width/10+factor)
@@ -826,6 +847,21 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 		box := &sdl.Rect{int32(c.column*PixelsPerCell+c.wallWidth) + offset, int32(c.row*PixelsPerCell+c.wallWidth) + offset, h, w}
 		r.FillRect(box)
 	}
+
+	return r
+}
+
+// DrawCurrentLocation marks the current location of the user
+func (c *Cell) DrawCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+	PixelsPerCell := c.width
+	colors.SetDrawColor(c.config.CurrentLocationColor, r)
+
+	avatar := &sdl.Rect{
+		int32(c.column*PixelsPerCell + PixelsPerCell/2),
+		int32(c.row*PixelsPerCell + PixelsPerCell/2),
+		int32(c.pathWidth * 6),
+		int32(c.pathWidth * 6)}
+	r.FillRect(avatar)
 
 	return r
 }

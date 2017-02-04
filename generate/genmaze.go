@@ -22,10 +22,6 @@ import (
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
-const (
-	FrameRate = 30
-)
-
 var (
 	winTitle string                      = "Maze"
 	actions  map[string]func(*grid.Grid) = map[string]func(*grid.Grid){
@@ -33,75 +29,77 @@ var (
 		"shortestRandomPath": drawShortestPathRandomCells,
 	}
 
-	//w            *sdl.Window
-	//r            *sdl.Renderer
-	//sdlErr       error
+	w            *sdl.Window
+	r            *sdl.Renderer
+	sdlErr       error
 	runningMutex sync.Mutex
 
 	solver solvealgos.Algorithmer
 
-	rows             = flag.Int("r", 60, "number of rows in the maze")
-	columns          = flag.Int("c", 60, "number of rows in the maze")
-	bgColor          = flag.String("bgcolor", "white", "background color")
-	wallColor        = flag.String("wall_color", "black", "wall color")
-	borderColor      = flag.String("border_color", "black", "border color")
-	pathColor        = flag.String("path_color", "red", "border color")
-	visitedCellColor = flag.String("visited_color", "red", "color of visited cell marker")
-	cellWidth        = flag.Int("w", 10, "cell width")
-	wallWidth        = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	pathWidth        = flag.Int("path_width", 2, "path width")
-	showAscii        = flag.Bool("ascii", false, "show ascii maze")
-	showGUI          = flag.Bool("gui", true, "show gui maze")
-	showStats        = flag.Bool("stats", false, "show maze stats")
-	markVisitedCells = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	createAlgo       = flag.String("create_algo", "bintree", "algorithm used to create the maze")
-	exportFile       = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	actionToRun      = flag.String("action", "", "action to run")
-	solveAlgo        = flag.String("solve_algo", "", "algorithm to solve the maze")
+	rows                 = flag.Int("r", 60, "number of rows in the maze")
+	columns              = flag.Int("c", 60, "number of rows in the maze")
+	bgColor              = flag.String("bgcolor", "white", "background color")
+	wallColor            = flag.String("wall_color", "black", "wall color")
+	borderColor          = flag.String("border_color", "black", "border color")
+	currentLocationColor = flag.String("location_color", "yellow", "border color")
+	pathColor            = flag.String("path_color", "red", "border color")
+	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
+	cellWidth            = flag.Int("w", 10, "cell width")
+	wallWidth            = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	pathWidth            = flag.Int("path_width", 2, "path width")
+	showAscii            = flag.Bool("ascii", false, "show ascii maze")
+	showGUI              = flag.Bool("gui", true, "show gui maze")
+	showStats            = flag.Bool("stats", false, "show maze stats")
+	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
+	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
+	exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	actionToRun          = flag.String("action", "", "action to run")
+	solveAlgo            = flag.String("solve_algo", "", "algorithm to solve the maze")
+	frameRate            = flag.Uint("frame_rate", 60, "frame rate for animation")
 )
 
-//func setupSDL() {
-//	if !*showGUI {
-//		return
-//	}
-//	sdl.Do(func() {
-//		sdl.Init(sdl.INIT_EVERYTHING)
-//		sdl.EnableScreenSaver()
-//	})
-//
-//	// window
-//	winWidth := (*columns)**cellWidth + *wallWidth*2
-//	winHeight := (*rows)**cellWidth + *wallWidth*2
-//
-//	sdl.Do(func() {
-//		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
-//			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-//			winWidth, winHeight, sdl.WINDOW_SHOWN)
-//	})
-//	if sdlErr != nil {
-//		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
-//		os.Exit(1)
-//	}
-//
-//	// renderer
-//	sdl.Do(func() {
-//		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
-//	})
-//	if sdlErr != nil {
-//		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", sdlErr)
-//		os.Exit(1)
-//	}
-//
-//	// Set options
-//	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
-//	sdl.Do(func() {
-//		r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-//	})
-//
-//	sdl.Do(func() {
-//		r.Clear()
-//	})
-//}
+func setupSDL() {
+	if !*showGUI {
+		return
+	}
+	sdl.Do(func() {
+		sdl.Init(sdl.INIT_EVERYTHING)
+		sdl.EnableScreenSaver()
+	})
+
+	// window
+	winWidth := (*columns)**cellWidth + *wallWidth*2
+	winHeight := (*rows)**cellWidth + *wallWidth*2
+
+	sdl.Do(func() {
+		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
+			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
+			winWidth, winHeight, sdl.WINDOW_SHOWN)
+	})
+	if sdlErr != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
+		os.Exit(1)
+	}
+
+	// renderer
+	sdl.Do(func() {
+		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
+	})
+	if sdlErr != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", sdlErr)
+		os.Exit(1)
+	}
+
+	// Set options
+	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
+	sdl.Do(func() {
+		r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
+	})
+
+	sdl.Do(func() {
+		r.Clear()
+	})
+}
 
 // checkCreateAlgo makes sure the passed in algorithm is valid
 func checkCreateAlgo(a string) bool {
@@ -203,59 +201,13 @@ func run() int {
 	// profiling
 	// defer profile.Start().Stop()
 
-	// For https://github.com/veandco/go-sdl2#faq
-	// runtime.LockOSThread()
-
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-
-	// setupSDL()
-	//sdl.Do(func() {
-	//	sdl.Init(sdl.INIT_EVERYTHING)
-	//	sdl.EnableScreenSaver()
-	//})
-
-	var w *sdl.Window
-	var r *sdl.Renderer
-	var sdlErr error
-
-	// window
-	winWidth := (*columns)**cellWidth + *wallWidth*2
-	winHeight := (*rows)**cellWidth + *wallWidth*2
-
-	sdl.Do(func() {
-		// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
-			winWidth, winHeight, sdl.WINDOW_SHOWN)
-	})
-	if sdlErr != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
-		os.Exit(1)
-	}
-
-	// renderer
-	sdl.Do(func() {
-		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
-	})
-	if sdlErr != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", sdlErr)
-		os.Exit(1)
-	}
-
-	// Set options
-	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
-	sdl.Do(func() {
-		r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-	})
-
-	sdl.Do(func() {
-		r.Clear()
-	})
+	setupSDL()
 
 	defer func() { sdl.Do(func() { w.Destroy() }) }()
 	defer func() { sdl.Do(func() { r.Destroy() }) }()
-
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,17 +216,18 @@ func run() int {
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	config := &grid.Config{
-		Rows:             *rows,
-		Columns:          *columns,
-		CellWidth:        *cellWidth,
-		WallWidth:        *wallWidth,
-		PathWidth:        *pathWidth,
-		BgColor:          colors.GetColor(*bgColor),
-		BorderColor:      colors.GetColor(*borderColor),
-		WallColor:        colors.GetColor(*wallColor),
-		PathColor:        colors.GetColor(*pathColor),
-		VisitedCellColor: colors.GetColor(*visitedCellColor),
-		MarkVisitedCells: *markVisitedCells,
+		Rows:                 *rows,
+		Columns:              *columns,
+		CellWidth:            *cellWidth,
+		WallWidth:            *wallWidth,
+		PathWidth:            *pathWidth,
+		BgColor:              colors.GetColor(*bgColor),
+		BorderColor:          colors.GetColor(*borderColor),
+		WallColor:            colors.GetColor(*wallColor),
+		PathColor:            colors.GetColor(*pathColor),
+		VisitedCellColor:     colors.GetColor(*visitedCellColor),
+		MarkVisitedCells:     *markVisitedCells,
+		CurrentLocationColor: colors.GetColor(*currentLocationColor),
 	}
 
 	g, err := grid.NewGrid(config)
@@ -384,38 +337,25 @@ func run() int {
 
 			// update display
 			// wg := sync.WaitGroup{}
+			// wg.Add(1)
 
-			// make path
-			//wg.Add(1)
-			//go func() {
-			//	sdl.Do(func() {
-			//		g.DrawPath(r, solver.SolvePath())
-			//	})
-			//	wg.Done()
-			//}()
-
+			// used to draw only a part of the path
 			x := animation
 			if x > len(solver.TravelPath()) {
 				x = len(solver.TravelPath()) - 1
 			}
 			sdl.Do(func() {
-				g.DrawPath(r, solver.TravelPath()[0:x])
+				g.DrawPath(r, solver.TravelPath()[0:x], *markVisitedCells)
 
 			})
 			animation++
-
-			if x == len(solver.TravelPath())-1 {
-				sdl.Do(func() {
-					g.DrawVisited(r)
-				})
-			}
 
 			// wg.Wait()
 
 			// render path and markers
 			sdl.Do(func() {
 				r.Present()
-				sdl.Delay(1000 / FrameRate)
+				sdl.Delay(uint32(1000 / *frameRate))
 				// fmt.Print("Press 'Enter' to continue...")
 				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})

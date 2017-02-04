@@ -41,6 +41,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Stack) bool {
 	// make sure to count when backtracking
 	totalStep++
 	currentCell.SetVisited()
+	travelPath = append(travelPath, currentCell)
 
 	return false
 }
