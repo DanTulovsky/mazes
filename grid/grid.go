@@ -369,9 +369,9 @@ func (g *Grid) Size() int {
 func (g *Grid) Rows() [][]*Cell {
 	rows := [][]*Cell{}
 
-	for y := 0; y < g.rows; y++ {
+	for y := g.rows - 1; y >= 0; y-- {
 		cells := []*Cell{}
-		for x := 0; x < g.columns; x++ {
+		for x := g.columns - 1; x >= 0; x-- {
 			cell, _ := g.Cell(x, y)
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
@@ -388,8 +388,8 @@ func (g *Grid) Cells() []*Cell {
 		return g.mazeCells
 	}
 	cells := []*Cell{}
-	for y := 0; y < g.rows; y++ {
-		for x := 0; x < g.columns; x++ {
+	for y := g.rows - 1; y >= 0; y-- {
+		for x := g.columns - 1; x >= 0; x-- {
 			cell := g.cells[x][y]
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
@@ -451,9 +451,6 @@ func (g *Grid) ConnectCells(cells []*Cell) {
 
 // LongestPath returns the longest path through the maze
 func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
-
-	utils.TimeTrack(time.Now(), "LongestPath")
-
 	// pick random starting point
 	fromCell = g.RandomCell()
 
@@ -486,27 +483,6 @@ func (g *Grid) SetFromToColors(fromCell, toCell *Cell) {
 	g.toCell = toCell
 }
 
-// SetPath draws the shortest path from fromCell to toCell
-// TODO(dant): Move this into solver
-func (g *Grid) SetPath(fromCell, toCell *Cell) {
-	_, path := g.ShortestPath(fromCell, toCell)
-	g.SetFromToColors(fromCell, toCell)
-
-	var prev, next *Cell
-	for x := 0; x < len(path.ListCells()); x++ {
-		if x > 0 {
-			prev = path.ListCells()[x-1]
-		} else {
-			prev = path.ListCells()[x]
-		}
-
-		if x < len(path.ListCells())-1 {
-			next = path.ListCells()[x+1]
-		}
-		path.ListCells()[x].SetPaths(prev, next)
-	}
-}
-
 // SetPathFromTo draws the given path from fromCell to toCell
 func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 	// g.SetFromToColors(fromCell, toCell)
@@ -527,13 +503,12 @@ func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 
 // ShortestPath finds the shortest path from fromCell to toCell
 func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
-	utils.TimeTrack(time.Now(), "ShortestPath")
-
 	if path := fromCell.PathTo(toCell); path != nil {
 		return path.Length(), path
 	}
 
 	var path = NewPath()
+
 	// Get all distances from this cell
 	d := fromCell.Distances()
 	toCellDist, _ := d.Get(toCell)

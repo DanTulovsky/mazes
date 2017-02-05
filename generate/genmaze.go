@@ -38,7 +38,7 @@ var (
 
 	mask []grid.Location = make([]grid.Location, 0)
 
-	rows                 = flag.Int("r", 60, "number of rows in the maze")
+	rows                 = flag.Int("r", 30, "number of rows in the maze")
 	columns              = flag.Int("c", 60, "number of rows in the maze")
 	bgColor              = flag.String("bgcolor", "white", "background color")
 	wallColor            = flag.String("wall_color", "black", "wall color")
@@ -46,7 +46,7 @@ var (
 	currentLocationColor = flag.String("location_color", "lime", "border color")
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
-	cellWidth            = flag.Int("w", 10, "cell width (best as multiple of 2)")
+	cellWidth            = flag.Int("w", 20, "cell width (best as multiple of 2)")
 	wallWidth            = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	pathWidth            = flag.Int("path_width", 2, "path width")
 	showAscii            = flag.Bool("ascii", false, "show ascii maze")
@@ -54,12 +54,12 @@ var (
 	showGUI              = flag.Bool("gui", true, "show gui maze")
 	showStats            = flag.Bool("stats", false, "show maze stats")
 	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
+	createAlgo           = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	maskImage            = flag.String("mask_image", "", "file name of mask image")
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate      = flag.Uint("frame_rate", 120, "frame rate for animation")
-	genDrawDelay   = flag.String("gen_draw_delay", "50ms", "solver delay per step, used for animation")
+	genDrawDelay   = flag.String("gen_draw_delay", "1000us", "solver delay per step, used for animation")
 	solveDrawDelay = flag.String("solve_draw_delay", "50ms", "solver delay per step, used for animation")
 )
 
@@ -252,6 +252,7 @@ func addToMask(x, y int) {
 // The size of the maze is the size of the image, in pixels.
 // Any *black* pixel in the mask image becomes an orphan square.
 func setupGridFromMaskImage(f string) {
+
 	// read in image
 	reader, err := os.Open(f)
 	if err != nil {
@@ -264,7 +265,8 @@ func setupGridFromMaskImage(f string) {
 	}
 
 	bounds := m.Bounds()
-	log.Printf("image size: (%v, %v) x (%v, %v)", bounds.Min.X, bounds.Max.X, bounds.Min.Y, bounds.Max.Y)
+	*columns = bounds.Max.X
+	*rows = bounds.Max.Y
 
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
@@ -276,9 +278,6 @@ func setupGridFromMaskImage(f string) {
 
 		}
 	}
-
-	*columns = bounds.Max.X
-	*rows = bounds.Max.Y
 }
 
 func run() int {
@@ -291,6 +290,7 @@ func run() int {
 	// Mask image if provided.
 	// If the mask image is provided, use that as the dimensions of the grid
 	if *maskImage != "" {
+		log.Printf("Using %v as grid mask", *maskImage)
 		setupGridFromMaskImage(*maskImage)
 	}
 
@@ -364,6 +364,8 @@ func run() int {
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
+
+		log.Printf("running generator %v", *createAlgo)
 		g, err = algo.Apply(g, delay)
 		if err != nil {
 			log.Fatalf(err.Error())

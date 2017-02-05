@@ -25,7 +25,7 @@ func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error
 	for _, row := range g.Rows() {
 		var run []*grid.Cell
 
-		for x := 0; x < len(row); x++ {
+		for x := len(row) - 1; x >= 0; x-- {
 			time.Sleep(delay) // animation delay
 
 			cell := row[x]
@@ -43,7 +43,7 @@ func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error
 					continue
 				} else if cell.North != nil {
 					// close out run, we are at the far right wall
-					if x != len(row)-1 {
+					if x != 0 {
 						// something went wrong!
 						log.Fatalf("x=%v; expected x=%v (should be at far right)", x, len(row)-1)
 					}
