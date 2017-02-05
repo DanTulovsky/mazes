@@ -254,6 +254,9 @@ func addToMask(x, y int) {
 	mask = append(mask, l)
 }
 
+// setupGridFromMaskImage reads in the mask image and creates the maze based on it.
+// The size of the maze is the size of the image, in pixels.
+// Any *black* pixel in the mask image becomes an orphan square.
 func setupGridFromMaskImage(f string) {
 	// read in image
 	reader, err := os.Open(f)
@@ -349,9 +352,6 @@ func run() int {
 	//		action(g)
 	//	}
 	//
-	if *showStats {
-		showMazeStats(g)
-	}
 	//}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -374,6 +374,10 @@ func run() int {
 		}
 		if err := algo.CheckGrid(g); err != nil {
 			log.Fatalf("maze is not valid: %v", err)
+		}
+
+		if *showStats {
+			showMazeStats(g)
 		}
 
 		if *solveAlgo != "" {
