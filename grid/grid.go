@@ -639,7 +639,6 @@ func (d *Distances) Cells() []*Cell {
 		cells = append(cells, c)
 	}
 	return cells
-
 }
 
 // Set sets the distance to the provided cell
@@ -664,7 +663,8 @@ type Cell struct {
 	// keep track of neighborgs
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
-	links map[*Cell]bool
+	// links map[*Cell]bool
+	links SafeMap
 	// distances to other cells
 	distances *Distances
 	// How many times has this cell been visited?
@@ -705,7 +705,7 @@ func NewCell(x, y int, c *Config) *Cell {
 	cell := &Cell{
 		row:       y,
 		column:    x,
-		links:     make(map[*Cell]bool),
+		links:     NewSafeMap(),
 		bgColor:   c.BgColor,   // default
 		wallColor: c.WallColor, // default
 		pathColor: c.PathColor, //default
@@ -996,11 +996,11 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 }
 
 func (c *Cell) linkOneWay(cell *Cell) {
-	c.links[cell] = true
+	c.links.Insert(cell, true)
 }
 
 func (c *Cell) unLinkOneWay(cell *Cell) {
-	delete(c.links, cell)
+	c.links.Delete(cell)
 }
 
 // Link links a cell to its neighbor (adds passage)
@@ -1018,8 +1018,8 @@ func (c *Cell) UnLink(cell *Cell) {
 // Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
-	for k, linked := range c.links {
-		if linked {
+	for _, k := range c.links.Keys() {
+		if c.Linked(k) {
 			keys = append(keys, k)
 		}
 	}
@@ -1029,8 +1029,8 @@ func (c *Cell) Links() []*Cell {
 // RandomLink returns a random cell linked to this one
 func (c *Cell) RandomLink() *Cell {
 	var keys []*Cell
-	for k, linked := range c.links {
-		if linked {
+	for _, k := range c.links.Keys() {
+		if c.Linked(k) {
 			keys = append(keys, k)
 		}
 	}
@@ -1040,7 +1040,8 @@ func (c *Cell) RandomLink() *Cell {
 // RandomUnvisitedLink returns a random cell linked to this one that has not been visited
 func (c *Cell) RandomUnvisitedLink() *Cell {
 	var keys []*Cell
-	for k, linked := range c.links {
+	for _, k := range c.links.Keys() {
+		linked := c.Linked(k)
 		if linked && !k.Visited() {
 			keys = append(keys, k)
 		}
@@ -1053,11 +1054,11 @@ func (c *Cell) RandomUnvisitedLink() *Cell {
 
 // Linked returns true if the two cells are linked (joined by a passage)
 func (c *Cell) Linked(cell *Cell) bool {
-	linked, ok := c.links[cell]
+	linked, ok := c.links.Find(cell)
 	if !ok {
 		return false
 	}
-	return linked
+	return linked.(bool)
 }
 
 // Neighbors returns a list of all cells that are neighbors (weather connected by passage or not)
