@@ -250,6 +250,10 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 			if cell.IsOrphan() {
 				continue
 			}
+			if cell.config.DarkMode && !cell.Visited() {
+				// in dark mode don't draw unvisited cells
+				continue
+			}
 			cell.Draw(r)
 		}
 	}

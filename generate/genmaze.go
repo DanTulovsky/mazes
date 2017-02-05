@@ -56,6 +56,7 @@ var (
 	wallWidth            = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	pathWidth            = flag.Int("path_width", 2, "path width")
 	showAscii            = flag.Bool("ascii", false, "show ascii maze")
+	darkMode             = flag.Bool("dark_mode", false, "only show cells solver has seen")
 	showGUI              = flag.Bool("gui", true, "show gui maze")
 	showStats            = flag.Bool("stats", false, "show maze stats")
 	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
@@ -328,6 +329,7 @@ func run() int {
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
 		OrphanMask:           mask,
+		DarkMode:             *darkMode,
 	}
 
 	g, err := grid.NewGrid(config)
