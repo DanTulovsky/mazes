@@ -15,6 +15,9 @@ import (
 
 	"mazes/solvealgos"
 	"time"
+
+	"image"
+	_ "image/png"
 )
 
 // For gui support
@@ -57,6 +60,7 @@ var (
 	showStats            = flag.Bool("stats", false, "show maze stats")
 	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
+	maskImage            = flag.String("mask_image", "", "file name of mask image")
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	actionToRun    = flag.String("action", "", "action to run")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
@@ -250,12 +254,47 @@ func addToMask(x, y int) {
 	mask = append(mask, l)
 }
 
+func setupGridFromMaskImage(f string) {
+	// read in image
+	reader, err := os.Open(f)
+	if err != nil {
+		log.Fatalf("failed to open mask image file: %v", err)
+	}
+
+	m, _, err := image.Decode(reader)
+	if err != nil {
+		log.Fatalf("error decoding image: %v", err)
+	}
+
+	bounds := m.Bounds()
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, a := m.At(x, y).RGBA()
+			// this only works for black, fix my colors to use the go image package colors
+			if colors.Same(colors.GetColor("black"), colors.Color{uint8(r), uint8(g), uint8(b), uint8(a), ""}) {
+				addToMask(x, y)
+			}
+
+		}
+	}
+
+	*columns = bounds.Max.X
+	*rows = bounds.Max.Y
+}
+
 func run() int {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// profiling
 	// defer profile.Start().Stop()
+
+	// Mask image if provided.
+	// If the mask image is provided, use that as the dimensions of the grid
+	if *maskImage != "" {
+		setupGridFromMaskImage(*maskImage)
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
@@ -267,11 +306,6 @@ func run() int {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	addToMask(0, 0)
-	addToMask(0, *rows-1)
-	addToMask(*columns/2, *rows/2)
-	addToMask(*columns-1, *rows-1)
-	addToMask(*columns-1, 0)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid

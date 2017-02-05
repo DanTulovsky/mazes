@@ -71,3 +71,11 @@ func SetDrawColor(c Color, r *sdl.Renderer) *sdl.Renderer {
 	}
 	return r
 }
+
+// Same return true if the two colors are the same, ignores color mask
+func Same(a, b Color) bool {
+	if a.R == b.R && a.G == b.G && a.B == b.B {
+		return true
+	}
+	return false
+}
