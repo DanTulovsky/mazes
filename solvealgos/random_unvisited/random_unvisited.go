@@ -30,7 +30,7 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay
 		segment := grid.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
-		g.SetPathFromTo(fromCell, currentCell, travelPath.ListCells())
+		g.SetPathFromTo(fromCell, currentCell, travelPath)
 
 		// prefer unvisited first
 		nextCell := currentCell.RandomUnvisitedLink()
@@ -49,12 +49,12 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay
 	segment := grid.NewSegment(currentCell, facing)
 	travelPath.AddSegement(segment)
 	travelPath.AddSegement(segment)
-	g.SetPathFromTo(fromCell, toCell, solvePath.ListCells())
+	g.SetPathFromTo(fromCell, toCell, solvePath)
 
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(len(solvePath.ListCells()))
+	a.SetSolveSteps(solvePath.Length())
 
 	return g, nil
 }

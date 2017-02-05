@@ -37,6 +37,7 @@ func (a *AldousBroder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, err
 		}
 		currentCell = randomNeighbor
 	}
-	return g, nil
 
+	a.Cleanup(g)
+	return g, nil
 }

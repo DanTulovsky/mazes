@@ -30,7 +30,7 @@ func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Dur
 		segment := grid.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
-		g.SetPathFromTo(fromCell, currentCell, travelPath.ListCells())
+		g.SetPathFromTo(fromCell, currentCell, travelPath)
 
 		nextCell := currentCell.RandomLink()
 		facing = currentCell.GetFacingDirection(nextCell)
@@ -42,12 +42,12 @@ func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Dur
 	segment := grid.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
-	g.SetPathFromTo(fromCell, toCell, travelPath.ListCells())
+	g.SetPathFromTo(fromCell, toCell, travelPath)
 
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(len(solvePath.ListCells()))
+	a.SetSolveSteps(solvePath.Length())
 
 	return g, nil
 }

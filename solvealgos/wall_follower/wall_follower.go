@@ -66,7 +66,7 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 		segment := grid.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
-		g.SetPathFromTo(fromCell, currentCell, travelPath.ListCells())
+		g.SetPathFromTo(fromCell, currentCell, travelPath)
 
 		if currentCell.VisitedTimes() > 4 {
 			// we are stuck in a loop, fail
@@ -99,12 +99,12 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 	segment := grid.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
-	g.SetPathFromTo(fromCell, toCell, solvePath.ListCells())
+	g.SetPathFromTo(fromCell, toCell, solvePath)
 
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(len(solvePath.List())) // always the same as the actual path
+	a.SetSolveSteps(solvePath.Length()) // always the same as the actual path
 
 	return g, nil
 }

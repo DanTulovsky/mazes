@@ -235,6 +235,8 @@ func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
 
 // Draw renders the gui maze in memory, display by calling Present
 func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
+	// utils.TimeTrack(time.Now(), "DrawMaze")
+
 	// If saved, draw distance colors
 	if g.fromCell != nil {
 		g.SetDistanceColors(g.fromCell)
@@ -260,21 +262,39 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// Draw location of the generator algorithm
 	g.DrawGenCurrentLocation(r)
 
-	// Draw the path so far
-	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells, false)
+	// Draw the path
+	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells)
 
 	// Draw the final path
-	g.DrawPath(r, g.SolvePath, false, true)
+	// g.DrawPath(r, g.SolvePath, false, true)
 
+	// Draw the location of the solver algorithm
+	g.DrawSolveCurrentLocation(r)
 	return r
 }
 
-func (g *Grid) DrawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
-	for _, cell := range g.Cells() {
-		cell.bgColor = colors.GetColor("white")
+func (g *Grid) DrawSolveCurrentLocation(r *sdl.Renderer) {
+
+	if g.TravelPath == nil {
+		return
 	}
 
+	segment := g.TravelPath.LastSegment()
+	if segment != nil {
+		cell := segment.Cell()
+		if cell != nil {
+			cell.DrawCurrentLocation(r)
+		}
+	}
+}
+
+func (g *Grid) DrawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+
 	if g.genCurrentLocation != nil {
+		for _, cell := range g.Cells() {
+			cell.bgColor = colors.GetColor("white")
+		}
+
 		g.genCurrentLocation.bgColor = colors.GetColor("yellow")
 	}
 	return r
@@ -282,12 +302,12 @@ func (g *Grid) DrawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawPath renders the gui maze path in memory, display by calling Present
 // This is drawing g.TravelPath if path == nil
-func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited, isSolution bool) *sdl.Renderer {
-
+func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
 	if path == nil {
 		path = g.TravelPath
 	}
 
+	var isSolution bool
 	var isLast bool
 
 	for x, segment := range path.segments {
@@ -295,13 +315,14 @@ func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited, isSolution boo
 			isLast = true // last segment is drawn slightly different
 		}
 
+		if CellInCellList(segment.Cell(), g.SolvePath.ListCells()) {
+			isSolution = true
+		} else {
+			isSolution = false
+		}
 		segment.DrawPath(r, g, isLast, isSolution) // solution is colored by a different color
 		if markVisited {
 			segment.Cell().DrawVisited(r)
-		}
-
-		if isLast {
-			segment.Cell().DrawCurrentLocation(r)
 		}
 
 	}
@@ -490,20 +511,20 @@ func (g *Grid) SetPath(fromCell, toCell *Cell) {
 }
 
 // SetPathFromTo draws the given path from fromCell to toCell
-func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
+func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 	// g.SetFromToColors(fromCell, toCell)
 
 	var prev, next *Cell
-	for x := 0; x < len(path); x++ {
+	for x := 0; x < path.Length(); x++ {
 		if x > 0 {
-			prev = path[x-1]
+			prev = path.segments[x-1].Cell()
 		}
 
-		if x < len(path)-1 {
-			next = path[x+1]
+		if x < path.Length()-1 {
+			next = path.segments[x+1].Cell()
 		}
 
-		path[x].SetPaths(prev, next)
+		path.segments[x].Cell().SetPaths(prev, next)
 	}
 }
 
@@ -1257,6 +1278,9 @@ func (p *Path) AddSegements(s []*PathSegment) {
 }
 
 func (p *Path) LastSegment() *PathSegment {
+	if len(p.segments) == 0 {
+		return nil
+	}
 	return p.segments[len(p.segments)-1]
 }
 
@@ -1267,6 +1291,11 @@ func (p *Path) DelSegement() {
 
 func (p *Path) List() []*PathSegment {
 	return p.segments
+}
+
+// Length returns the length of the path
+func (p *Path) Length() int {
+	return len(p.segments)
 }
 
 func (p *Path) ListCells() []*Cell {

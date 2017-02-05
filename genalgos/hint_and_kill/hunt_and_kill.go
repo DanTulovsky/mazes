@@ -63,6 +63,7 @@ func (a *HuntAndKill) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, erro
 		currentCell.Link(randomNeighbor)
 		currentCell = randomNeighbor
 	}
-	return g, nil
 
+	a.Cleanup(g)
+	return g, nil
 }

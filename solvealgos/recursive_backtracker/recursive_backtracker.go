@@ -29,7 +29,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay t
 	segment := grid.NewSegment(currentCell, facing)
 	path.AddSegement(segment)
 	travelPath.AddSegement(segment)
-	g.SetPathFromTo(startCell, currentCell, travelPath.ListCells())
+	g.SetPathFromTo(startCell, currentCell, travelPath)
 
 	if currentCell == toCell {
 		return true
@@ -54,7 +54,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay t
 		segmentReturn := grid.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segmentReturn)
 		currentCell.SetVisited()
-		g.SetPathFromTo(startCell, currentCell, travelPath.ListCells())
+		g.SetPathFromTo(startCell, currentCell, travelPath)
 
 	}
 	path.DelSegement()
@@ -74,11 +74,11 @@ func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, 
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
-	g.SetPathFromTo(fromCell, toCell, path.ListCells())
+	g.SetPathFromTo(fromCell, toCell, path)
 
 	// stats
 	a.SetSolvePath(path)
-	a.SetSolveSteps(len(travelPath.ListCells()))
+	a.SetSolveSteps(travelPath.Length())
 	a.SetTravelPath(travelPath)
 
 	return g, nil

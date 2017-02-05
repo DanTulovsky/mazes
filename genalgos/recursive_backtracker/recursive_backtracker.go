@@ -45,5 +45,6 @@ func (a *RecursiveBacktracker) Apply(g *grid.Grid, delay time.Duration) (*grid.G
 		cells.Push(randomNeighbor)
 	}
 
+	a.Cleanup(g)
 	return g, nil
 }

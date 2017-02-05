@@ -71,6 +71,7 @@ func (a *Wilsons) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 		// clear path
 		walkPath = []*grid.Cell{}
 	}
-	return g, nil
 
+	a.Cleanup(g)
+	return g, nil
 }

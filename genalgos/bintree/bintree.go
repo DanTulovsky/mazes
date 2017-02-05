@@ -39,5 +39,7 @@ func (a *Bintree) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 			currentCell.Link(neighbor)
 		}
 	}
+
+	a.Cleanup(g)
 	return g, nil
 }

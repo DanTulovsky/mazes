@@ -11,6 +11,7 @@ import (
 
 type Algorithmer interface {
 	Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error)
+	Cleanup(g *grid.Grid)
 	CheckGrid(g *grid.Grid) error
 }
 
@@ -83,6 +84,11 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 	}
 
 	return nil
+}
+
+// Cleanup cleans up after generator is done
+func (a *Common) Cleanup(g *grid.Grid) {
+	g.SetGenCurrentLocation(nil)
 }
 
 func TimeTrack(g *grid.Grid, start time.Time) {

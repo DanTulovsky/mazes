@@ -83,5 +83,6 @@ func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error
 
 	}
 
+	a.Cleanup(g)
 	return g, nil
 }

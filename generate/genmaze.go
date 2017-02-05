@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/pkg/profile"
 	"github.com/veandco/go-sdl2/sdl"
 
 	"flag"
@@ -42,7 +43,7 @@ var (
 	bgColor              = flag.String("bgcolor", "white", "background color")
 	wallColor            = flag.String("wall_color", "black", "wall color")
 	borderColor          = flag.String("border_color", "black", "border color")
-	currentLocationColor = flag.String("location_color", "yellow", "border color")
+	currentLocationColor = flag.String("location_color", "lime", "border color")
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
 	cellWidth            = flag.Int("w", 10, "cell width (best as multiple of 2)")
@@ -56,7 +57,7 @@ var (
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	actionToRun    = flag.String("action", "", "action to run")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
-	frameRate      = flag.Uint("frame_rate", 60, "frame rate for animation")
+	frameRate      = flag.Uint("frame_rate", 30, "frame rate for animation")
 	genDrawDelay   = flag.String("gen_draw_delay", "50ms", "solver delay per step, used for animation")
 	solveDrawDelay = flag.String("solve_draw_delay", "50ms", "solver delay per step, used for animation")
 )
@@ -240,7 +241,7 @@ func run() int {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// profiling
-	// defer profile.Start().Stop()
+	defer profile.Start().Stop()
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
