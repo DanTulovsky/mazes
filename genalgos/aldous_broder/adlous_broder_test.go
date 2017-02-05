@@ -44,7 +44,7 @@ func TestApply(t *testing.T) {
 			}
 		}
 
-		if g, err = a.Apply(g); err != nil {
+		if g, err = a.Apply(g, 0); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 
@@ -67,7 +67,7 @@ func BenchmarkApply(b *testing.B) {
 			b.Errorf("invalid config: %v", err)
 		}
 		a := setup()
-		a.Apply(g)
+		a.Apply(g, 0)
 	}
 
 }

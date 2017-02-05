@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/pkg/profile"
+	"sync"
+
 	"github.com/veandco/go-sdl2/sdl"
 
 	"flag"
@@ -31,12 +32,14 @@ var (
 	}
 	fromCell, toCell *grid.Cell
 
-	w      *sdl.Window
-	r      *sdl.Renderer
-	sdlErr error
-	// runningMutex sync.Mutex
+	w            *sdl.Window
+	r            *sdl.Renderer
+	sdlErr       error
+	runningMutex sync.Mutex
 
 	solver solvealgos.Algorithmer
+
+	mask []grid.Location = make([]grid.Location, 0)
 
 	rows                 = flag.Int("r", 60, "number of rows in the maze")
 	columns              = flag.Int("c", 60, "number of rows in the maze")
@@ -236,12 +239,23 @@ func main() {
 	os.Exit(run())
 }
 
+// addToMask adds location to grid mask (excluded cells) and checks for bounds errors
+func addToMask(x, y int) {
+	l := grid.Location{x, y}
+
+	if x >= *columns || y >= *rows || x < 0 || y < 0 {
+		log.Fatalf("invalid cell passed to mask: %v (grid size: %v %v)", l, *columns, *rows)
+	}
+
+	mask = append(mask, l)
+}
+
 func run() int {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// profiling
-	defer profile.Start().Stop()
+	// defer profile.Start().Stop()
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
@@ -253,6 +267,11 @@ func run() int {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
+	addToMask(0, 0)
+	addToMask(0, *rows-1)
+	addToMask(*columns/2, *rows/2)
+	addToMask(*columns-1, *rows-1)
+	addToMask(*columns-1, 0)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
@@ -270,6 +289,7 @@ func run() int {
 		VisitedCellColor:     colors.GetColor(*visitedCellColor),
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
+		OrphanMask:           mask,
 	}
 
 	g, err := grid.NewGrid(config)
@@ -303,7 +323,6 @@ func run() int {
 	///////////////////////////////////////////////////////////////////////////
 	// Generators/Solvers
 	///////////////////////////////////////////////////////////////////////////
-
 	go func() {
 		// sleep to allow grid to be drawn
 		time.Sleep(time.Second * 2)
@@ -330,6 +349,9 @@ func run() int {
 			}
 		}
 	}()
+	///////////////////////////////////////////////////////////////////////////
+	// End Generators/Solvers
+	///////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
@@ -339,7 +361,6 @@ func run() int {
 		fmt.Printf("%v\n", g)
 	}
 
-	// animation := 0
 	// gui maze
 	if *showGUI {
 		running := true
@@ -354,6 +375,7 @@ func run() int {
 			//			runningMutex.Unlock()
 			//		}
 			//	}
+			//})
 
 			// Displays the main maze, no paths or other markers
 			sdl.Do(func() {
@@ -364,26 +386,12 @@ func run() int {
 				g.DrawMaze(r)
 			})
 
-			// For solvers, to animate the path.
-			//if solver != nil {
-			//	// update display
 			//	// wg := sync.WaitGroup{}
 			//	// wg.Add(1)
 			//
-			//	// used to draw only a part of the path
-			//	x := animation
-			//	if x > len(solver.TravelPath().List()) {
-			//		x = len(solver.TravelPath().List()) - 1
-			//	}
-			//	sdl.Do(func() {
-			//		path := grid.NewPath()
-			//		path.AddSegements(solver.TravelPath().List()[0:x])
-			//		g.DrawPath(r, path, *markVisitedCells)
-			//	})
-			//	animation++
+			// Do things between drawing here
 			//
 			//	// wg.Wait()
-			//}
 
 			sdl.Do(func() {
 				r.Present()
