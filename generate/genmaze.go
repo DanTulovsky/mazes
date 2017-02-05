@@ -270,6 +270,7 @@ func setupGridFromMaskImage(f string) {
 	}
 
 	bounds := m.Bounds()
+	log.Printf("image size: (%v, %v) x (%v, %v)", bounds.Min.X, bounds.Max.X, bounds.Min.Y, bounds.Max.Y)
 
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
