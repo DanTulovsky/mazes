@@ -3,8 +3,10 @@ package grid
 import "fmt"
 
 type Distances struct {
-	root  *Cell // the root cell
-	cells SafeMap
+	root                 *Cell // the root cell
+	cells                SafeMap
+	furthestCell         *Cell
+	furthestCellDistance int
 }
 
 func NewDistances(c *Cell) *Distances {
@@ -45,4 +47,29 @@ func (d *Distances) Get(c *Cell) (int, error) {
 		return -1, fmt.Errorf("distance to [%v] not known", c)
 	}
 	return dist.(int), nil
+}
+
+// Furthest returns one of the cells that is furthest from this one, and the distance
+func (d *Distances) Furthest() (*Cell, int) {
+	if d.furthestCell != nil {
+		return d.furthestCell, d.furthestCellDistance
+	}
+
+	var furthest *Cell = d.root
+
+	longest := 0
+	for _, cell := range d.Cells() {
+		dist, _ := d.Get(cell)
+		if dist > longest {
+			furthest = cell
+			longest = dist
+		}
+
+	}
+
+	// cache
+	d.furthestCell = furthest
+	d.furthestCellDistance = longest
+
+	return furthest, longest
 }

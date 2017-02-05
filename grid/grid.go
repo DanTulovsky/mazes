@@ -29,7 +29,9 @@ type Grid struct {
 	rows             int
 	columns          int
 	cells            [][]*Cell
-	cellWidth        int // cell width
+	mazeCells        []*Cell // cells that are in the maze, not orphaned (for cachine)
+	orphanCells      []*Cell // cells that are orphaned (for caching)
+	cellWidth        int     // cell width
 	wallWidth        int
 	pathWidth        int
 	bgColor          colors.Color
@@ -130,18 +132,6 @@ func (g *Grid) Dimensions() (int, int) {
 	return g.columns, g.rows
 }
 
-// ClearDrawPresent clears the buffer, draws the maze in buffer, and displays on the screen
-func (g *Grid) ClearDrawPresent(r *sdl.Renderer, w *sdl.Window) {
-	if r == nil {
-		log.Fatal("trying to render on an uninitialied render, did you pass --gui?")
-	}
-	r.Clear()     // clears buffer
-	g.DrawMaze(r) // populate buffer
-	// g.DrawPath(r)
-
-	r.Present() // redraw screen
-}
-
 func (g *Grid) String() string {
 	output := "  "
 	for x := 0; x < g.columns; x++ {
@@ -196,38 +186,6 @@ func (g *Grid) String() string {
 	return output
 }
 
-// DrawBorder renders the maze border in memory, display by calling Present
-func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
-	colors.SetDrawColor(g.borderColor, r)
-
-	var bg sdl.Rect
-	var rects []sdl.Rect
-	winWidth := int32(g.columns*g.cellWidth + g.wallWidth*2)
-	winHeight := int32(g.rows*g.cellWidth + g.wallWidth*2)
-	wallWidth := int32(g.wallWidth)
-
-	// top
-	bg = sdl.Rect{0, 0, winWidth, wallWidth}
-	rects = append(rects, bg)
-
-	// left
-	bg = sdl.Rect{0, 0, wallWidth, winHeight}
-	rects = append(rects, bg)
-
-	// bottom
-	bg = sdl.Rect{0, winHeight - wallWidth, winWidth, wallWidth}
-	rects = append(rects, bg)
-
-	// right
-	bg = sdl.Rect{winWidth - wallWidth, 0, wallWidth, winHeight}
-	rects = append(rects, bg)
-
-	if err := r.FillRects(rects); err != nil {
-		Fail(fmt.Errorf("error drawing border: %v", err))
-	}
-	return r
-}
-
 // Draw renders the gui maze in memory, display by calling Present
 func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// utils.TimeTrack(time.Now(), "DrawMaze")
@@ -270,6 +228,38 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// Draw the location of the solver algorithm
 	g.DrawSolveCurrentLocation(r)
 
+	return r
+}
+
+// DrawBorder renders the maze border in memory, display by calling Present
+func (g *Grid) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
+	colors.SetDrawColor(g.borderColor, r)
+
+	var bg sdl.Rect
+	var rects []sdl.Rect
+	winWidth := int32(g.columns*g.cellWidth + g.wallWidth*2)
+	winHeight := int32(g.rows*g.cellWidth + g.wallWidth*2)
+	wallWidth := int32(g.wallWidth)
+
+	// top
+	bg = sdl.Rect{0, 0, winWidth, wallWidth}
+	rects = append(rects, bg)
+
+	// left
+	bg = sdl.Rect{0, 0, wallWidth, winHeight}
+	rects = append(rects, bg)
+
+	// bottom
+	bg = sdl.Rect{0, winHeight - wallWidth, winWidth, wallWidth}
+	rects = append(rects, bg)
+
+	// right
+	bg = sdl.Rect{winWidth - wallWidth, 0, wallWidth, winHeight}
+	rects = append(rects, bg)
+
+	if err := r.FillRects(rects); err != nil {
+		Fail(fmt.Errorf("error drawing border: %v", err))
+	}
 	return r
 }
 
@@ -389,8 +379,11 @@ func (g *Grid) Rows() [][]*Cell {
 	return rows
 }
 
-// Cells returns a list of cells in the grid
+// Cells returns a list of un-orphanded cells in the grid
 func (g *Grid) Cells() []*Cell {
+	if g.mazeCells != nil {
+		return g.mazeCells
+	}
 	cells := []*Cell{}
 	for y := 0; y < g.rows; y++ {
 		for x := 0; x < g.columns; x++ {
@@ -400,11 +393,18 @@ func (g *Grid) Cells() []*Cell {
 			}
 		}
 	}
+
+	// cache
+	g.mazeCells = cells
 	return cells
 }
 
 // OrphanCells returns a list of orphan cells in the grid
 func (g *Grid) OrphanCells() []*Cell {
+	if g.orphanCells != nil {
+		return g.orphanCells
+	}
+
 	cells := []*Cell{}
 	for y := 0; y < g.rows; y++ {
 		for x := 0; x < g.columns; x++ {
@@ -414,6 +414,8 @@ func (g *Grid) OrphanCells() []*Cell {
 			}
 		}
 	}
+
+	g.orphanCells = cells
 	return cells
 }
 

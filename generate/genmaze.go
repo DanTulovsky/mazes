@@ -436,7 +436,7 @@ func run() int {
 
 			sdl.Do(func() {
 				r.Present()
-				sdl.Delay(uint32(1000 / *frameRate))
+				// sdl.Delay(uint32(1000 / *frameRate))
 				// fmt.Print("Press 'Enter' to continue...")
 				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})

@@ -150,19 +150,7 @@ func (c *Cell) SetPaths(previous, next *Cell) {
 
 // FurthestCell returns the cell and distance of the cell that is furthest from this one
 func (c *Cell) FurthestCell() (*Cell, int) {
-	var furthest *Cell = c // you are the furthest from yourself at the start
-	fromDist := c.Distances()
-
-	longest := 0
-	for _, cell := range fromDist.Cells() {
-		dist, _ := fromDist.Get(cell)
-		if dist > longest {
-			furthest = cell
-			longest = dist
-		}
-
-	}
-	return furthest, longest
+	return c.Distances().Furthest()
 }
 
 // Distances finds the distances of all cells to *this* cell
