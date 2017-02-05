@@ -175,7 +175,7 @@ func RunAll(config *grid.Config) {
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveTime().Nanoseconds()))
 
 			key = fmt.Sprintf("%v_solve_path_length", solverName)
-			mazeStats[name][key] = append(mazeStats[name][key], float64(len(solver.SolvePath().ListCells())))
+			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolvePath().Length()))
 
 			key = fmt.Sprintf("%v_solve_steps", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveSteps()))

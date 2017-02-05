@@ -58,7 +58,7 @@ func (a *Common) SetSolvePath(p *grid.Path) {
 
 // SolveSteps returns the number of steps (visits to cells) it took to solve the maze
 func (a *Common) SolveSteps() int {
-	return len(a.travelPath.ListCells())
+	return a.travelPath.Length()
 }
 
 // SetSolveSteps sets the solveSteps
