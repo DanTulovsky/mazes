@@ -28,11 +28,7 @@ import (
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
 var (
-	winTitle string                      = "Maze"
-	actions  map[string]func(*grid.Grid) = map[string]func(*grid.Grid){
-		"longestPath":        drawLongestPath,
-		"shortestRandomPath": drawShortestPathRandomCells,
-	}
+	winTitle         string = "Maze"
 	fromCell, toCell *grid.Cell
 
 	w            *sdl.Window
@@ -63,7 +59,6 @@ var (
 	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
 	maskImage            = flag.String("mask_image", "", "file name of mask image")
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	actionToRun    = flag.String("action", "", "action to run")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate      = flag.Uint("frame_rate", 30, "frame rate for animation")
 	genDrawDelay   = flag.String("gen_draw_delay", "50ms", "solver delay per step, used for animation")
@@ -134,27 +129,27 @@ func checkSolveAlgo(a string) bool {
 }
 
 // drawShortestPathRandomCells draws the shortest distance between two random cells
-func drawShortestPathRandomCells(g *grid.Grid) {
-	fromCell = g.RandomCell()
-	toCell = g.RandomCell()
-	log.Printf("Finding shortest path: [%v] -> [%v]", fromCell, toCell)
-
-	// For coloring
-	g.SetDistanceColors(fromCell)
-
-	// calculates and sets the path between cells
-	g.SetPath(fromCell, toCell)
-}
+//func drawShortestPathRandomCells(g *grid.Grid) {
+//	fromCell = g.RandomCell()
+//	toCell = g.RandomCell()
+//	log.Printf("Finding shortest path: [%v] -> [%v]", fromCell, toCell)
+//
+//	// For coloring
+//	g.SetDistanceColors(fromCell)
+//
+//	// calculates and sets the path between cells
+//	g.SetPath(fromCell, toCell)
+//}
 
 // drawLongestPath draws one possible longest path through the maze
-func drawLongestPath(g *grid.Grid) {
-	var dist int
-	dist, fromCell, toCell, _ = g.LongestPath()
-	g.SetDistanceColors(fromCell)
-	g.SetPath(fromCell, toCell)
-	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
-
-}
+//func drawLongestPath(g *grid.Grid) {
+//	var dist int
+//	dist, fromCell, toCell, _ = g.LongestPath()
+//	g.SetDistanceColors(fromCell)
+//	g.SetPath(fromCell, toCell)
+//	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
+//
+//}
 
 //func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
 //	if path == "" {

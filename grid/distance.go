@@ -24,6 +24,11 @@ func (d *Distances) String() string {
 	return "TODO"
 }
 
+// Root returns the root cell that distances are calculated from
+func (d *Distances) Root() *Cell {
+	return d.root
+}
+
 // Cells returns a list of cells that we have distance information for
 func (d *Distances) Cells() []*Cell {
 	var cells []*Cell

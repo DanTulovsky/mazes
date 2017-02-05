@@ -205,9 +205,12 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
+
 			if cell.IsOrphan() {
+				// these are cells not connected to the maze
 				continue
 			}
+
 			if cell.config.DarkMode && !cell.Visited() {
 				// in dark mode don't draw unvisited cells
 				continue
@@ -279,9 +282,9 @@ func (g *Grid) DrawSolveCurrentLocation(r *sdl.Renderer) {
 }
 
 func (g *Grid) DrawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
-
 	if g.genCurrentLocation != nil {
 		for _, cell := range g.Cells() {
+			// reset all colors to default
 			cell.bgColor = colors.GetColor("white")
 		}
 
@@ -466,7 +469,7 @@ func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 	return dist, furthest, toCell, path
 }
 
-func (p *Path) reverseCells() {
+func (p *Path) ReverseCells() {
 	for i, j := 0, len(p.segments)-1; i < j; i, j = i+1, j-1 {
 		p.segments[i], p.segments[j] = p.segments[j], p.segments[i]
 	}
@@ -478,7 +481,7 @@ func (g *Grid) SetFromToColors(fromCell, toCell *Cell) {
 	fromCell.bgColor = colors.SetOpacity(fromCell.bgColor, 0)
 	toCell.bgColor = colors.SetOpacity(toCell.bgColor, 255)
 
-	// save thse for coor refresh.
+	// save these for color refresh.
 	g.fromCell = fromCell
 	g.toCell = toCell
 }
@@ -553,7 +556,7 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	}
 
 	// add toCell to path
-	path.reverseCells()
+	path.ReverseCells()
 	segment := NewSegment(toCell, "north") // arbitrary facing
 	path.AddSegement(segment)
 

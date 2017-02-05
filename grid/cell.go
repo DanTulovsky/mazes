@@ -193,45 +193,44 @@ func (c *Cell) Distances() *Distances {
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	var bg *sdl.Rect
-	PixelsPerCell := c.width
 
 	// Fill in background color
 	colors.SetDrawColor(c.bgColor, r)
 
-	bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
-		int32(PixelsPerCell), int32(PixelsPerCell)}
+	bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
+		int32(c.width), int32(c.width)}
 	r.FillRect(bg)
 
 	// Draw walls as needed
 	// East
 	if !c.Linked(c.East) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
-			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
+		bg = &sdl.Rect{int32(c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth), int32(c.row*c.width + c.wallWidth),
+			int32(c.wallWidth / 2), int32(c.width + c.wallWidth/2)}
 		r.FillRect(bg)
 	}
 
 	// West
 	if !c.Linked(c.West) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
-			int32(c.wallWidth / 2), int32(PixelsPerCell + c.wallWidth/2)}
+		bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
+			int32(c.wallWidth / 2), int32(c.width + c.wallWidth/2)}
 		r.FillRect(bg)
 	}
 
 	// North
 	if !c.Linked(c.North) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + c.wallWidth),
-			int32(PixelsPerCell), int32(c.wallWidth / 2)}
+		bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
+			int32(c.width), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
 
 	// South
 	if !c.Linked(c.South) {
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*PixelsPerCell + c.wallWidth), int32(c.row*PixelsPerCell + PixelsPerCell - c.wallWidth/2 + c.wallWidth),
-			int32(PixelsPerCell), int32(c.wallWidth / 2)}
+		bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth),
+			int32(c.width), int32(c.wallWidth / 2)}
 		r.FillRect(bg)
 	}
 
