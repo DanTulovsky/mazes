@@ -1,8 +1,6 @@
 package main
 
 import (
-	"sync"
-
 	"github.com/veandco/go-sdl2/sdl"
 
 	"flag"
@@ -31,10 +29,10 @@ var (
 	winTitle         string = "Maze"
 	fromCell, toCell *grid.Cell
 
-	w            *sdl.Window
-	r            *sdl.Renderer
-	sdlErr       error
-	runningMutex sync.Mutex
+	w      *sdl.Window
+	r      *sdl.Renderer
+	sdlErr error
+	// runningMutex sync.Mutex
 
 	solver solvealgos.Algorithmer
 
@@ -60,7 +58,7 @@ var (
 	maskImage            = flag.String("mask_image", "", "file name of mask image")
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
-	frameRate      = flag.Uint("frame_rate", 30, "frame rate for animation")
+	frameRate      = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay   = flag.String("gen_draw_delay", "50ms", "solver delay per step, used for animation")
 	solveDrawDelay = flag.String("solve_draw_delay", "50ms", "solver delay per step, used for animation")
 )
@@ -431,7 +429,7 @@ func run() int {
 
 			sdl.Do(func() {
 				r.Present()
-				// sdl.Delay(uint32(1000 / *frameRate))
+				sdl.Delay(uint32(1000 / *frameRate))
 				// fmt.Print("Press 'Enter' to continue...")
 				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
