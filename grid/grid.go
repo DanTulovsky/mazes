@@ -432,7 +432,7 @@ func (g *Grid) ConnectCells(cells []*Cell) {
 }
 
 // LongestPath returns the longest path through the maze
-func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
+func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 
 	utils.TimeTrack(time.Now(), "LongestPath")
 
@@ -451,9 +451,9 @@ func (g *Grid) LongestPath() (dist int, fromCell, toCell *Cell, path []*Cell) {
 	return dist, furthest, toCell, path
 }
 
-func reverseCells(cells []*Cell) {
-	for i, j := 0, len(cells)-1; i < j; i, j = i+1, j-1 {
-		cells[i], cells[j] = cells[j], cells[i]
+func (p *Path) reverseCells() {
+	for i, j := 0, len(p.segments)-1; i < j; i, j = i+1, j-1 {
+		p.segments[i], p.segments[j] = p.segments[j], p.segments[i]
 	}
 }
 
@@ -475,17 +475,17 @@ func (g *Grid) SetPath(fromCell, toCell *Cell) {
 	g.SetFromToColors(fromCell, toCell)
 
 	var prev, next *Cell
-	for x := 0; x < len(path); x++ {
+	for x := 0; x < len(path.ListCells()); x++ {
 		if x > 0 {
-			prev = path[x-1]
+			prev = path.ListCells()[x-1]
 		} else {
-			prev = path[x]
+			prev = path.ListCells()[x]
 		}
 
-		if x < len(path)-1 {
-			next = path[x+1]
+		if x < len(path.ListCells())-1 {
+			next = path.ListCells()[x+1]
 		}
-		path[x].SetPaths(prev, next)
+		path.ListCells()[x].SetPaths(prev, next)
 	}
 }
 
@@ -508,14 +508,14 @@ func (g *Grid) SetPathFromTo(fromCell, toCell *Cell, path []*Cell) {
 }
 
 // ShortestPath finds the shortest path from fromCell to toCell
-func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
+func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	utils.TimeTrack(time.Now(), "ShortestPath")
 
 	if path := fromCell.PathTo(toCell); path != nil {
-		return len(path), path
+		return len(path.ListCells()), path
 	}
 
-	var path []*Cell
+	var path = NewPath()
 	// Get all distances from this cell
 	d := fromCell.Distances()
 	toCellDist, _ := d.Get(toCell)
@@ -532,15 +532,17 @@ func (g *Grid) ShortestPath(fromCell, toCell *Cell) (int, []*Cell) {
 				next = link
 			}
 		}
-		path = append(path, next)
+		segment := NewSegment(next, "north") // arbitrary facing
+		path.AddSegement(segment)
 		current = next
 	}
 
 	// add toCell to path
-	reverseCells(path)
-	path = append(path, toCell)
+	path.reverseCells()
+	segment := NewSegment(toCell, "north") // arbitrary facing
+	path.AddSegement(segment)
 
-	// reocrd path for caching
+	// record path for caching
 	fromCell.SetPathTo(toCell, path)
 
 	return toCellDist, path
@@ -663,7 +665,6 @@ type Cell struct {
 	// keep track of neighborgs
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
-	// links map[*Cell]bool
 	links SafeMap
 	// distances to other cells
 	distances *Distances
@@ -687,7 +688,7 @@ type Cell struct {
 	pathNorth, pathSouth, pathEast, pathWest bool
 
 	// keep track of paths to specific cells
-	paths map[*Cell][]*Cell
+	paths map[*Cell]*Path
 }
 
 // CellInCellList returns true if cell is in cellList
@@ -712,7 +713,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
-		paths:     make(map[*Cell][]*Cell),
+		paths:     make(map[*Cell]*Path),
 		config:    c,
 	}
 	cell.distances = NewDistances(cell)
@@ -725,7 +726,7 @@ func (c *Cell) String() string {
 }
 
 // PathTo returns the path to the toCell or nil if not available
-func (c *Cell) PathTo(toCell *Cell) []*Cell {
+func (c *Cell) PathTo(toCell *Cell) *Path {
 	if path, ok := c.paths[toCell]; ok {
 		return path
 	}
@@ -733,12 +734,12 @@ func (c *Cell) PathTo(toCell *Cell) []*Cell {
 }
 
 // SetPathTo sets the path from this cell to toCell
-func (c *Cell) SetPathTo(toCell *Cell, path []*Cell) {
+func (c *Cell) SetPathTo(toCell *Cell, path *Path) {
 	c.paths[toCell] = path
 }
 
 // RemovePathTo removes the path from this cell to toCell
-func (c *Cell) RemovePathTo(toCell *Cell, path []*Cell) {
+func (c *Cell) RemovePathTo(toCell *Cell, path *Path) {
 	delete(c.paths, toCell)
 }
 
