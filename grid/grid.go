@@ -613,8 +613,7 @@ func (g *Grid) GetFacingDirection(fromCell, toCell *Cell) string {
 }
 
 type Distances struct {
-	root *Cell // the root cell
-	// cells map[*Cell]int // Distance to this cell
+	root  *Cell // the root cell
 	cells SafeMap
 }
 
@@ -623,8 +622,7 @@ func NewDistances(c *Cell) *Distances {
 	sm.Insert(c, 0)
 
 	return &Distances{
-		root: c,
-		// cells: map[*Cell]int{c: 0},
+		root:  c,
 		cells: sm,
 	}
 }
@@ -688,7 +686,7 @@ type Cell struct {
 	pathNorth, pathSouth, pathEast, pathWest bool
 
 	// keep track of paths to specific cells
-	paths map[*Cell]*Path
+	paths SafeMap
 }
 
 // CellInCellList returns true if cell is in cellList
@@ -713,7 +711,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
-		paths:     make(map[*Cell]*Path),
+		paths:     NewSafeMap(),
 		config:    c,
 	}
 	cell.distances = NewDistances(cell)
@@ -727,20 +725,20 @@ func (c *Cell) String() string {
 
 // PathTo returns the path to the toCell or nil if not available
 func (c *Cell) PathTo(toCell *Cell) *Path {
-	if path, ok := c.paths[toCell]; ok {
-		return path
+	if path, ok := c.paths.Find(toCell); ok {
+		return path.(*Path)
 	}
 	return nil
 }
 
 // SetPathTo sets the path from this cell to toCell
 func (c *Cell) SetPathTo(toCell *Cell, path *Path) {
-	c.paths[toCell] = path
+	c.paths.Insert(toCell, path)
 }
 
 // RemovePathTo removes the path from this cell to toCell
 func (c *Cell) RemovePathTo(toCell *Cell, path *Path) {
-	delete(c.paths, toCell)
+	c.paths.Delete(toCell)
 }
 
 // Location returns the x,y location of the cell
