@@ -10,8 +10,8 @@ import (
 )
 
 type Algorithmer interface {
-	Apply(*grid.Grid) (*grid.Grid, error)
-	CheckGrid(*grid.Grid) error
+	Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error)
+	CheckGrid(g *grid.Grid) error
 }
 
 type Common struct {

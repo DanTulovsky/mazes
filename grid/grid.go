@@ -85,6 +85,8 @@ type Grid struct {
 
 	SolvePath  *Path // the final solve path of the solver
 	TravelPath *Path // the travel path of the solver, update in real time
+
+	genCurrentLocation *Cell // the current location of generator
 }
 
 // NewGrid returns a new grid.
@@ -113,6 +115,10 @@ func NewGrid(c *Config) (*Grid, error) {
 	g.configureCells()
 
 	return g, nil
+}
+
+func (g *Grid) SetGenCurrentLocation(cell *Cell) {
+	g.genCurrentLocation = cell
 }
 
 func (g *Grid) SetCreateTime(t time.Duration) {
@@ -251,12 +257,26 @@ func (g *Grid) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// Draw outside border
 	g.DrawBorder(r)
 
+	// Draw location of the generator algorithm
+	g.DrawGenCurrentLocation(r)
+
 	// Draw the path so far
 	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells, false)
 
 	// Draw the final path
 	g.DrawPath(r, g.SolvePath, false, true)
 
+	return r
+}
+
+func (g *Grid) DrawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+	for _, cell := range g.Cells() {
+		cell.bgColor = colors.GetColor("white")
+	}
+
+	if g.genCurrentLocation != nil {
+		g.genCurrentLocation.bgColor = colors.GetColor("yellow")
+	}
 	return r
 }
 
@@ -376,8 +396,8 @@ func (g *Grid) Rows() [][]*Cell {
 // Cells returns a list of cells in the grid
 func (g *Grid) Cells() []*Cell {
 	cells := []*Cell{}
-	for x := 0; x < g.columns; x++ {
-		for y := 0; y < g.rows; y++ {
+	for y := 0; y < g.rows; y++ {
+		for x := 0; x < g.columns; x++ {
 			cells = append(cells, g.cells[x][y])
 		}
 	}

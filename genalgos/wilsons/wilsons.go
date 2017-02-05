@@ -19,7 +19,7 @@ type Wilsons struct {
 }
 
 // Apply applies wilson's algorithm to generate the maze.
-func (a *Wilsons) Apply(g *grid.Grid) (*grid.Grid, error) {
+func (a *Wilsons) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 
 	defer genalgos.TimeTrack(g, time.Now())
 
@@ -33,12 +33,17 @@ func (a *Wilsons) Apply(g *grid.Grid) (*grid.Grid, error) {
 	visitedCells = append(visitedCells, start)
 
 	for len(g.UnvisitedCells()) > 0 {
+		time.Sleep(delay) // animation delay
+
 		// pick random, unvisited cell
 		randomCell = g.RandomCellFromList(g.UnvisitedCells())
 		currentCell = randomCell
+		g.SetGenCurrentLocation(currentCell)
 
 		// walk until you hit a visited cell
 		for !grid.CellInCellList(currentCell, visitedCells) {
+			time.Sleep(delay) // animation delay
+
 			// handle loop
 			if grid.CellInCellList(currentCell, walkPath) {
 				i := utils.SliceIndex(len(walkPath), func(i int) bool { return walkPath[i] == currentCell })
@@ -50,6 +55,8 @@ func (a *Wilsons) Apply(g *grid.Grid) (*grid.Grid, error) {
 
 			// visit random neighbors until you come to a visited cell
 			currentCell = currentCell.RandomNeighbor()
+
+			g.SetGenCurrentLocation(currentCell)
 
 		}
 

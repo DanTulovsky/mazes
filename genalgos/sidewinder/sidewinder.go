@@ -17,7 +17,7 @@ type Sidewinder struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *Sidewinder) Apply(g *grid.Grid) (*grid.Grid, error) {
+func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	gridWidth, _ := g.Dimensions()
@@ -26,7 +26,10 @@ func (a *Sidewinder) Apply(g *grid.Grid) (*grid.Grid, error) {
 		var run []*grid.Cell
 
 		for x := 0; x < len(row); x++ {
+			time.Sleep(delay) // animation delay
+
 			cell := row[x]
+			g.SetGenCurrentLocation(cell)
 
 			run = append(run, cell)
 

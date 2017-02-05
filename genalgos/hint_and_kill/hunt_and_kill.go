@@ -40,13 +40,16 @@ func Shuffle(cells []*grid.Cell) []*grid.Cell {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *HuntAndKill) Apply(g *grid.Grid) (*grid.Grid, error) {
+func (a *HuntAndKill) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 
 	defer genalgos.TimeTrack(g, time.Now())
 
 	currentCell := g.RandomCell()
 
 	for currentCell != nil {
+		time.Sleep(delay) // animation delay
+		g.SetGenCurrentLocation(currentCell)
+
 		currentCell.SetVisited()
 		neighbors := currentCell.Neighbors()
 

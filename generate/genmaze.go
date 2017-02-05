@@ -54,10 +54,11 @@ var (
 	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo           = flag.String("create_algo", "bintree", "algorithm used to create the maze")
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	actionToRun = flag.String("action", "", "action to run")
-	solveAlgo   = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
-	frameRate   = flag.Uint("frame_rate", 60, "frame rate for animation")
-	solveDelay  = flag.String("draw_delay", "50ms", "solver delay per step, used for animation")
+	actionToRun    = flag.String("action", "", "action to run")
+	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
+	frameRate      = flag.Uint("frame_rate", 60, "frame rate for animation")
+	genDrawDelay   = flag.String("gen_draw_delay", "50ms", "solver delay per step, used for animation")
+	solveDrawDelay = flag.String("solve_draw_delay", "50ms", "solver delay per step, used for animation")
 )
 
 func setupSDL() {
@@ -214,11 +215,11 @@ func Solve(g *grid.Grid) (solvealgos.Algorithmer, error) {
 	g.ResetVisited()
 
 	solver = algos.SolveAlgorithms[*solveAlgo]
-	duration, err := time.ParseDuration(*solveDelay)
+	delay, err := time.ParseDuration(*solveDrawDelay)
 	if err != nil {
 		return nil, err
 	}
-	g, err = solver.Solve(g, fromCell, toCell, duration)
+	g, err = solver.Solve(g, fromCell, toCell, delay)
 	if err != nil {
 		return nil, fmt.Errorf("error running solver: %v", err)
 	}
@@ -282,45 +283,52 @@ func run() int {
 	if !checkCreateAlgo(*createAlgo) {
 		log.Fatalf("invalid create algorithm: %v", *createAlgo)
 	}
-	// apply algorithm
-	algo := algos.Algorithms[*createAlgo]
-
-	g, err = algo.Apply(g)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	if err := algo.CheckGrid(g); err != nil {
-		log.Fatalf("maze is not valid: %v", err)
-	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// {Predefined actions to run}
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	if *actionToRun != "" {
-		if action, ok := actions[*actionToRun]; !ok {
-			log.Fatalf("no such action [%v]", *actionToRun)
-		} else {
-			action(g)
-		}
-
-		if *showStats {
-			showMazeStats(g)
-		}
+	//if *actionToRun != "" {
+	//	if action, ok := actions[*actionToRun]; !ok {
+	//		log.Fatalf("no such action [%v]", *actionToRun)
+	//	} else {
+	//		action(g)
+	//	}
+	//
+	if *showStats {
+		showMazeStats(g)
 	}
+	//}
 
 	///////////////////////////////////////////////////////////////////////////
-	// Solvers
+	// Generators/Solvers
 	///////////////////////////////////////////////////////////////////////////
-	if *solveAlgo != "" {
-		go func() {
-			// sleep to allow grid to be drawn
-			time.Sleep(time.Second * 2)
+
+	go func() {
+		// sleep to allow grid to be drawn
+		time.Sleep(time.Second * 2)
+
+		// apply algorithm
+		algo := algos.Algorithms[*createAlgo]
+
+		delay, err := time.ParseDuration(*genDrawDelay)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+		g, err = algo.Apply(g, delay)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+		if err := algo.CheckGrid(g); err != nil {
+			log.Fatalf("maze is not valid: %v", err)
+		}
+
+		if *solveAlgo != "" {
 			solver, err = Solve(g)
 			if err != nil {
 				log.Print(err)
 			}
-		}()
-	}
+		}
+	}()
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY

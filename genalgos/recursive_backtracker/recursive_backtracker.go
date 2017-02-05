@@ -17,7 +17,7 @@ type RecursiveBacktracker struct {
 }
 
 // Apply applies the recursive backtracker algorithm to generate the maze.
-func (a *RecursiveBacktracker) Apply(g *grid.Grid) (*grid.Grid, error) {
+func (a *RecursiveBacktracker) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	cells := grid.NewStack()
@@ -25,9 +25,10 @@ func (a *RecursiveBacktracker) Apply(g *grid.Grid) (*grid.Grid, error) {
 	cells.Push(currentCell)
 
 	for currentCell != nil {
-
+		time.Sleep(delay) // animation delay
 		currentCell = cells.Top()
 		currentCell.SetVisited()
+		g.SetGenCurrentLocation(currentCell)
 
 		neighbors := currentCell.Neighbors()
 

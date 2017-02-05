@@ -15,7 +15,7 @@ type AldousBroder struct {
 }
 
 // Apply applies the adlous-broder algorithm to generate the maze.
-func (a *AldousBroder) Apply(g *grid.Grid) (*grid.Grid, error) {
+func (a *AldousBroder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	var visitedCells int
@@ -24,6 +24,9 @@ func (a *AldousBroder) Apply(g *grid.Grid) (*grid.Grid, error) {
 	visitedCells++
 
 	for visitedCells < len(g.Cells()) {
+		time.Sleep(delay) // animation delay
+		g.SetGenCurrentLocation(currentCell)
+
 		neighbors := currentCell.Neighbors()
 
 		randomNeighbor := g.RandomCellFromList(neighbors)

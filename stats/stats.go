@@ -150,7 +150,7 @@ func RunAll(config *grid.Config) {
 			os.Exit(1)
 		}
 
-		g, err = algo.Apply(g)
+		g, err = algo.Apply(g, 0)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
@@ -166,7 +166,7 @@ func RunAll(config *grid.Config) {
 
 			solver := algos.SolveAlgorithms[solverName]
 			log.Printf("running (solver): %v", solverName)
-			g, err = solver.Solve(g, fromCell, toCell)
+			g, err = solver.Solve(g, fromCell, toCell, 0)
 			if err != nil {
 				log.Fatalf("failed to run solver [%v]: %v", solverName, err)
 			}
@@ -175,7 +175,7 @@ func RunAll(config *grid.Config) {
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveTime().Nanoseconds()))
 
 			key = fmt.Sprintf("%v_solve_path_length", solverName)
-			mazeStats[name][key] = append(mazeStats[name][key], float64(len(solver.SolvePath())))
+			mazeStats[name][key] = append(mazeStats[name][key], float64(len(solver.SolvePath().ListCells())))
 
 			key = fmt.Sprintf("%v_solve_steps", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveSteps()))
