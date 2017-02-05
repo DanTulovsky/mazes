@@ -611,14 +611,19 @@ func (g *Grid) GetFacingDirection(fromCell, toCell *Cell) string {
 }
 
 type Distances struct {
-	root  *Cell         // the root cell
-	cells map[*Cell]int // Distance to this cell
+	root *Cell // the root cell
+	// cells map[*Cell]int // Distance to this cell
+	cells SafeMap
 }
 
 func NewDistances(c *Cell) *Distances {
+	sm := NewSafeMap()
+	sm.Insert(c, 0)
+
 	return &Distances{
-		root:  c,
-		cells: map[*Cell]int{c: 0},
+		root: c,
+		// cells: map[*Cell]int{c: 0},
+		cells: sm,
 	}
 }
 
@@ -630,7 +635,7 @@ func (d *Distances) String() string {
 // Cells returns a list of cells that we have distance information for
 func (d *Distances) Cells() []*Cell {
 	var cells []*Cell
-	for c := range d.cells {
+	for _, c := range d.cells.Keys() {
 		cells = append(cells, c)
 	}
 	return cells
@@ -639,16 +644,18 @@ func (d *Distances) Cells() []*Cell {
 
 // Set sets the distance to the provided cell
 func (d *Distances) Set(c *Cell, dist int) {
-	d.cells[c] = dist
+	d.cells.Update(c, func(d interface{}, exists bool) interface{} {
+		return dist
+	})
 }
 
 // Get returns the distance to c
 func (d *Distances) Get(c *Cell) (int, error) {
-	dist, ok := d.cells[c]
+	dist, ok := d.cells.Find(c)
 	if !ok {
 		return -1, fmt.Errorf("distance to [%v] not known", c)
 	}
-	return dist, nil
+	return dist.(int), nil
 }
 
 // Cell defines a single cell in the grid
@@ -797,7 +804,7 @@ func (c *Cell) FurthestCell() (*Cell, int) {
 // Implements simplified Dijkstra’s algorithm
 // Shades the cells
 func (c *Cell) Distances() *Distances {
-	if len(c.distances.cells) > 1 {
+	if c.distances.cells.Len() > 1 {
 		// Already have this info
 		return c.distances
 	}
