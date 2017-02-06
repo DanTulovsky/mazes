@@ -300,10 +300,19 @@ func (g *Grid) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		path = g.TravelPath
 	}
 
+	alreadyDone := make(map[*Cell]bool)
+
 	var isSolution bool
 	var isLast bool
 
 	for x, segment := range path.segments {
+		if _, ok := alreadyDone[segment.Cell()]; ok {
+			continue
+		}
+
+		// cache state of this cell
+		alreadyDone[segment.Cell()] = true
+
 		if x == len(path.segments)-1 {
 			isLast = true // last segment is drawn slightly different
 		}

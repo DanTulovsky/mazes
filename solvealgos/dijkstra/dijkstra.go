@@ -28,6 +28,8 @@ func (a *Dijkstra) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.D
 		// animation delay
 		time.Sleep(delay)
 
+		currentCell.SetVisited()
+
 		smallest := math.MaxInt16
 		var next *grid.Cell
 		for _, link := range currentCell.Links() {
