@@ -4,7 +4,7 @@
 package random_unvisited
 
 import (
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/solvealgos"
 	"time"
 )
@@ -13,7 +13,7 @@ type RandomUnvisited struct {
 	solvealgos.Common
 }
 
-func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
+func (a *RandomUnvisited) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = g.TravelPath
@@ -27,7 +27,7 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay
 
 		currentCell.SetVisited()
 
-		segment := grid.NewSegment(currentCell, facing)
+		segment := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 		g.SetPathFromTo(fromCell, currentCell, travelPath)
@@ -46,7 +46,7 @@ func (a *RandomUnvisited) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay
 
 	// last cell
 	facing = currentCell.GetFacingDirection(toCell)
-	segment := grid.NewSegment(currentCell, facing)
+	segment := maze.NewSegment(currentCell, facing)
 	travelPath.AddSegement(segment)
 	travelPath.AddSegement(segment)
 	g.SetPathFromTo(fromCell, toCell, solvePath)

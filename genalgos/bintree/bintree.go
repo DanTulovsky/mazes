@@ -5,7 +5,7 @@ package bintree
 
 import (
 	"mazes/genalgos"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/utils"
 	"time"
 )
@@ -15,14 +15,14 @@ type Bintree struct {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *Bintree) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
+func (a *Bintree) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	for _, currentCell := range g.Cells() {
 		time.Sleep(delay) // animation delay
 		g.SetGenCurrentLocation(currentCell)
 
-		neighbors := []*grid.Cell{}
+		neighbors := []*maze.Cell{}
 		if currentCell.North != nil {
 			neighbors = append(neighbors, currentCell.North)
 		}

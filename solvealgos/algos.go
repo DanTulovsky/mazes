@@ -3,31 +3,31 @@ package solvealgos
 
 import (
 	"errors"
-	"mazes/grid"
+	"mazes/maze"
 	"time"
 )
 
 type Algorithmer interface {
-	SolvePath() *grid.Path // final path
+	SolvePath() *maze.Path // final path
 	SolveSteps() int
 	SolveTime() time.Duration
-	SetSolvePath(p *grid.Path)
+	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// delay is ms for animation
-	Solve(g *grid.Grid, fromCell *grid.Cell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error)
-	TravelPath() *grid.Path // all the cells travelled
+	Solve(g *maze.Grid, fromCell *maze.Cell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error)
+	TravelPath() *maze.Path // all the cells travelled
 }
 
 type Common struct {
-	solvePath  *grid.Path    // path of the final solution
+	solvePath  *maze.Path    // path of the final solution
 	solveSteps int           // how many cell visits it tooks (including duplicates)
 	solveTime  time.Duration // how long the last solve time took
-	travelPath *grid.Path    // all the cells visited in order
+	travelPath *maze.Path    // all the cells visited in order
 }
 
 // Solve should write the path of the solution to the grid
-func (a *Common) Solve(g *grid.Grid, fromCell, toCell *grid.Cell) (*grid.Grid, error) {
+func (a *Common) Solve(g *maze.Grid, fromCell, toCell *maze.Cell) (*maze.Grid, error) {
 	return nil, errors.New("Solve() not implemented")
 }
 
@@ -47,12 +47,12 @@ func (a *Common) SetSolveTime(t time.Duration) {
 }
 
 // SolvePath returns the path for the solution
-func (a *Common) SolvePath() *grid.Path {
+func (a *Common) SolvePath() *maze.Path {
 	return a.solvePath
 }
 
 // SetSolvePath sets the solvePath
-func (a *Common) SetSolvePath(p *grid.Path) {
+func (a *Common) SetSolvePath(p *maze.Path) {
 	a.solvePath = p
 }
 
@@ -67,11 +67,11 @@ func (a *Common) SetSolveSteps(s int) {
 }
 
 // TravelPath returns the entire path traveled (often the same as the solution path)
-func (a *Common) TravelPath() *grid.Path {
+func (a *Common) TravelPath() *maze.Path {
 	return a.travelPath
 }
 
 // SetTravelPath sets the solvePath
-func (a *Common) SetTravelPath(p *grid.Path) {
+func (a *Common) SetTravelPath(p *maze.Path) {
 	a.travelPath = p
 }

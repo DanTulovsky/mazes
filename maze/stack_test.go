@@ -1,4 +1,4 @@
-package grid
+package maze
 
 import "testing"
 

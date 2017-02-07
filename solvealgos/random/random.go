@@ -4,7 +4,7 @@
 package random
 
 import (
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/solvealgos"
 	"time"
 )
@@ -13,7 +13,7 @@ type Random struct {
 	solvealgos.Common
 }
 
-func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
+func (a *Random) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = g.TravelPath
@@ -27,7 +27,7 @@ func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Dur
 
 		currentCell.SetVisited()
 
-		segment := grid.NewSegment(currentCell, facing)
+		segment := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 		g.SetPathFromTo(fromCell, currentCell, travelPath)
@@ -39,7 +39,7 @@ func (a *Random) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Dur
 
 	// add the last cell
 	facing = currentCell.GetFacingDirection(toCell)
-	segment := grid.NewSegment(toCell, facing)
+	segment := maze.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 	g.SetPathFromTo(fromCell, toCell, travelPath)

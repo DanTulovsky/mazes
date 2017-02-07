@@ -8,7 +8,6 @@ import (
 	"log"
 	"mazes/algos"
 	"mazes/colors"
-	"mazes/grid"
 	"os"
 
 	"mazes/solvealgos"
@@ -16,6 +15,7 @@ import (
 
 	"image"
 	_ "image/png"
+	"mazes/maze"
 )
 
 // For gui support
@@ -27,7 +27,7 @@ import (
 
 var (
 	winTitle         string = "Maze"
-	fromCell, toCell *grid.Cell
+	fromCell, toCell *maze.Cell
 
 	w      *sdl.Window
 	r      *sdl.Renderer
@@ -36,7 +36,7 @@ var (
 
 	solver solvealgos.Algorithmer
 
-	mask []grid.Location = make([]grid.Location, 0)
+	mask []maze.Location = make([]maze.Location, 0)
 
 	rows                 = flag.Int("r", 30, "number of rows in the maze")
 	columns              = flag.Int("c", 60, "number of rows in the maze")
@@ -176,7 +176,7 @@ func checkSolveAlgo(a string) bool {
 //}
 
 // showMazeStats shows some states about the maze
-func showMazeStats(g *grid.Grid) {
+func showMazeStats(g *maze.Grid) {
 	x, y := g.Dimensions()
 	log.Printf(">> Dimensions: [%v, %v]", x, y)
 	log.Printf(">> Dead Ends: %v", len(g.DeadEnds()))
@@ -197,7 +197,7 @@ func showMazeStats(g *grid.Grid) {
 //}
 
 // Solve runs the solvers against the grid.
-func Solve(g *grid.Grid) (solvealgos.Algorithmer, error) {
+func Solve(g *maze.Grid) (solvealgos.Algorithmer, error) {
 	var err error
 
 	if !checkSolveAlgo(*solveAlgo) {
@@ -239,7 +239,7 @@ func main() {
 
 // addToMask adds location to grid mask (excluded cells) and checks for bounds errors
 func addToMask(x, y int) {
-	l := grid.Location{x, y}
+	l := maze.Location{x, y}
 
 	if x >= *columns || y >= *rows || x < 0 || y < 0 {
 		log.Fatalf("invalid cell passed to mask: %v (grid size: %v %v)", l, *columns, *rows)
@@ -308,7 +308,7 @@ func run() int {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	config := &grid.Config{
+	config := &maze.Config{
 		Rows:                 *rows,
 		Columns:              *columns,
 		CellWidth:            *cellWidth,
@@ -325,7 +325,7 @@ func run() int {
 		DarkMode:             *darkMode,
 	}
 
-	g, err := grid.NewGrid(config)
+	g, err := maze.NewGrid(config)
 	if err != nil {
 		fmt.Printf("invalid config: %v", err)
 		os.Exit(1)

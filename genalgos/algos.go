@@ -5,28 +5,28 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/tree"
 	"mazes/utils"
 	"time"
 )
 
 type Algorithmer interface {
-	Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error)
-	Cleanup(g *grid.Grid)
-	CheckGrid(g *grid.Grid) error
+	Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error)
+	Cleanup(g *maze.Grid)
+	CheckGrid(g *maze.Grid) error
 }
 
 type Common struct {
 }
 
-func (a *Common) Apply(*grid.Grid) (*grid.Grid, error) {
+func (a *Common) Apply(*maze.Grid) (*maze.Grid, error) {
 	return nil, errors.New("Apply() not implemented")
 }
 
-func Step(g *grid.Grid, t *tree.Tree, currentCell, parentCell *grid.Cell) bool {
+func Step(g *maze.Grid, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 
-	var nextCell *grid.Cell
+	var nextCell *maze.Cell
 	currentCell.SetVisited()
 
 	if currentCell != parentCell {
@@ -44,11 +44,11 @@ func Step(g *grid.Grid, t *tree.Tree, currentCell, parentCell *grid.Cell) bool {
 
 			if nextNode == nil {
 				// something is really wrong and should never happen
-				grid.Fail(fmt.Errorf("unable to find %v in tree", nextCell))
+				maze.Fail(fmt.Errorf("unable to find %v in tree", nextCell))
 			}
 
 			if currentNode.Parent() != nextNode {
-				grid.Fail(fmt.Errorf("found a cycle in the graph, %v is connected to %v, but %v is not the parent;\n%v", currentNode,
+				maze.Fail(fmt.Errorf("found a cycle in the graph, %v is connected to %v, but %v is not the parent;\n%v", currentNode,
 					nextNode, nextNode, t))
 			}
 		}
@@ -69,7 +69,7 @@ func Step(g *grid.Grid, t *tree.Tree, currentCell, parentCell *grid.Cell) bool {
 }
 
 // CheckGrid checks that the generated grid is valid
-func (a *Common) CheckGrid(g *grid.Grid) error {
+func (a *Common) CheckGrid(g *maze.Grid) error {
 	log.Print("Checking for cycles and converting to a spanning tree...")
 	g.ResetVisited()
 
@@ -99,17 +99,17 @@ func (a *Common) CheckGrid(g *grid.Grid) error {
 }
 
 // Cleanup cleans up after generator is done
-func (a *Common) Cleanup(g *grid.Grid) {
+func (a *Common) Cleanup(g *maze.Grid) {
 	g.SetGenCurrentLocation(nil)
 }
 
-func TimeTrack(g *grid.Grid, start time.Time) {
+func TimeTrack(g *maze.Grid, start time.Time) {
 	g.SetCreateTime(time.Since(start))
 }
 
 // RandomUnvisitedCellFromList returns a random cell from n that has not been visited
-func RandomUnvisitedCellFromList(neighbors []*grid.Cell) *grid.Cell {
-	var allowed []*grid.Cell
+func RandomUnvisitedCellFromList(neighbors []*maze.Cell) *maze.Cell {
+	var allowed []*maze.Cell
 	for _, n := range neighbors {
 		if !n.Visited() {
 			allowed = append(allowed, n)

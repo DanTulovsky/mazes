@@ -1,4 +1,4 @@
-package grid
+package maze
 
 const (
 	remove commandAction = iota
@@ -55,7 +55,7 @@ type findResult struct {
 	found bool
 }
 
-func (sm safeMap) Find(key *Cell) (value interface{}, found bool) {
+func (sm safeMap) Find(key *Cell) (interface{}, bool) {
 	reply := make(chan interface{})
 	sm <- commandData{action: find, key: key, result: reply}
 	result := (<-reply).(findResult)
@@ -103,7 +103,7 @@ func (sm safeMap) run() {
 			store[command.key] = command.update(value, found)
 		case keys:
 			var keys []*Cell
-			for k, _ := range store {
+			for k := range store {
 				keys = append(keys, k)
 			}
 			command.result <- keys

@@ -5,28 +5,28 @@ import (
 	"log"
 	"mazes/genalgos/aldous_broder"
 	"mazes/genalgos/recursive_backtracker"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/utils"
 	"testing"
 )
 
 var applytests = []struct {
-	config      *grid.Config
-	orphanCells []*grid.Location
+	config      *maze.Config
+	orphanCells []*maze.Location
 	wantErr     bool
 }{
 	{
-		config: &grid.Config{
+		config: &maze.Config{
 			Rows:    utils.Random(5, 10),
 			Columns: utils.Random(5, 20),
 		},
-		orphanCells: []*grid.Location{
+		orphanCells: []*maze.Location{
 			{0, 0},
 			{4, 4},
 		},
 		wantErr: false,
 	}, {
-		config: &grid.Config{
+		config: &maze.Config{
 			Rows:    utils.Random(1, 40),
 			Columns: utils.Random(1, 20),
 		},
@@ -36,7 +36,7 @@ var applytests = []struct {
 
 func TestSolveAldousBroder(t *testing.T) {
 	for _, tt := range applytests {
-		g, err := grid.NewGrid(tt.config)
+		g, err := maze.NewGrid(tt.config)
 		gen, solv := &aldous_broder.AldousBroder{}, &WallFollower{}
 
 		if err != nil {
@@ -68,7 +68,7 @@ func TestSolveAldousBroder(t *testing.T) {
 
 func TestSolveRecursiveBacktracker(t *testing.T) {
 	for _, tt := range applytests {
-		g, err := grid.NewGrid(tt.config)
+		g, err := maze.NewGrid(tt.config)
 		gen, solv := &recursive_backtracker.RecursiveBacktracker{}, &WallFollower{}
 
 		if err != nil {
@@ -107,10 +107,10 @@ func TestSolveRecursiveBacktracker(t *testing.T) {
 
 		for _, o := range g.OrphanCells() {
 			// make sure orphan cells are not in the solution
-			if grid.CellInCellList(o, g.SolvePath.ListCells()) {
+			if maze.CellInCellList(o, g.SolvePath.ListCells()) {
 				t.Errorf("orpha cell %v is in solvePath [%v]", o, g.SolvePath)
 			}
-			if grid.CellInCellList(o, g.TravelPath.ListCells()) {
+			if maze.CellInCellList(o, g.TravelPath.ListCells()) {
 				t.Errorf("orpha cell %v is in travelPath [%v]", o, g.TravelPath)
 			}
 		}

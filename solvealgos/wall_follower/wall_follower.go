@@ -7,7 +7,7 @@ package wall_follower
 
 import (
 	"fmt"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/solvealgos"
 	"time"
 )
@@ -17,22 +17,22 @@ type WallFollower struct {
 }
 
 // getDirections returns the possible directions to move in the proper order based on which way you are "facing"
-func getDirections(c *grid.Cell, facing string) []*grid.Cell {
+func getDirections(c *maze.Cell, facing string) []*maze.Cell {
 
 	switch facing {
 	case "north":
-		return []*grid.Cell{c.East, c.North, c.West, c.South}
+		return []*maze.Cell{c.East, c.North, c.West, c.South}
 	case "east":
-		return []*grid.Cell{c.South, c.East, c.North, c.West}
+		return []*maze.Cell{c.South, c.East, c.North, c.West}
 	case "south":
-		return []*grid.Cell{c.West, c.South, c.East, c.North}
+		return []*maze.Cell{c.West, c.South, c.East, c.North}
 	case "west":
-		return []*grid.Cell{c.North, c.West, c.South, c.East}
+		return []*maze.Cell{c.North, c.West, c.South, c.East}
 	}
 	return nil
 }
 
-func pickNextCell(currentCell *grid.Cell, facing string) *grid.Cell {
+func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
 	// always go in this order: "right", "forward", "left", "back"
 
 	dirs := getDirections(currentCell, facing)
@@ -48,7 +48,7 @@ func pickNextCell(currentCell *grid.Cell, facing string) *grid.Cell {
 	return nil
 }
 
-func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
+func (a *WallFollower) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = g.TravelPath
@@ -63,7 +63,7 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 
 		currentCell.SetVisited()
 
-		segment := grid.NewSegment(currentCell, facing)
+		segment := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 		g.SetPathFromTo(fromCell, currentCell, travelPath)
@@ -96,7 +96,7 @@ func (a *WallFollower) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay ti
 	}
 
 	// last cell
-	segment := grid.NewSegment(toCell, facing)
+	segment := maze.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 	g.SetPathFromTo(fromCell, toCell, solvePath)

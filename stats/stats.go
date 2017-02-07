@@ -6,7 +6,6 @@ import (
 	"log"
 	"mazes/colors"
 	"mazes/genalgos"
-	"mazes/grid"
 	"os"
 
 	"sort"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/montanaflynn/stats"
 
+	"mazes/maze"
 	_ "net/http/pprof"
 )
 
@@ -43,7 +43,7 @@ var (
 )
 
 // setMazeStats sets stats about the maze
-func setMazeStats(g *grid.Grid, algo string) {
+func setMazeStats(g *maze.Grid, algo string) {
 	mazeStats[algo]["deadends"] = append(mazeStats[algo]["deadends"], float64(len(g.DeadEnds())))
 	mazeStats[algo]["createtime"] = append(mazeStats[algo]["createtime"], float64(g.CreateTime().Nanoseconds()))
 }
@@ -134,7 +134,7 @@ func solveKeys(m map[string]solvealgos.Algorithmer) []string {
 	return keys
 }
 
-func RunAll(config *grid.Config) {
+func RunAll(config *maze.Config) {
 	// Loop over all algos and collect stats
 	for _, name := range keys(algos.Algorithms) {
 		algo := algos.Algorithms[name]
@@ -144,7 +144,7 @@ func RunAll(config *grid.Config) {
 		}
 		log.Printf("running (gen): %v", name)
 
-		g, err := grid.NewGrid(config)
+		g, err := maze.NewGrid(config)
 		if err != nil {
 			fmt.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -198,7 +198,7 @@ func main() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	config := &grid.Config{
+	config := &maze.Config{
 		Rows:        *rows,
 		Columns:     *columns,
 		CellWidth:   *cellWidth,

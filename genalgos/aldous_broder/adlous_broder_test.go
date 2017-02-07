@@ -2,23 +2,23 @@ package aldous_broder
 
 import (
 	"fmt"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/utils"
 	"testing"
 )
 
 var applytests = []struct {
-	config  *grid.Config
+	config  *maze.Config
 	wantErr bool
 }{
 	{
-		config: &grid.Config{
+		config: &maze.Config{
 			Rows:    utils.Random(5, 40),
 			Columns: utils.Random(5, 40),
 		},
 		wantErr: false,
 	}, {
-		config: &grid.Config{
+		config: &maze.Config{
 			Rows:    10,
 			Columns: 15,
 		},
@@ -33,7 +33,7 @@ func setup() *AldousBroder {
 func TestApply(t *testing.T) {
 
 	for _, tt := range applytests {
-		g, err := grid.NewGrid(tt.config)
+		g, err := maze.NewGrid(tt.config)
 		a := setup()
 
 		if err != nil {
@@ -56,13 +56,13 @@ func TestApply(t *testing.T) {
 }
 
 func BenchmarkApply(b *testing.B) {
-	config := &grid.Config{
+	config := &maze.Config{
 		Rows:    3,
 		Columns: 3,
 	}
 
 	for i := 0; i < b.N; i++ {
-		g, err := grid.NewGrid(config)
+		g, err := maze.NewGrid(config)
 		if err != nil {
 			b.Errorf("invalid config: %v", err)
 		}

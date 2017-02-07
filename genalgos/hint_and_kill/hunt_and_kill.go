@@ -5,7 +5,7 @@ package hint_and_kill
 import (
 	"math/rand"
 	"mazes/genalgos"
-	"mazes/grid"
+	"mazes/maze"
 	"time"
 )
 
@@ -15,7 +15,7 @@ type HuntAndKill struct {
 
 // Hunt scans the grid from left to right and returns the first unvisited cell with at least one visited neighbor
 // Returns nil if there are no more
-func HuntAndLink(g *grid.Grid) *grid.Cell {
+func HuntAndLink(g *maze.Grid) *maze.Cell {
 	for _, cell := range g.Cells() {
 		if cell.Visited() {
 			continue
@@ -31,7 +31,7 @@ func HuntAndLink(g *grid.Grid) *grid.Cell {
 	return nil
 }
 
-func Shuffle(cells []*grid.Cell) []*grid.Cell {
+func Shuffle(cells []*maze.Cell) []*maze.Cell {
 	for i := range cells {
 		j := rand.Intn(i + 1)
 		cells[i], cells[j] = cells[j], cells[i]
@@ -40,7 +40,7 @@ func Shuffle(cells []*grid.Cell) []*grid.Cell {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *HuntAndKill) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
+func (a *HuntAndKill) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
 
 	defer genalgos.TimeTrack(g, time.Now())
 

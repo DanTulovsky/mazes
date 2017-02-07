@@ -9,7 +9,7 @@ package wilsons
 
 import (
 	"mazes/genalgos"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/utils"
 	"time"
 )
@@ -19,14 +19,14 @@ type Wilsons struct {
 }
 
 // Apply applies wilson's algorithm to generate the maze.
-func (a *Wilsons) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
+func (a *Wilsons) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
 
 	defer genalgos.TimeTrack(g, time.Now())
 
-	var currentCell *grid.Cell
-	var randomCell *grid.Cell
-	var walkPath []*grid.Cell
-	var visitedCells []*grid.Cell
+	var currentCell *maze.Cell
+	var randomCell *maze.Cell
+	var walkPath []*maze.Cell
+	var visitedCells []*maze.Cell
 
 	start := g.RandomCell()
 	start.SetVisited()
@@ -41,11 +41,11 @@ func (a *Wilsons) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 		g.SetGenCurrentLocation(currentCell)
 
 		// walk until you hit a visited cell
-		for !grid.CellInCellList(currentCell, visitedCells) {
+		for !maze.CellInCellList(currentCell, visitedCells) {
 			time.Sleep(delay) // animation delay
 
 			// handle loop
-			if grid.CellInCellList(currentCell, walkPath) {
+			if maze.CellInCellList(currentCell, walkPath) {
 				i := utils.SliceIndex(len(walkPath), func(i int) bool { return walkPath[i] == currentCell })
 				walkPath = walkPath[0:i]
 			}
@@ -69,7 +69,7 @@ func (a *Wilsons) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
 		}
 
 		// clear path
-		walkPath = []*grid.Cell{}
+		walkPath = []*maze.Cell{}
 	}
 
 	a.Cleanup(g)

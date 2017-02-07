@@ -5,28 +5,28 @@ package recursive_backtracker
 
 import (
 	"fmt"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/solvealgos"
 	"time"
 )
 
-var travelPath *grid.Path
+var travelPath *maze.Path
 var facing string = "north"
-var startCell *grid.Cell
+var startCell *maze.Cell
 
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay time.Duration) bool {
+func Step(g *maze.Grid, currentCell, toCell *maze.Cell, path *maze.Path, delay time.Duration) bool {
 	// animation delay
 	time.Sleep(delay)
 
-	var nextCell *grid.Cell
+	var nextCell *maze.Cell
 	currentCell.SetVisited()
 
-	segment := grid.NewSegment(currentCell, facing)
+	segment := maze.NewSegment(currentCell, facing)
 	path.AddSegement(segment)
 	travelPath.AddSegement(segment)
 	g.SetPathFromTo(startCell, currentCell, travelPath)
@@ -51,7 +51,7 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay t
 			continue
 		}
 
-		segmentReturn := grid.NewSegment(currentCell, facing)
+		segmentReturn := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segmentReturn)
 		currentCell.SetVisited()
 		g.SetPathFromTo(startCell, currentCell, travelPath)
@@ -63,13 +63,14 @@ func Step(g *grid.Grid, currentCell, toCell *grid.Cell, path *grid.Path, delay t
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
+func (a *RecursiveBacktracker) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var path = g.SolvePath
 	travelPath = g.TravelPath
 	startCell = fromCell
 
+	// DFS traversal of the grid
 	if r := Step(g, fromCell, toCell, path, delay); !r {
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}

@@ -7,7 +7,7 @@ package sidewinder
 import (
 	"log"
 	"mazes/genalgos"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/utils"
 	"time"
 )
@@ -17,13 +17,13 @@ type Sidewinder struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error) {
+func (a *Sidewinder) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	gridWidth, _ := g.Dimensions()
 
 	for _, row := range g.Rows() {
-		var run []*grid.Cell
+		var run []*maze.Cell
 
 		for x := len(row) - 1; x >= 0; x-- {
 			time.Sleep(delay) // animation delay
@@ -52,7 +52,7 @@ func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error
 						c.Link(c.North)
 					}
 					// clear out run
-					run = []*grid.Cell{} // not strictly necessary
+					run = []*maze.Cell{} // not strictly necessary
 
 					continue
 				}
@@ -61,7 +61,7 @@ func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error
 				if l.X != gridWidth-1 || l.Y != 0 {
 					log.Fatalf("in cell %v, which is not top-right cell", cell)
 				}
-				run = []*grid.Cell{}
+				run = []*maze.Cell{}
 				continue // should only happen at top right cell
 			}
 
@@ -76,7 +76,7 @@ func (a *Sidewinder) Apply(g *grid.Grid, delay time.Duration) (*grid.Grid, error
 					cell.Link(cell.East)
 				}
 				// clear out run
-				run = []*grid.Cell{}
+				run = []*maze.Cell{}
 			}
 
 		}

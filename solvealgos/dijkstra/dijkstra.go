@@ -4,7 +4,7 @@ package dijkstra
 
 import (
 	"math"
-	"mazes/grid"
+	"mazes/maze"
 	"mazes/solvealgos"
 	"time"
 )
@@ -13,7 +13,7 @@ type Dijkstra struct {
 	solvealgos.Common
 }
 
-func (a *Dijkstra) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.Duration) (*grid.Grid, error) {
+func (a *Dijkstra) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = g.TravelPath
@@ -31,7 +31,7 @@ func (a *Dijkstra) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.D
 		currentCell.SetVisited()
 
 		smallest := math.MaxInt16
-		var next *grid.Cell
+		var next *maze.Cell
 		for _, link := range currentCell.Links() {
 			dist, _ := d.Get(link)
 			if dist < smallest {
@@ -39,7 +39,7 @@ func (a *Dijkstra) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.D
 				next = link
 			}
 		}
-		segment := grid.NewSegment(next, "north") // arbitrary facing
+		segment := maze.NewSegment(next, "north") // arbitrary facing
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 		g.SetPathFromTo(fromCell, currentCell, travelPath)
@@ -48,7 +48,7 @@ func (a *Dijkstra) Solve(g *grid.Grid, fromCell, toCell *grid.Cell, delay time.D
 
 	// add toCell to path
 	travelPath.ReverseCells()
-	segment := grid.NewSegment(toCell, "north") // arbitrary facing
+	segment := maze.NewSegment(toCell, "north") // arbitrary facing
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 	g.SetPathFromTo(fromCell, toCell, travelPath)
