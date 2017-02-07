@@ -13,7 +13,7 @@ type Dijkstra struct {
 	solvealgos.Common
 }
 
-func (a *Dijkstra) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
+func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = g.TravelPath

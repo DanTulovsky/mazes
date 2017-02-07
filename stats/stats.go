@@ -20,8 +20,8 @@ import (
 
 	"github.com/montanaflynn/stats"
 
-	"mazes/maze"
 	_ "net/http/pprof"
+	"mazes/maze"
 )
 
 var (
@@ -43,7 +43,7 @@ var (
 )
 
 // setMazeStats sets stats about the maze
-func setMazeStats(g *maze.Grid, algo string) {
+func setMazeStats(g *maze.Maze, algo string) {
 	mazeStats[algo]["deadends"] = append(mazeStats[algo]["deadends"], float64(len(g.DeadEnds())))
 	mazeStats[algo]["createtime"] = append(mazeStats[algo]["createtime"], float64(g.CreateTime().Nanoseconds()))
 }

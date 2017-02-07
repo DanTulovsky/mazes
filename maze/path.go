@@ -38,7 +38,7 @@ func (ps *PathSegment) UpdateFacingDirection(f string) {
 }
 
 // DrawPath draws the path as present in the cells
-func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Grid, isLast, isSolution bool) *sdl.Renderer {
+func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, isLast, isSolution bool) *sdl.Renderer {
 	pathWidth := p.Cell().pathWidth
 	PixelsPerCell := p.Cell().width
 

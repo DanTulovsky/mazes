@@ -15,7 +15,7 @@ type Algorithmer interface {
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// delay is ms for animation
-	Solve(g *maze.Grid, fromCell *maze.Cell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error)
+	Solve(g *maze.Maze, fromCell *maze.Cell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error)
 	TravelPath() *maze.Path // all the cells travelled
 }
 
@@ -27,7 +27,7 @@ type Common struct {
 }
 
 // Solve should write the path of the solution to the grid
-func (a *Common) Solve(g *maze.Grid, fromCell, toCell *maze.Cell) (*maze.Grid, error) {
+func (a *Common) Solve(g *maze.Maze, fromCell, toCell *maze.Cell) (*maze.Maze, error) {
 	return nil, errors.New("Solve() not implemented")
 }
 

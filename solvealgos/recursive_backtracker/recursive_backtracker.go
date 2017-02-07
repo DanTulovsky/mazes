@@ -19,7 +19,7 @@ type RecursiveBacktracker struct {
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(g *maze.Grid, currentCell, toCell *maze.Cell, path *maze.Path, delay time.Duration) bool {
+func Step(g *maze.Maze, currentCell, toCell *maze.Cell, path *maze.Path, delay time.Duration) bool {
 	// animation delay
 	time.Sleep(delay)
 
@@ -63,7 +63,7 @@ func Step(g *maze.Grid, currentCell, toCell *maze.Cell, path *maze.Path, delay t
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
+func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var path = g.SolvePath

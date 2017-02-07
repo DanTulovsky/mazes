@@ -12,19 +12,19 @@ import (
 )
 
 type Algorithmer interface {
-	Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error)
-	Cleanup(g *maze.Grid)
-	CheckGrid(g *maze.Grid) error
+	Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error)
+	Cleanup(g *maze.Maze)
+	CheckGrid(g *maze.Maze) error
 }
 
 type Common struct {
 }
 
-func (a *Common) Apply(*maze.Grid) (*maze.Grid, error) {
+func (a *Common) Apply(*maze.Maze) (*maze.Maze, error) {
 	return nil, errors.New("Apply() not implemented")
 }
 
-func Step(g *maze.Grid, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
+func Step(g *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 
 	var nextCell *maze.Cell
 	currentCell.SetVisited()
@@ -69,7 +69,7 @@ func Step(g *maze.Grid, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 }
 
 // CheckGrid checks that the generated grid is valid
-func (a *Common) CheckGrid(g *maze.Grid) error {
+func (a *Common) CheckGrid(g *maze.Maze) error {
 	log.Print("Checking for cycles and converting to a spanning tree...")
 	g.ResetVisited()
 
@@ -99,11 +99,11 @@ func (a *Common) CheckGrid(g *maze.Grid) error {
 }
 
 // Cleanup cleans up after generator is done
-func (a *Common) Cleanup(g *maze.Grid) {
+func (a *Common) Cleanup(g *maze.Maze) {
 	g.SetGenCurrentLocation(nil)
 }
 
-func TimeTrack(g *maze.Grid, start time.Time) {
+func TimeTrack(g *maze.Maze, start time.Time) {
 	g.SetCreateTime(time.Since(start))
 }
 

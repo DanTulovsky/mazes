@@ -17,7 +17,7 @@ type Sidewinder struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *Sidewinder) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
+func (a *Sidewinder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	gridWidth, _ := g.Dimensions()

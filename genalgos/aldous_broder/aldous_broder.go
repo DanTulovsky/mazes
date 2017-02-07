@@ -15,7 +15,7 @@ type AldousBroder struct {
 }
 
 // Apply applies the adlous-broder algorithm to generate the maze.
-func (a *AldousBroder) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
+func (a *AldousBroder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	var visitedCells int

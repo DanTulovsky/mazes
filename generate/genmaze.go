@@ -176,10 +176,10 @@ func checkSolveAlgo(a string) bool {
 //}
 
 // showMazeStats shows some states about the maze
-func showMazeStats(g *maze.Grid) {
-	x, y := g.Dimensions()
+func showMazeStats(m *maze.Maze) {
+	x, y := m.Dimensions()
 	log.Printf(">> Dimensions: [%v, %v]", x, y)
-	log.Printf(">> Dead Ends: %v", len(g.DeadEnds()))
+	log.Printf(">> Dead Ends: %v", len(m.DeadEnds()))
 }
 
 //func waitGUI() {
@@ -197,7 +197,7 @@ func showMazeStats(g *maze.Grid) {
 //}
 
 // Solve runs the solvers against the grid.
-func Solve(g *maze.Grid) (solvealgos.Algorithmer, error) {
+func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
 	var err error
 
 	if !checkSolveAlgo(*solveAlgo) {
@@ -209,19 +209,19 @@ func Solve(g *maze.Grid) (solvealgos.Algorithmer, error) {
 	// solve the longest path
 	if fromCell == nil || toCell == nil {
 		log.Print("No fromCella and toCell set, defaulting to longestPath.")
-		_, fromCell, toCell, _ = g.LongestPath()
+		_, fromCell, toCell, _ = m.LongestPath()
 	}
 
-	g.SetDistanceColors(fromCell)
-	g.SetFromToColors(fromCell, toCell)
-	g.ResetVisited()
+	m.SetDistanceColors(fromCell)
+	m.SetFromToColors(fromCell, toCell)
+	m.ResetVisited()
 
 	solver = algos.SolveAlgorithms[*solveAlgo]
 	delay, err := time.ParseDuration(*solveDrawDelay)
 	if err != nil {
 		return nil, err
 	}
-	g, err = solver.Solve(g, fromCell, toCell, delay)
+	m, err = solver.Solve(m, fromCell, toCell, delay)
 	if err != nil {
 		return nil, fmt.Errorf("error running solver: %v", err)
 	}

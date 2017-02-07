@@ -8,8 +8,8 @@ package recursive_backtracker
 
 import (
 	"mazes/genalgos"
-	"mazes/maze"
 	"time"
+	"mazes/maze"
 )
 
 type RecursiveBacktracker struct {
@@ -17,7 +17,7 @@ type RecursiveBacktracker struct {
 }
 
 // Apply applies the recursive backtracker algorithm to generate the maze.
-func (a *RecursiveBacktracker) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
+func (a *RecursiveBacktracker) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	cells := maze.NewStack()

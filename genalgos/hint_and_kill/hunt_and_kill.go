@@ -15,7 +15,7 @@ type HuntAndKill struct {
 
 // Hunt scans the grid from left to right and returns the first unvisited cell with at least one visited neighbor
 // Returns nil if there are no more
-func HuntAndLink(g *maze.Grid) *maze.Cell {
+func HuntAndLink(g *maze.Maze) *maze.Cell {
 	for _, cell := range g.Cells() {
 		if cell.Visited() {
 			continue
@@ -40,7 +40,7 @@ func Shuffle(cells []*maze.Cell) []*maze.Cell {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *HuntAndKill) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
+func (a *HuntAndKill) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 
 	defer genalgos.TimeTrack(g, time.Now())
 

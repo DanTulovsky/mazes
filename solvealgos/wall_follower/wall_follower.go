@@ -48,7 +48,7 @@ func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
 	return nil
 }
 
-func (a *WallFollower) Solve(g *maze.Grid, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Grid, error) {
+func (a *WallFollower) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = g.TravelPath

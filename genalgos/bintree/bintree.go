@@ -15,7 +15,7 @@ type Bintree struct {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *Bintree) Apply(g *maze.Grid, delay time.Duration) (*maze.Grid, error) {
+func (a *Bintree) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
 	for _, currentCell := range g.Cells() {
