@@ -28,8 +28,8 @@ var (
 	// algo[stat] = value
 	mazeStats map[string]map[string][]float64 = make(map[string]map[string][]float64)
 
-	rows            = flag.Int("r", 20, "number of rows in the maze")
-	columns         = flag.Int("c", 20, "number of rows in the maze")
+	rows            = flag.Int("r", 10, "number of rows in the maze")
+	columns         = flag.Int("c", 10, "number of rows in the maze")
 	bgColor         = flag.String("bgcolor", "white", "background color")
 	wallColor       = flag.String("wall_color", "black", "wall color")
 	borderColor     = flag.String("border_color", "black", "border color")

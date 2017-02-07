@@ -135,3 +135,8 @@ func keys(m map[*node]bool) []*node {
 func (n *node) Children() []*node {
 	return keys(n.children)
 }
+
+// Parent returns the parent of the current node
+func (n *node) Parent() *node {
+	return n.parent
+}
