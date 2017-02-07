@@ -62,6 +62,7 @@ func TestNewGrid(t *testing.T) {
 		if g.Size() != tt.config.Rows*tt.config.Columns {
 			t.Errorf("Expected size [%v], but have [%v]", tt.config.Rows*tt.config.Columns, g.Size())
 		}
+
 	}
 }
 
