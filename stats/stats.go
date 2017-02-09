@@ -20,8 +20,8 @@ import (
 
 	"github.com/montanaflynn/stats"
 
-	_ "net/http/pprof"
 	"mazes/maze"
+	_ "net/http/pprof"
 )
 
 var (
@@ -174,9 +174,11 @@ func RunAll(config *maze.Config) {
 			key := fmt.Sprintf("%v_solve_time", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveTime().Nanoseconds()))
 
+			// Solution path length (not travel path)
 			key = fmt.Sprintf("%v_solve_path_length", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolvePath().Length()))
 
+			// Travel path length while finding the end
 			key = fmt.Sprintf("%v_solve_steps", solverName)
 			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveSteps()))
 		}

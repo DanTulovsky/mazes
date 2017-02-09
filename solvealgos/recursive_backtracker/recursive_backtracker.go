@@ -19,7 +19,7 @@ type RecursiveBacktracker struct {
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(g *maze.Maze, currentCell, toCell *maze.Cell, path *maze.Path, delay time.Duration) bool {
+func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, delay time.Duration) bool {
 	// animation delay
 	time.Sleep(delay)
 
@@ -27,7 +27,7 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, path *maze.Path, delay t
 	currentCell.SetVisited()
 
 	segment := maze.NewSegment(currentCell, facing)
-	path.AddSegement(segment)
+	solvePath.AddSegement(segment)
 	travelPath.AddSegement(segment)
 	g.SetPathFromTo(startCell, currentCell, travelPath)
 
@@ -39,7 +39,7 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, path *maze.Path, delay t
 		if !nextCell.Visited() {
 			facing = currentCell.GetFacingDirection(nextCell)
 			segment.UpdateFacingDirection(facing)
-			if Step(g, nextCell, toCell, path, delay) {
+			if Step(g, nextCell, toCell, solvePath, delay) {
 				return true
 			}
 		}
@@ -57,7 +57,7 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, path *maze.Path, delay t
 		g.SetPathFromTo(startCell, currentCell, travelPath)
 
 	}
-	path.DelSegement()
+	solvePath.DelSegement()
 	time.Sleep(delay)
 
 	return false
@@ -66,19 +66,19 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, path *maze.Path, delay t
 func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var path = g.SolvePath
+	var solvePath = g.SolvePath
 	travelPath = g.TravelPath
 	startCell = fromCell
 
 	// DFS traversal of the grid
-	if r := Step(g, fromCell, toCell, path, delay); !r {
+	if r := Step(g, fromCell, toCell, solvePath, delay); !r {
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
-	g.SetPathFromTo(fromCell, toCell, path)
+	g.SetPathFromTo(fromCell, toCell, solvePath)
 
 	// stats
-	a.SetSolvePath(path)
+	a.SetSolvePath(solvePath)
 	a.SetSolveSteps(travelPath.Length())
 	a.SetTravelPath(travelPath)
 
