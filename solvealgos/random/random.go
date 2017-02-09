@@ -47,7 +47,7 @@ func (a *Random) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Dur
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(solvePath.Length())
+	a.SetSolveSteps(travelPath.Length())
 
 	return g, nil
 }

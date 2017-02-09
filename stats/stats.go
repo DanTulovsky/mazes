@@ -84,14 +84,14 @@ func printSolverStats() {
 			fmt.Printf("          %-25s : %6v\n", solverName, time.Duration(t))
 		}
 
-		fmt.Println("      Length of Solution (average)")
+		fmt.Println("      Length of Shortest Solution (average)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
 			key := fmt.Sprintf("%v_solve_path_length", solverName)
 			l, _ := stats.Mean(mazeStats[name][key])
 			fmt.Printf("          %-25s : %6v\n", solverName, l)
 		}
 
-		fmt.Println("      Steps to find Solution (average)")
+		fmt.Println("      Travel Steps to find Solution (average)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
 			key := fmt.Sprintf("%v_solve_steps", solverName)
 			s, _ := stats.Mean(mazeStats[name][key])
