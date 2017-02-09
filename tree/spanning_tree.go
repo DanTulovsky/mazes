@@ -6,12 +6,15 @@ import "fmt"
 // to be used for a tree of cells, where the value of each cell is the coordinate: "x,y"
 type Tree struct {
 	root *node
+	// tree only allows unique values, so make retrieving them fast
+	values map[string]*node
 }
 
 // NewTree returns a new tree with node n as the root
 func NewTree(n *node) (*Tree, error) {
 	return &Tree{
-		root: n,
+		root:   n,
+		values: map[string]*node{n.value: n},
 	}, nil
 }
 
@@ -44,12 +47,13 @@ func (t *Tree) AddNode(n *node, p *node) error {
 		return fmt.Errorf("new tree node cannot be nil: %v", n)
 	}
 
-	if t.Node(n.value) != nil {
+	if _, ok := t.values[n.value]; ok {
 		return fmt.Errorf("node with value [%v] already exists", n.value)
 	}
 
 	n.parent = p
 	p.children[n] = true
+	t.values[n.value] = n
 
 	return nil
 }
@@ -75,24 +79,13 @@ func (t *Tree) NodeCount() int {
 	return nodes
 }
 
-// findNode returns the node with value v, nil otherwise
-func findNode(n *node, v string) *node {
-	if n.value == v {
-		return n
-	}
-
-	for _, n := range n.Children() {
-		if r := findNode(n, v); r != nil {
-			return r
-		}
-	}
-
-	return nil
-}
-
 // Node returns the node with the provided value, nil if not found
 func (t *Tree) Node(v string) *node {
-	return findNode(t.Root(), v)
+	if node, ok := t.values[v]; !ok {
+		return nil
+	} else {
+		return node
+	}
 
 }
 

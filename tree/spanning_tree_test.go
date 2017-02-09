@@ -79,9 +79,9 @@ func makeTree(nodes map[string][]string) (*Tree, error) {
 func TestTree(t *testing.T) {
 
 	for _, tt := range treetests {
-		_, err := makeTree(tt.nodes)
+		trie, err := makeTree(tt.nodes)
 		if err != nil && !tt.wantErr {
-			t.Errorf("failed to create tree: %v", err)
+			t.Errorf("failed to create tree: %v\n%v\n", err, trie)
 		}
 
 	}
