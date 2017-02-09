@@ -104,7 +104,7 @@ func (a *WallFollower) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay ti
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(solvePath.Length()) // always the same as the actual path
+	a.SetSolveSteps(travelPath.Length()) // always the same as the actual path
 
 	return g, nil
 }

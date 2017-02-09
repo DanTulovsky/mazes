@@ -59,8 +59,8 @@ var (
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate      = flag.Uint("frame_rate", 120, "frame rate for animation")
-	genDrawDelay   = flag.String("gen_draw_delay", "1000us", "solver delay per step, used for animation")
-	solveDrawDelay = flag.String("solve_draw_delay", "50ms", "solver delay per step, used for animation")
+	genDrawDelay   = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
+	solveDrawDelay = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 )
 
 func setupSDL() {
