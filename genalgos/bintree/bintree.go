@@ -18,7 +18,7 @@ type Bintree struct {
 func (a *Bintree) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	defer genalgos.TimeTrack(g, time.Now())
 
-	for _, currentCell := range g.Cells() {
+	for currentCell := range g.Cells() {
 		time.Sleep(delay) // animation delay
 		g.SetGenCurrentLocation(currentCell)
 

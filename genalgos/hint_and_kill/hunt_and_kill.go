@@ -16,7 +16,7 @@ type HuntAndKill struct {
 // Hunt scans the grid from left to right and returns the first unvisited cell with at least one visited neighbor
 // Returns nil if there are no more
 func HuntAndLink(g *maze.Maze) *maze.Cell {
-	for _, cell := range g.Cells() {
+	for cell := range g.Cells() {
 		if cell.Visited() {
 			continue
 		}

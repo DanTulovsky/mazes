@@ -16,6 +16,9 @@ import (
 	"image"
 	_ "image/png"
 	"mazes/maze"
+
+	"github.com/pkg/profile"
+	"github.com/sasha-s/go-deadlock"
 )
 
 // For gui support
@@ -38,24 +41,25 @@ var (
 
 	mask []maze.Location = make([]maze.Location, 0)
 
-	rows                 = flag.Int("r", 30, "number of rows in the maze")
-	columns              = flag.Int("c", 60, "number of rows in the maze")
-	bgColor              = flag.String("bgcolor", "white", "background color")
-	wallColor            = flag.String("wall_color", "black", "wall color")
-	borderColor          = flag.String("border_color", "black", "border color")
-	currentLocationColor = flag.String("location_color", "lime", "border color")
-	pathColor            = flag.String("path_color", "red", "border color")
-	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
-	cellWidth            = flag.Int("w", 20, "cell width (best as multiple of 2)")
-	wallWidth            = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	pathWidth            = flag.Int("path_width", 2, "path width")
-	showAscii            = flag.Bool("ascii", false, "show ascii maze")
-	darkMode             = flag.Bool("dark_mode", false, "only show cells solver has seen")
-	showGUI              = flag.Bool("gui", true, "show gui maze")
-	showStats            = flag.Bool("stats", false, "show maze stats")
-	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	createAlgo           = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	maskImage            = flag.String("mask_image", "", "file name of mask image")
+	rows                    = flag.Int("r", 30, "number of rows in the maze")
+	columns                 = flag.Int("c", 60, "number of rows in the maze")
+	bgColor                 = flag.String("bgcolor", "white", "background color")
+	wallColor               = flag.String("wall_color", "black", "wall color")
+	borderColor             = flag.String("border_color", "black", "border color")
+	currentLocationColor    = flag.String("location_color", "lime", "border color")
+	pathColor               = flag.String("path_color", "red", "border color")
+	visitedCellColor        = flag.String("visited_color", "red", "color of visited cell marker")
+	cellWidth               = flag.Int("w", 20, "cell width (best as multiple of 2)")
+	wallWidth               = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	pathWidth               = flag.Int("path_width", 2, "path width")
+	showAscii               = flag.Bool("ascii", false, "show ascii maze")
+	darkMode                = flag.Bool("dark_mode", false, "only show cells solver has seen")
+	showGUI                 = flag.Bool("gui", true, "show gui maze")
+	showStats               = flag.Bool("stats", false, "show maze stats")
+	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
+	markVisitedCells        = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
+	createAlgo              = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
+	maskImage               = flag.String("mask_image", "", "file name of mask image")
 	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	frameRate      = flag.Uint("frame_rate", 120, "frame rate for animation")
@@ -284,8 +288,14 @@ func run() int {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	if *enableDeadlockDetection {
+		deadlock.Opts.Disable = false
+	} else {
+		deadlock.Opts.Disable = true
+	}
+
 	// profiling
-	// defer profile.Start().Stop()
+	defer profile.Start().Stop()
 
 	// Mask image if provided.
 	// If the mask image is provided, use that as the dimensions of the grid
@@ -325,7 +335,7 @@ func run() int {
 		DarkMode:             *darkMode,
 	}
 
-	g, err := maze.NewGrid(config)
+	m, err := maze.NewGrid(config)
 	if err != nil {
 		fmt.Printf("invalid config: %v", err)
 		os.Exit(1)
@@ -366,20 +376,20 @@ func run() int {
 		}
 
 		log.Printf("running generator %v", *createAlgo)
-		g, err = algo.Apply(g, delay)
+		m, err = algo.Apply(m, delay)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
-		if err := algo.CheckGrid(g); err != nil {
+		if err := algo.CheckGrid(m); err != nil {
 			log.Fatalf("maze is not valid: %v", err)
 		}
 
 		if *showStats {
-			showMazeStats(g)
+			showMazeStats(m)
 		}
 
 		if *solveAlgo != "" {
-			solver, err = Solve(g)
+			solver, err = Solve(m)
 			if err != nil {
 				log.Print(err)
 			}
@@ -394,7 +404,7 @@ func run() int {
 	///////////////////////////////////////////////////////////////////////////
 	// ascii maze
 	if *showAscii {
-		fmt.Printf("%v\n", g)
+		fmt.Printf("%v\n", m)
 	}
 
 	// gui maze
@@ -419,7 +429,7 @@ func run() int {
 				colors.SetDrawColor(colors.GetColor("black"), r)
 
 				r.Clear()
-				g.DrawMaze(r)
+				m.DrawMaze(r)
 			})
 
 			//	// wg := sync.WaitGroup{}
