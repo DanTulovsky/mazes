@@ -250,7 +250,7 @@ func (m *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	m.drawPath(r, m.TravelPath, m.config.MarkVisitedCells)
 
 	// Draw the location of the solver algorithm
-	m.drawSolveCurrentLocation(r)
+	// m.drawSolveCurrentLocation(r)
 
 	return r
 }
@@ -304,13 +304,17 @@ func (m *Maze) drawSolveCurrentLocation(r *sdl.Renderer) {
 
 func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 
-	if m.GenCurrentLocation() != nil {
+	current_location := m.GenCurrentLocation()
+
+	if current_location != nil {
 		for _, cell := range m.Cells() {
-			// reset all colors to default
-			cell.SetBGColor(colors.GetColor("white"))
+			if cell != nil {
+				// reset all colors to default
+				cell.SetBGColor(colors.GetColor("white"))
+			}
 		}
 
-		m.GenCurrentLocation().SetBGColor(colors.GetColor("yellow"))
+		current_location.SetBGColor(colors.GetColor("yellow"))
 	}
 	return r
 }
@@ -326,18 +330,23 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 
 	var isSolution bool
 	var isLast bool
+	pathLength := len(path.segments)
 
 	for x, segment := range path.segments {
+		if x == pathLength-1 {
+			isLast = true // last segment is drawn slightly different
+		}
+
+		if isLast {
+			segment.Cell().DrawCurrentLocation(r)
+		}
+
 		if _, ok := alreadyDone[segment.Cell()]; ok {
 			continue
 		}
 
 		// cache state of this cell
 		alreadyDone[segment.Cell()] = true
-
-		if x == len(path.segments)-1 {
-			isLast = true // last segment is drawn slightly different
-		}
 
 		if SegmentInPath(segment, m.SolvePath) {
 			isSolution = true
