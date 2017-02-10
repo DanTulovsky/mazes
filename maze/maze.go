@@ -11,6 +11,7 @@ import (
 
 	"math"
 
+	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -45,6 +46,8 @@ type Maze struct {
 	TravelPath *Path // the travel path of the solver, update in real time
 
 	genCurrentLocation *Cell // the current location of generator
+
+	deadlock.RWMutex
 }
 
 // NewGrid returns a new grid.
@@ -114,42 +117,60 @@ func (m *Maze) configureCells() {
 
 }
 
+// SetCurrentLocation sets the current cell location of the generator algorithm
 func (m *Maze) SetGenCurrentLocation(cell *Cell) {
+	m.Lock()
+	defer m.Unlock()
 	m.genCurrentLocation = cell
 }
 
-func (g *Maze) SetCreateTime(t time.Duration) {
-	g.createTime = t
+// GenCurrentLocation returns the current cell location of the generator algorithm
+func (m *Maze) GenCurrentLocation() *Cell {
+	m.RLock()
+	defer m.RUnlock()
+	return m.genCurrentLocation
 }
 
-func (g *Maze) CreateTime() time.Duration {
-	return g.createTime
+func (m *Maze) SetCreateTime(t time.Duration) {
+	m.Lock()
+	defer m.Unlock()
+	m.createTime = t
+}
+
+func (m *Maze) CreateTime() time.Duration {
+	m.RLock()
+	defer m.RUnlock()
+	return m.createTime
 }
 
 // Dimensions returns the dimensions of the grid.
-func (g *Maze) Dimensions() (int, int) {
-
-	return g.columns, g.rows
+func (m *Maze) Dimensions() (int, int) {
+	m.RLock()
+	defer m.RUnlock()
+	return m.columns, m.rows
 }
 
-func (g *Maze) String() string {
+func (m *Maze) String() string {
+	m.RLock()
+	defer m.RUnlock()
+
 	output := "  "
-	for x := 0; x < g.columns; x++ {
+	for x := 0; x < m.columns; x++ {
 		output = fmt.Sprintf("%v%4v", output, x)
 	}
 
 	output = fmt.Sprintf("\n%v\n   ┌", output)
-	for x := 0; x < g.columns-1; x++ {
+	for x := 0; x < m.columns-1; x++ {
 		output = fmt.Sprintf("%v───┬", output)
 	}
 	output = output + "───┐" + "\n"
 
-	for y := 0; y < g.rows; y++ {
+	for y := 0; y < m.rows; y++ {
 		top := fmt.Sprintf("%-3v│", y)
 		bottom := "   ├"
 
-		for x := 0; x < g.columns; x++ {
-			cell, err := g.Cell(x, y)
+		for x := 0; x < m.columns; x++ {
+			cell, err := m.Cell(x, y)
 			if err != nil {
 				continue
 			}
@@ -165,16 +186,16 @@ func (g *Maze) String() string {
 				south_boundary = "───"
 			}
 			corner := "┼"
-			if x == g.columns-1 {
+			if x == m.columns-1 {
 				corner = "┤" // right wall
 			}
-			if x == g.columns-1 && y == g.rows-1 {
+			if x == m.columns-1 && y == m.rows-1 {
 				corner = "┘"
 			}
-			if x == 0 && y == g.rows-1 {
+			if x == 0 && y == m.rows-1 {
 				bottom = "   └"
 			}
-			if x < g.columns-1 && y == g.rows-1 {
+			if x < m.columns-1 && y == m.rows-1 {
 				corner = "┴"
 			}
 			bottom = fmt.Sprintf("%v%v%v", bottom, south_boundary, corner)
@@ -187,21 +208,21 @@ func (g *Maze) String() string {
 }
 
 // Draw renders the gui maze in memory, display by calling Present
-func (g *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
+func (m *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// utils.TimeTrack(time.Now(), "DrawMaze")
 
 	// If saved, draw distance colors
-	if g.fromCell != nil {
-		g.SetDistanceColors(g.fromCell)
+	if m.fromCell != nil {
+		m.SetDistanceColors(m.fromCell)
 	}
-	if g.fromCell != nil && g.toCell != nil {
-		g.SetFromToColors(g.fromCell, g.toCell)
+	if m.fromCell != nil && m.toCell != nil {
+		m.SetFromToColors(m.fromCell, m.toCell)
 	}
 
 	// Each cell draws its background, half the wall as well as anything inside it
-	for x := 0; x < g.columns; x++ {
-		for y := 0; y < g.rows; y++ {
-			cell, err := g.Cell(x, y)
+	for x := 0; x < m.columns; x++ {
+		for y := 0; y < m.rows; y++ {
+			cell, err := m.Cell(x, y)
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
@@ -220,29 +241,29 @@ func (g *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Draw outside border
-	g.DrawBorder(r)
+	m.drawBorder(r)
 
 	// Draw location of the generator algorithm
-	g.DrawGenCurrentLocation(r)
+	m.drawGenCurrentLocation(r)
 
 	// Draw the path
-	g.DrawPath(r, g.TravelPath, g.config.MarkVisitedCells)
+	m.drawPath(r, m.TravelPath, m.config.MarkVisitedCells)
 
 	// Draw the location of the solver algorithm
-	g.DrawSolveCurrentLocation(r)
+	m.drawSolveCurrentLocation(r)
 
 	return r
 }
 
 // DrawBorder renders the maze border in memory, display by calling Present
-func (g *Maze) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
-	colors.SetDrawColor(g.borderColor, r)
+func (m *Maze) drawBorder(r *sdl.Renderer) *sdl.Renderer {
+	colors.SetDrawColor(m.borderColor, r)
 
 	var bg sdl.Rect
 	var rects []sdl.Rect
-	winWidth := int32(g.columns*g.cellWidth + g.wallWidth*2)
-	winHeight := int32(g.rows*g.cellWidth + g.wallWidth*2)
-	wallWidth := int32(g.wallWidth)
+	winWidth := int32(m.columns*m.cellWidth + m.wallWidth*2)
+	winHeight := int32(m.rows*m.cellWidth + m.wallWidth*2)
+	wallWidth := int32(m.wallWidth)
 
 	// top
 	bg = sdl.Rect{0, 0, winWidth, wallWidth}
@@ -266,13 +287,13 @@ func (g *Maze) DrawBorder(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
-func (g *Maze) DrawSolveCurrentLocation(r *sdl.Renderer) {
+func (m *Maze) drawSolveCurrentLocation(r *sdl.Renderer) {
 
-	if g.TravelPath == nil {
+	if m.TravelPath == nil {
 		return
 	}
 
-	segment := g.TravelPath.LastSegment()
+	segment := m.TravelPath.LastSegment()
 	if segment != nil {
 		cell := segment.Cell()
 		if cell != nil {
@@ -281,23 +302,24 @@ func (g *Maze) DrawSolveCurrentLocation(r *sdl.Renderer) {
 	}
 }
 
-func (g *Maze) DrawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
-	if g.genCurrentLocation != nil {
-		for _, cell := range g.Cells() {
+func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+
+	if m.GenCurrentLocation() != nil {
+		for _, cell := range m.Cells() {
 			// reset all colors to default
-			cell.bgColor = colors.GetColor("white")
+			cell.SetBGColor(colors.GetColor("white"))
 		}
 
-		g.genCurrentLocation.bgColor = colors.GetColor("yellow")
+		m.GenCurrentLocation().SetBGColor(colors.GetColor("yellow"))
 	}
 	return r
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
 // This is drawing g.TravelPath if path == nil
-func (g *Maze) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
+func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
 	if path == nil {
-		path = g.TravelPath
+		path = m.TravelPath
 	}
 
 	alreadyDone := make(map[*Cell]bool)
@@ -317,13 +339,13 @@ func (g *Maze) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 			isLast = true // last segment is drawn slightly different
 		}
 
-		if SegmentInPath(segment, g.SolvePath) {
+		if SegmentInPath(segment, m.SolvePath) {
 			isSolution = true
 		} else {
 			isSolution = false
 		}
 
-		segment.DrawPath(r, g, isLast, isSolution) // solution is colored by a different color
+		segment.DrawPath(r, m, isLast, isSolution) // solution is colored by a different color
 
 		if markVisited {
 			segment.Cell().DrawVisited(r)
@@ -336,31 +358,40 @@ func (g *Maze) DrawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 
 // DrawVisited renders the gui maze visited dots in memory, display by calling Present
 // This function draws the entire path at once
-func (g *Maze) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
-	for x := 0; x < g.columns; x++ {
-		for y := 0; y < g.rows; y++ {
-			cell, err := g.Cell(x, y)
-			if err != nil {
-				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
-			}
-			cell.DrawVisited(r)
-		}
-	}
-
-	return r
-}
+//func (m *Maze) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
+//	m.RLock()
+//	defer m.RUnlock()
+//
+//	for x := 0; x < m.columns; x++ {
+//		for y := 0; y < m.rows; y++ {
+//			cell, err := m.Cell(x, y)
+//			if err != nil {
+//				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
+//			}
+//			cell.DrawVisited(r)
+//		}
+//	}
+//
+//	return r
+//}
 
 // Cell returns the cell at r,c
-func (g *Maze) Cell(x, y int) (*Cell, error) {
-	if x < 0 || x >= g.columns || y < 0 || y >= g.rows {
+func (m *Maze) Cell(x, y int) (*Cell, error) {
+	m.RLock()
+	defer m.RUnlock()
+
+	if x < 0 || x >= m.columns || y < 0 || y >= m.rows {
 		return nil, fmt.Errorf("(%v, %v) is outside the grid", x, y)
 	}
-	return g.cells[x][y], nil
+	return m.cells[x][y], nil
 }
 
 // RandomCell returns a random cell out of all non-orphaned cells
-func (g *Maze) RandomCell() *Cell {
-	cells := g.Cells()
+func (m *Maze) RandomCell() *Cell {
+	m.RLock()
+	defer m.RUnlock()
+
+	cells := m.Cells()
 	return cells[utils.Random(0, len(cells))]
 }
 
@@ -370,18 +401,24 @@ func (g *Maze) RandomCellFromList(cells []*Cell) *Cell {
 }
 
 // Size returns the number of cells in the grid
-func (g *Maze) Size() int {
-	return g.columns * g.rows
+func (m *Maze) Size() int {
+	m.RLock()
+	defer m.RUnlock()
+
+	return m.columns * m.rows
 }
 
 // Rows returns a list of rows (essentially the grid) - excluding the orphaned cells
-func (g *Maze) Rows() [][]*Cell {
+func (m *Maze) Rows() [][]*Cell {
+	m.RLock()
+	defer m.RUnlock()
+
 	rows := [][]*Cell{}
 
-	for y := g.rows - 1; y >= 0; y-- {
+	for y := m.rows - 1; y >= 0; y-- {
 		cells := []*Cell{}
-		for x := g.columns - 1; x >= 0; x-- {
-			cell, _ := g.Cell(x, y)
+		for x := m.columns - 1; x >= 0; x-- {
+			cell, _ := m.Cell(x, y)
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
 			}
@@ -392,14 +429,17 @@ func (g *Maze) Rows() [][]*Cell {
 }
 
 // Cells returns a list of un-orphanded cells in the grid
-func (g *Maze) Cells() []*Cell {
-	if g.mazeCells != nil {
-		return g.mazeCells
+func (m *Maze) Cells() []*Cell {
+	m.RLock()
+	defer m.RUnlock()
+
+	if m.mazeCells != nil {
+		return m.mazeCells
 	}
 	cells := []*Cell{}
-	for y := g.rows - 1; y >= 0; y-- {
-		for x := g.columns - 1; x >= 0; x-- {
-			cell := g.cells[x][y]
+	for y := m.rows - 1; y >= 0; y-- {
+		for x := m.columns - 1; x >= 0; x-- {
+			cell := m.cells[x][y]
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
 			}
@@ -407,35 +447,38 @@ func (g *Maze) Cells() []*Cell {
 	}
 
 	// cache
-	g.mazeCells = cells
+	m.mazeCells = cells
 	return cells
 }
 
 // OrphanCells returns a list of orphan cells in the grid
-func (g *Maze) OrphanCells() []*Cell {
-	if g.orphanCells != nil {
-		return g.orphanCells
+func (m *Maze) OrphanCells() []*Cell {
+	m.RLock()
+	defer m.RUnlock()
+
+	if m.orphanCells != nil {
+		return m.orphanCells
 	}
 
 	cells := []*Cell{}
-	for y := 0; y < g.rows; y++ {
-		for x := 0; x < g.columns; x++ {
-			cell := g.cells[x][y]
+	for y := 0; y < m.rows; y++ {
+		for x := 0; x < m.columns; x++ {
+			cell := m.cells[x][y]
 			if cell.IsOrphan() {
 				cells = append(cells, cell)
 			}
 		}
 	}
 
-	g.orphanCells = cells
+	m.orphanCells = cells
 	return cells
 }
 
 // UnvisitedCells returns a list of unvisited cells in the grid
-func (g *Maze) UnvisitedCells() []*Cell {
+func (m *Maze) UnvisitedCells() []*Cell {
 	cells := []*Cell{}
 
-	for _, cell := range g.Cells() {
+	for _, cell := range m.Cells() {
 		if !cell.Visited() {
 			cells = append(cells, cell)
 		}
@@ -445,7 +488,7 @@ func (g *Maze) UnvisitedCells() []*Cell {
 }
 
 // ConnectCells connects the list of cells in order by passageways
-func (g *Maze) ConnectCells(cells []*Cell) {
+func (m *Maze) ConnectCells(cells []*Cell) {
 
 	for x := 0; x < len(cells)-1; x++ {
 		cell := cells[x]
@@ -459,9 +502,9 @@ func (g *Maze) ConnectCells(cells []*Cell) {
 }
 
 // LongestPath returns the longest path through the maze
-func (g *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
+func (m *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 	// pick random starting point
-	fromCell = g.RandomCell()
+	fromCell = m.RandomCell()
 
 	// find furthest point
 	furthest, _ := fromCell.FurthestCell()
@@ -470,31 +513,27 @@ func (g *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 	toCell, _ = furthest.FurthestCell()
 
 	// now get the path
-	dist, path = g.ShortestPath(furthest, toCell)
+	dist, path = m.ShortestPath(furthest, toCell)
 
 	return dist, furthest, toCell, path
 }
 
-func (p *Path) ReverseCells() {
-	for i, j := 0, len(p.segments)-1; i < j; i, j = i+1, j-1 {
-		p.segments[i], p.segments[j] = p.segments[j], p.segments[i]
-	}
-}
-
 // SetFromToColors sets the opacity of the from and to cells to be highly visible
-func (g *Maze) SetFromToColors(fromCell, toCell *Cell) {
+func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
+	m.Lock()
+	defer m.Unlock()
+
 	// Set path start and end colors
-	fromCell.bgColor = colors.SetOpacity(fromCell.bgColor, 0)
-	toCell.bgColor = colors.SetOpacity(toCell.bgColor, 255)
+	fromCell.SetBGColor(colors.SetOpacity(fromCell.bgColor, 0))
+	toCell.SetBGColor(colors.SetOpacity(toCell.bgColor, 255))
 
 	// save these for color refresh.
-	g.fromCell = fromCell
-	g.toCell = toCell
+	m.fromCell = fromCell
+	m.toCell = toCell
 }
 
 // SetPathFromTo draws the given path from fromCell to toCell
-func (g *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
-	// g.SetFromToColors(fromCell, toCell)
+func (m *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 
 	var prev, next *Cell
 	for x := 0; x < path.Length(); x++ {
@@ -511,7 +550,7 @@ func (g *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 }
 
 // ShortestPath finds the shortest path from fromCell to toCell
-func (g *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
+func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	if path := fromCell.PathTo(toCell); path != nil {
 		return path.Length(), path
 	}
@@ -551,14 +590,14 @@ func (g *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 }
 
 // SetDistanceColors colors the graph based on distances from c
-func (g *Maze) SetDistanceColors(c *Cell) {
+func (m *Maze) SetDistanceColors(c *Cell) {
 	// figure out the distances if needed
 	c.Distances()
 
 	_, longestPath := c.FurthestCell()
 
 	// use alpha blending, works for any color
-	for _, cell := range g.Cells() {
+	for _, cell := range m.Cells() {
 		d, err := c.distances.Get(cell)
 		if err != nil {
 			log.Printf("failed to get distance from %v to %v", c, cell)
@@ -566,18 +605,20 @@ func (g *Maze) SetDistanceColors(c *Cell) {
 		}
 		// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
 		adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
-		cell.bgColor = colors.OpacityAdjust(g.bgColor, adjustedColor)
-
+		cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 	}
 
-	g.fromCell = c
+	m.Lock()
+	defer m.Unlock()
+
+	m.fromCell = c
 }
 
 // DeadEnds returns a list of cells that are deadends (only linked to one neighbor
-func (g *Maze) DeadEnds() []*Cell {
+func (m *Maze) DeadEnds() []*Cell {
 	var deadends []*Cell
 
-	for _, cell := range g.Cells() {
+	for _, cell := range m.Cells() {
 		if len(cell.Links()) == 1 {
 			deadends = append(deadends, cell)
 		}
@@ -587,8 +628,8 @@ func (g *Maze) DeadEnds() []*Cell {
 }
 
 // ResetVisited sets all cells to be unvisited
-func (g *Maze) ResetVisited() {
-	for _, c := range g.Cells() {
+func (m *Maze) ResetVisited() {
+	for _, c := range m.Cells() {
 		c.SetUnVisited()
 	}
 
@@ -596,7 +637,7 @@ func (g *Maze) ResetVisited() {
 
 // GetFacingDirection returns the direction walker was facing when moving fromCell -> toCell
 // north, south, east, west
-func (g *Maze) GetFacingDirection(fromCell, toCell *Cell) string {
+func (m *Maze) GetFacingDirection(fromCell, toCell *Cell) string {
 	facing := ""
 
 	if fromCell.North == toCell {

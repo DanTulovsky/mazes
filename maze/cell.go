@@ -6,6 +6,7 @@ import (
 	"mazes/colors"
 	"mazes/utils"
 
+	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -42,6 +43,8 @@ type Cell struct {
 
 	// cell is isolated
 	orphan bool
+
+	deadlock.RWMutex
 }
 
 // CellInCellList returns true if cell is in cellList
@@ -86,6 +89,8 @@ func NewCell(x, y int, c *Config) *Cell {
 }
 
 func (c *Cell) String() string {
+	c.RLock()
+	defer c.RUnlock()
 	return fmt.Sprintf("(%v, %v)", c.column, c.row)
 }
 
@@ -109,31 +114,49 @@ func (c *Cell) RemovePathTo(toCell *Cell, path *Path) {
 
 // Location returns the x,y location of the cell
 func (c *Cell) Location() Location {
+	c.RLock()
+	defer c.RUnlock()
+
 	return Location{c.column, c.row}
 }
 
 // Visited returns true if the cell has been visited
 func (c *Cell) Visited() bool {
+	c.RLock()
+	defer c.RUnlock()
+
 	return c.visited > 0
 }
 
 // VisitedTimes returns how many times a cell has been visited
 func (c *Cell) VisitedTimes() int {
+	c.RLock()
+	defer c.RUnlock()
+
 	return c.visited
 }
 
 // SetVisited marks the cell as visited
 func (c *Cell) SetVisited() {
+	c.Lock()
+	defer c.Unlock()
+
 	c.visited++
 }
 
 // SetUnVisited marks the cell as unvisited
 func (c *Cell) SetUnVisited() {
+	c.Lock()
+	defer c.Unlock()
+
 	c.visited = 0
 }
 
 // SetPaths sets the paths present in the cell
 func (c *Cell) SetPaths(previous, next *Cell) {
+	c.Lock()
+	defer c.Unlock()
+
 	if c.North == previous || c.North == next {
 		c.pathNorth = true
 	}
@@ -190,12 +213,28 @@ func (c *Cell) Distances() *Distances {
 	return c.distances
 }
 
+// BGColor returns the cell's background color
+func (c *Cell) BGColor() colors.Color {
+	c.RLock()
+	defer c.RUnlock()
+
+	return c.bgColor
+}
+
+// SetBGColor returns the cell's background color
+func (c *Cell) SetBGColor(color colors.Color) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.bgColor = color
+}
+
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	var bg *sdl.Rect
 
 	// Fill in background color
-	colors.SetDrawColor(c.bgColor, r)
+	colors.SetDrawColor(c.BGColor(), r)
 
 	bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
 		int32(c.width), int32(c.width)}
@@ -239,6 +278,9 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawVisited draws the visited marker. If num is supplied and is not 0, use that as the times visited. Used for animation.
 func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
+	c.RLock()
+	defer c.RUnlock()
+
 	PixelsPerCell := c.width
 
 	if c.config.MarkVisitedCells && c.Visited() {
@@ -265,6 +307,9 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawCurrentLocation marks the current location of the user
 func (c *Cell) DrawCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+	c.RLock()
+	defer c.RUnlock()
+
 	PixelsPerCell := c.width
 	colors.SetDrawColor(c.config.CurrentLocationColor, r)
 
@@ -280,36 +325,13 @@ func (c *Cell) DrawCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawPath draws the path as present in the cells
 func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
+	c.RLock()
+	defer c.RUnlock()
+
 	var path *sdl.Rect
 	colors.SetDrawColor(c.pathColor, r)
 	pathWidth := c.pathWidth
 	PixelsPerCell := c.width
-
-	//// shift the path right, left, up, down, depending on direction moving
-	//var northX, southX, eastY, westY int32
-	//var shift int32 = 30
-	//
-	//switch c.moveNext {
-	//case "north":
-	//	northX = shift
-	//case "south":
-	//	southX = -shift
-	//case "east":
-	//	eastY = shift
-	//case "west":
-	//	westY = -shift
-	//}
-	//
-	//switch c.movePrevious {
-	//case "north":
-	//	northX = -shift
-	//case "south":
-	//	southX = shift
-	//case "east":
-	//	eastY = -shift
-	//case "west":
-	//	westY = shift
-	//}
 
 	if c.pathEast {
 		path = &sdl.Rect{
@@ -415,6 +437,9 @@ func (c *Cell) Linked(cell *Cell) bool {
 
 // Neighbors returns a list of all cells that are neighbors (weather connected by passage or not)
 func (c *Cell) Neighbors() []*Cell {
+	c.RLock()
+	defer c.RUnlock()
+
 	var n []*Cell
 
 	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
@@ -427,6 +452,9 @@ func (c *Cell) Neighbors() []*Cell {
 
 // RandomNeighbor returns a random neighbor of this cell
 func (c *Cell) RandomNeighbor() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+
 	var n []*Cell
 
 	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
@@ -440,6 +468,9 @@ func (c *Cell) RandomNeighbor() *Cell {
 // GetFacingDirection returns the direction walker was facing when moving to toCell from this cell
 // north, south, east, west
 func (c *Cell) GetFacingDirection(toCell *Cell) string {
+	c.RLock()
+	defer c.RUnlock()
+
 	facing := ""
 
 	if c.North == toCell {
@@ -458,23 +489,29 @@ func (c *Cell) GetFacingDirection(toCell *Cell) string {
 }
 
 // Orphan isolates the cell from all of its neighbors
-func (cell *Cell) Orphan() {
-	if cell.East != nil {
-		cell.East.West = nil
+func (c *Cell) Orphan() {
+	c.Lock()
+	defer c.Unlock()
+
+	if c.East != nil {
+		c.East.West = nil
 	}
-	if cell.West != nil {
-		cell.West.East = nil
+	if c.West != nil {
+		c.West.East = nil
 	}
-	if cell.North != nil {
-		cell.North.South = nil
+	if c.North != nil {
+		c.North.South = nil
 	}
-	if cell.South != nil {
-		cell.South.North = nil
+	if c.South != nil {
+		c.South.North = nil
 	}
 
-	cell.orphan = true
+	c.orphan = true
 }
 
-func (cell *Cell) IsOrphan() bool {
-	return cell.orphan
+func (c *Cell) IsOrphan() bool {
+	c.RLock()
+	defer c.RUnlock()
+
+	return c.orphan
 }
