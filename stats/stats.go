@@ -93,22 +93,37 @@ func printSolverStats() {
 	for _, genAlgoName := range keys(algos.Algorithms) {
 		fmt.Printf("\n  %-25s\n", genAlgoName)
 
-		fmt.Println("      Time to Solve (average)")
+		fmt.Println("      Time to Solve (min / avg/ max)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			t, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
-			fmt.Printf("          %-25s : %6v\n", solverName, time.Duration(t))
+			minTime, _ := stats.Min(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
+			meanTime, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
+			maxTime, _ := stats.Max(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
+			fmt.Printf("          %-25s : %12v / %12v / %12v\n", solverName,
+				time.Duration(minTime),
+				time.Duration(meanTime),
+				time.Duration(maxTime))
 		}
 
-		fmt.Println("      Length of Shortest Solution (average)")
+		fmt.Println("      Length of Shortest Solution (min / avg/ max)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			l, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
-			fmt.Printf("          %-25s : %6v\n", solverName, l)
+			min, _ := stats.Min(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
+			mean, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
+			max, _ := stats.Max(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
+			fmt.Printf("          %-25s : %12v / %12v / %12v\n", solverName,
+				min,
+				mean,
+				max)
 		}
 
-		fmt.Println("      Travel Steps to find Solution (average)")
+		fmt.Println("      Travel Steps to find Solution (min / avg/ max)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			s, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
-			fmt.Printf("          %-25s : %6v\n", solverName, s)
+			min, _ := stats.Min(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
+			mean, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
+			max, _ := stats.Max(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
+			fmt.Printf("          %-25s : %12v / %12v / %12v\n", solverName,
+				min,
+				mean,
+				max)
 		}
 	}
 }
