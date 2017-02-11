@@ -48,11 +48,11 @@ func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
 	return nil
 }
 
-func (a *WallFollower) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
+func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = g.TravelPath
-	var solvePath = g.SolvePath
+	var travelPath = m.TravelPath
+	var solvePath = m.SolvePath
 
 	currentCell := fromCell
 	facing := "north"
@@ -66,7 +66,7 @@ func (a *WallFollower) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay ti
 		segment := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
-		g.SetPathFromTo(fromCell, currentCell, travelPath)
+		m.SetPathFromTo(fromCell, currentCell, travelPath)
 
 		if currentCell.VisitedTimes() > 4 {
 			// we are stuck in a loop, fail
@@ -99,12 +99,12 @@ func (a *WallFollower) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay ti
 	segment := maze.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
-	g.SetPathFromTo(fromCell, toCell, solvePath)
+	m.SetPathFromTo(fromCell, toCell, solvePath)
 
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
 	a.SetSolveSteps(travelPath.Length()) // always the same as the actual path
 
-	return g, nil
+	return m, nil
 }

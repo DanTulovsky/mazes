@@ -51,7 +51,7 @@ type Maze struct {
 }
 
 // NewGrid returns a new grid.
-func NewGrid(c *Config) (*Maze, error) {
+func NewMaze(c *Config) (*Maze, error) {
 	if err := c.CheckConfig(); err != nil {
 		return nil, err
 	}

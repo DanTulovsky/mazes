@@ -36,7 +36,7 @@ var applytests = []struct {
 
 func TestSolveAldousBroder(t *testing.T) {
 	for _, tt := range applytests {
-		g, err := maze.NewGrid(tt.config)
+		g, err := maze.NewMaze(tt.config)
 		gen, solv := &aldous_broder.AldousBroder{}, &WallFollower{}
 
 		if err != nil {
@@ -68,7 +68,7 @@ func TestSolveAldousBroder(t *testing.T) {
 
 func TestSolveRecursiveBacktracker(t *testing.T) {
 	for _, tt := range applytests {
-		m, err := maze.NewGrid(tt.config)
+		m, err := maze.NewMaze(tt.config)
 		gen, solv := &recursive_backtracker.RecursiveBacktracker{}, &WallFollower{}
 
 		if err != nil {

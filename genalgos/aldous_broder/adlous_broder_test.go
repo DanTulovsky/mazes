@@ -33,7 +33,7 @@ func setup() *AldousBroder {
 func TestApply(t *testing.T) {
 
 	for _, tt := range applytests {
-		g, err := maze.NewGrid(tt.config)
+		g, err := maze.NewMaze(tt.config)
 		a := setup()
 
 		if err != nil {
@@ -62,7 +62,7 @@ func BenchmarkApply(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		g, err := maze.NewGrid(config)
+		g, err := maze.NewMaze(config)
 		if err != nil {
 			b.Errorf("invalid config: %v", err)
 		}

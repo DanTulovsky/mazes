@@ -48,7 +48,7 @@ var gridcreatetests = []struct {
 func TestNewGrid(t *testing.T) {
 
 	for _, tt := range gridcreatetests {
-		g, err := NewGrid(tt.config)
+		g, err := NewMaze(tt.config)
 
 		if err != nil {
 			if !tt.wantErr {
@@ -72,13 +72,13 @@ func BenchmarkNewGrid(b *testing.B) {
 		Columns: 10,
 	}
 
-	_, err := NewGrid(config)
+	_, err := NewMaze(config)
 	if err != nil {
 		b.Errorf("invalid config: %v", err)
 	}
 
 	for i := 0; i < b.N; i++ {
-		NewGrid(config)
+		NewMaze(config)
 	}
 
 }

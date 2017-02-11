@@ -21,6 +21,7 @@ type RecursiveBacktracker struct {
 // Step steps into the next cell and returns true if it reach toCell.
 func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, delay time.Duration) bool {
 	// animation delay
+	// log.Printf("currentCell: %v", currentCell)
 	time.Sleep(delay)
 
 	var nextCell *maze.Cell

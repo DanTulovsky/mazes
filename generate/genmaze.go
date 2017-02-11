@@ -17,7 +17,6 @@ import (
 	_ "image/png"
 	"mazes/maze"
 
-	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 )
 
@@ -218,7 +217,7 @@ func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
 
 	m.SetDistanceColors(fromCell)
 	m.SetFromToColors(fromCell, toCell)
-	m.ResetVisited()
+	m.Reset()
 
 	solver = algos.SolveAlgorithms[*solveAlgo]
 	delay, err := time.ParseDuration(*solveDrawDelay)
@@ -295,7 +294,7 @@ func run() int {
 	}
 
 	// profiling
-	defer profile.Start().Stop()
+	// defer profile.Start().Stop()
 
 	// Mask image if provided.
 	// If the mask image is provided, use that as the dimensions of the grid
@@ -335,7 +334,7 @@ func run() int {
 		DarkMode:             *darkMode,
 	}
 
-	m, err := maze.NewGrid(config)
+	m, err := maze.NewMaze(config)
 	if err != nil {
 		fmt.Printf("invalid config: %v", err)
 		os.Exit(1)

@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/montanaflynn/stats"
+	deadlock "github.com/sasha-s/go-deadlock"
 
 	"sort"
 
@@ -28,18 +29,19 @@ var (
 	// algo[stat] = value
 	mazeStats map[string]*algostats = make(map[string]*algostats)
 
-	rows            = flag.Int("r", 10, "number of rows in the maze")
-	columns         = flag.Int("c", 10, "number of rows in the maze")
-	bgColor         = flag.String("bgcolor", "white", "background color")
-	wallColor       = flag.String("wall_color", "black", "wall color")
-	borderColor     = flag.String("border_color", "black", "border color")
-	pathColor       = flag.String("path_color", "red", "border color")
-	cellWidth       = flag.Int("w", 2, "cell width")
-	wallWidth       = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	pathWidth       = flag.Int("path_width", 2, "path width")
-	runs            = flag.Int("runs", 20, "number of runs")
-	showGenStats    = flag.Bool("gen_stats", true, "show generator stats")
-	showSolverStats = flag.Bool("solver_stats", true, "show solver stats")
+	rows                    = flag.Int("r", 10, "number of rows in the maze")
+	columns                 = flag.Int("c", 10, "number of rows in the maze")
+	bgColor                 = flag.String("bgcolor", "white", "background color")
+	wallColor               = flag.String("wall_color", "black", "wall color")
+	borderColor             = flag.String("border_color", "black", "border color")
+	pathColor               = flag.String("path_color", "red", "border color")
+	cellWidth               = flag.Int("w", 2, "cell width")
+	wallWidth               = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	pathWidth               = flag.Int("path_width", 2, "path width")
+	runs                    = flag.Int("runs", 20, "number of runs")
+	showGenStats            = flag.Bool("gen_stats", true, "show generator stats")
+	showSolverStats         = flag.Bool("solver_stats", true, "show solver stats")
+	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 )
 
 // per gen algorithm stats
@@ -176,7 +178,7 @@ func RunAll(config *maze.Config) {
 		}
 		log.Printf("running (gen): %v", genAlgoName)
 
-		m, err := maze.NewGrid(config)
+		m, err := maze.NewMaze(config)
 		if err != nil {
 			fmt.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -202,7 +204,7 @@ func RunAll(config *maze.Config) {
 			m.Reset()
 
 			solver := algos.SolveAlgorithms[solverName]
-			log.Printf("running (solver): %v", solverName)
+			log.Printf("  running (solver): %v", solverName)
 			m, err = solver.Solve(m, fromCell, toCell, 0)
 			if err != nil {
 				log.Fatalf("failed to run solver [%v]: %v", solverName, err)
@@ -226,6 +228,12 @@ func RunAll(config *maze.Config) {
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	if *enableDeadlockDetection {
+		deadlock.Opts.Disable = false
+	} else {
+		deadlock.Opts.Disable = true
+	}
 
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
