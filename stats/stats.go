@@ -75,7 +75,7 @@ func printGenStats() {
 	}
 
 	// create time
-	fmt.Println("\nGenerators Create Time (min / avg/ max)")
+	fmt.Println("\nGenerators Create Time (min / avg / max)")
 	for _, name := range keys(algos.Algorithms) {
 		minTime, _ := stats.Min(mazeStats[name].CreateTime)
 		meanTime, _ := stats.Mean(mazeStats[name].CreateTime)
@@ -93,7 +93,7 @@ func printSolverStats() {
 	for _, genAlgoName := range keys(algos.Algorithms) {
 		fmt.Printf("\n  %-25s\n", genAlgoName)
 
-		fmt.Println("      Time to Solve (min / avg/ max)")
+		fmt.Println("      Time to Solve (min / avg / max)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
 			minTime, _ := stats.Min(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
 			meanTime, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
@@ -104,26 +104,26 @@ func printSolverStats() {
 				time.Duration(maxTime))
 		}
 
-		fmt.Println("      Length of Shortest Solution (min / avg/ max)")
+		fmt.Println("      Length of Shortest Solution (min / avg / max)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
 			min, _ := stats.Min(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
 			mean, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
 			max, _ := stats.Max(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
 			fmt.Printf("          %-25s : %12v / %12v / %12v\n", solverName,
-				min,
-				mean,
-				max)
+				int(min),
+				int(mean),
+				int(max))
 		}
 
-		fmt.Println("      Travel Steps to find Solution (min / avg/ max)")
+		fmt.Println("      Travel Steps to find Solution (min / avg / max)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
 			min, _ := stats.Min(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
 			mean, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
 			max, _ := stats.Max(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
 			fmt.Printf("          %-25s : %12v / %12v / %12v\n", solverName,
-				min,
-				mean,
-				max)
+				int(min),
+				int(mean),
+				int(max))
 		}
 	}
 }
