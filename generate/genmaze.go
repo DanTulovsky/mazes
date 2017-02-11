@@ -13,7 +13,6 @@ import (
 	"mazes/solvealgos"
 	"time"
 
-	_ "image/png"
 	"mazes/maze"
 
 	"github.com/sasha-s/go-deadlock"

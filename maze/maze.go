@@ -15,6 +15,8 @@ import (
 
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
+
+	_ "image/png"
 )
 
 func init() {

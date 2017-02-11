@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-var gridcreatetests = []struct {
+var mazecreatetests = []struct {
 	config  *Config
 	wantErr bool
 }{
@@ -45,10 +45,26 @@ var gridcreatetests = []struct {
 	},
 }
 
-func TestNewGrid(t *testing.T) {
+var mazecreatefromimagetests = []struct {
+	config  *Config
+	image   string
+	wantErr bool
+}{
+	{
+		config:  &Config{},
+		image:   "../masks/maze_text.png",
+		wantErr: false,
+	}, {
+		config:  &Config{},
+		image:   "../masks/fail1.png",
+		wantErr: true,
+	},
+}
 
-	for _, tt := range gridcreatetests {
-		g, err := NewMaze(tt.config)
+func TestNewMaze(t *testing.T) {
+
+	for _, tt := range mazecreatetests {
+		m, err := NewMaze(tt.config)
 
 		if err != nil {
 			if !tt.wantErr {
@@ -59,14 +75,35 @@ func TestNewGrid(t *testing.T) {
 
 		}
 
-		if g.Size() != tt.config.Rows*tt.config.Columns {
-			t.Errorf("Expected size [%v], but have [%v]", tt.config.Rows*tt.config.Columns, g.Size())
+		if m.Size() != tt.config.Rows*tt.config.Columns {
+			t.Errorf("Expected size [%v], but have [%v]", tt.config.Rows*tt.config.Columns, m.Size())
 		}
 
 	}
 }
 
-func BenchmarkNewGrid(b *testing.B) {
+func TestNewMazeFromImage(t *testing.T) {
+
+	for _, tt := range mazecreatefromimagetests {
+		m, err := NewMazeFromImage(tt.config, tt.image)
+
+		if err != nil {
+			if !tt.wantErr {
+				t.Fatalf("unable to create maze from image (%v): %v", tt.image, err)
+			} else {
+				continue // skip the rest of the tests
+			}
+
+		}
+
+		if m.Size() != tt.config.Rows*tt.config.Columns {
+			t.Errorf("Expected size [%v], but have [%v]", tt.config.Rows*tt.config.Columns, m.Size())
+		}
+
+	}
+}
+
+func BenchmarkNewMaze(b *testing.B) {
 	config := &Config{
 		Rows:    10,
 		Columns: 10,
