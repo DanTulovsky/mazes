@@ -647,6 +647,14 @@ func (m *Maze) DeadEnds() []*Cell {
 	return deadends
 }
 
+// Reset resets vital maze stats for a new solver run
+func (m *Maze) Reset() {
+	m.TravelPath = NewPath()
+	m.SolvePath = NewPath()
+	m.ResetVisited()
+
+}
+
 // ResetVisited sets all cells to be unvisited
 func (m *Maze) ResetVisited() {
 	for c := range m.Cells() {

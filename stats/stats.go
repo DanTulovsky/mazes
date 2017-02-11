@@ -8,6 +8,8 @@ import (
 	"mazes/genalgos"
 	"os"
 
+	"github.com/montanaflynn/stats"
+
 	"sort"
 
 	"mazes/algos"
@@ -18,15 +20,13 @@ import (
 
 	"net/http"
 
-	"github.com/montanaflynn/stats"
-
 	"mazes/maze"
 	_ "net/http/pprof"
 )
 
 var (
 	// algo[stat] = value
-	mazeStats map[string]map[string][]float64 = make(map[string]map[string][]float64)
+	mazeStats map[string]*algostats = make(map[string]*algostats)
 
 	rows            = flag.Int("r", 10, "number of rows in the maze")
 	columns         = flag.Int("c", 10, "number of rows in the maze")
@@ -42,10 +42,26 @@ var (
 	showSolverStats = flag.Bool("solver_stats", true, "show solver stats")
 )
 
+// per gen algorithm stats
+type algostats struct {
+	Name       string
+	Deadends   []float64
+	CreateTime []float64
+	Solvers    map[string]*solverstat
+}
+
+type solverstat struct {
+	Name          string
+	TimeToSolve   []float64 // nanoseconds
+	ShortestSteps []float64 // length of shortest solution (often the same as solveSteps)
+	SolveSteps    []float64 // number of steps it took to find the solution
+}
+
 // setMazeStats sets stats about the maze
 func setMazeStats(g *maze.Maze, algo string) {
-	mazeStats[algo]["deadends"] = append(mazeStats[algo]["deadends"], float64(len(g.DeadEnds())))
-	mazeStats[algo]["createtime"] = append(mazeStats[algo]["createtime"], float64(g.CreateTime().Nanoseconds()))
+
+	mazeStats[algo].Deadends = append(mazeStats[algo].Deadends, float64(len(g.DeadEnds())))
+	mazeStats[algo].CreateTime = append(mazeStats[algo].CreateTime, float64(g.CreateTime().Nanoseconds()))
 }
 
 func printGenStats() {
@@ -54,16 +70,16 @@ func printGenStats() {
 	// dead ends
 	fmt.Println("\nDead Ends (average)")
 	for _, name := range keys(algos.Algorithms) {
-		deadends, _ := stats.Mean(mazeStats[name]["deadends"])
+		deadends, _ := stats.Mean(mazeStats[name].Deadends)
 		fmt.Printf("  %-25s : %6.0f / %.0f (%5.2f%%)\n", name, deadends, cells, deadends/cells*100)
 	}
 
 	// create time
 	fmt.Println("\nGenerators Create Time (min / avg/ max)")
 	for _, name := range keys(algos.Algorithms) {
-		minTime, _ := stats.Min(mazeStats[name]["createtime"])
-		meanTime, _ := stats.Mean(mazeStats[name]["createtime"])
-		maxTime, _ := stats.Max(mazeStats[name]["createtime"])
+		minTime, _ := stats.Min(mazeStats[name].CreateTime)
+		meanTime, _ := stats.Mean(mazeStats[name].CreateTime)
+		maxTime, _ := stats.Max(mazeStats[name].CreateTime)
 		fmt.Printf("  %-25s : %12v / %12v / %12v\n", name,
 			time.Duration(minTime),
 			time.Duration(meanTime),
@@ -74,27 +90,24 @@ func printGenStats() {
 func printSolverStats() {
 	// solvers
 	fmt.Println("\nSolver Stats")
-	for _, name := range keys(algos.Algorithms) {
-		fmt.Printf("\n  %-25s\n", name)
+	for _, genAlgoName := range keys(algos.Algorithms) {
+		fmt.Printf("\n  %-25s\n", genAlgoName)
 
 		fmt.Println("      Time to Solve (average)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			key := fmt.Sprintf("%v_solve_time", solverName)
-			t, _ := stats.Mean(mazeStats[name][key])
+			t, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve)
 			fmt.Printf("          %-25s : %6v\n", solverName, time.Duration(t))
 		}
 
 		fmt.Println("      Length of Shortest Solution (average)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			key := fmt.Sprintf("%v_solve_path_length", solverName)
-			l, _ := stats.Mean(mazeStats[name][key])
+			l, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps)
 			fmt.Printf("          %-25s : %6v\n", solverName, l)
 		}
 
 		fmt.Println("      Travel Steps to find Solution (average)")
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			key := fmt.Sprintf("%v_solve_steps", solverName)
-			s, _ := stats.Mean(mazeStats[name][key])
+			s, _ := stats.Mean(mazeStats[genAlgoName].Solvers[solverName].SolveSteps)
 			fmt.Printf("          %-25s : %6v\n", solverName, s)
 		}
 	}
@@ -136,55 +149,62 @@ func solveKeys(m map[string]solvealgos.Algorithmer) []string {
 
 func RunAll(config *maze.Config) {
 	// Loop over all algos and collect stats
-	for _, name := range keys(algos.Algorithms) {
-		algo := algos.Algorithms[name]
+	for _, genAlgoName := range keys(algos.Algorithms) {
 
-		if _, ok := mazeStats[name]; !ok {
-			mazeStats[name] = make(map[string][]float64)
+		algo := algos.Algorithms[genAlgoName]
+
+		if _, ok := mazeStats[genAlgoName]; !ok {
+			mazeStats[genAlgoName] = &algostats{
+				Name:    genAlgoName,
+				Solvers: make(map[string]*solverstat),
+			}
 		}
-		log.Printf("running (gen): %v", name)
+		log.Printf("running (gen): %v", genAlgoName)
 
-		g, err := maze.NewGrid(config)
+		m, err := maze.NewGrid(config)
 		if err != nil {
 			fmt.Printf("invalid config: %v", err)
 			os.Exit(1)
 		}
 
-		g, err = algo.Apply(g, 0)
+		m, err = algo.Apply(m, 0)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
-		if err := algo.CheckGrid(g); err != nil {
+		if err := algo.CheckGrid(m); err != nil {
 			log.Fatalf("maze is not valid: %v", err)
 		}
 
 		// solve using all available solvers, use longest path in maze
-		_, fromCell, toCell, _ := g.LongestPath()
+		_, fromCell, toCell, _ := m.LongestPath()
 
 		for _, solverName := range solveKeys(algos.SolveAlgorithms) {
-			g.ResetVisited()
+			if _, ok := mazeStats[genAlgoName].Solvers[solverName]; !ok {
+				mazeStats[genAlgoName].Solvers[solverName] = &solverstat{
+					Name: solverName,
+				}
+			}
+			m.Reset()
 
 			solver := algos.SolveAlgorithms[solverName]
 			log.Printf("running (solver): %v", solverName)
-			g, err = solver.Solve(g, fromCell, toCell, 0)
+			m, err = solver.Solve(m, fromCell, toCell, 0)
 			if err != nil {
 				log.Fatalf("failed to run solver [%v]: %v", solverName, err)
 			}
 
-			key := fmt.Sprintf("%v_solve_time", solverName)
-			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveTime().Nanoseconds()))
+			mazeStats[genAlgoName].Solvers[solverName].Name = solverName
+			mazeStats[genAlgoName].Solvers[solverName].TimeToSolve = append(mazeStats[genAlgoName].Solvers[solverName].TimeToSolve, float64(solver.SolveTime().Nanoseconds()))
 
 			// Solution path length (not travel path)
-			key = fmt.Sprintf("%v_solve_path_length", solverName)
-			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolvePath().Length()))
+			mazeStats[genAlgoName].Solvers[solverName].ShortestSteps = append(mazeStats[genAlgoName].Solvers[solverName].ShortestSteps, float64(solver.SolvePath().Length()))
 
 			// Travel path length while finding the end
-			key = fmt.Sprintf("%v_solve_steps", solverName)
-			mazeStats[name][key] = append(mazeStats[name][key], float64(solver.SolveSteps()))
+			mazeStats[genAlgoName].Solvers[solverName].SolveSteps = append(mazeStats[genAlgoName].Solvers[solverName].SolveSteps, float64(solver.SolveSteps()))
 		}
 
 		// shows some stats about the maze
-		setMazeStats(g, name)
+		setMazeStats(m, genAlgoName)
 	}
 }
 
