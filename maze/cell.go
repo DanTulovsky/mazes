@@ -47,6 +47,14 @@ type Cell struct {
 	deadlock.RWMutex
 }
 
+// CellInCellMap returns true if cell is in cellMap
+func CellInCellMap(cell *Cell, cellMap map[*Cell]bool) bool {
+	if _, ok := cellMap[cell]; ok {
+		return true
+	}
+	return false
+}
+
 // CellInCellList returns true if cell is in cellList
 func CellInCellList(cell *Cell, cellList []*Cell) bool {
 	for _, c := range cellList {
@@ -76,6 +84,40 @@ func NewCell(x, y int, c *Config) *Cell {
 	cell.distances = NewDistances(cell)
 
 	return cell
+}
+
+// HavePath returns true if there is a path to s (north, south, east, west)
+func (c *Cell) HavePath(s string) (have bool) {
+	c.RLock()
+	defer c.RUnlock()
+
+	switch s {
+	case "north":
+		have = c.pathNorth
+	case "south":
+		have = c.pathSouth
+	case "east":
+		have = c.pathEast
+	case "west":
+		have = c.pathWest
+	}
+	return have
+}
+
+func (c *Cell) SetHavePath(s string) {
+	c.Lock()
+	defer c.Unlock()
+
+	switch s {
+	case "north":
+		c.pathNorth = true
+	case "south":
+		c.pathSouth = true
+	case "east":
+		c.pathEast = true
+	case "west":
+		c.pathWest = true
+	}
 }
 
 func (c *Cell) String() string {
@@ -144,20 +186,17 @@ func (c *Cell) SetUnVisited() {
 
 // SetPaths sets the paths present in the cell
 func (c *Cell) SetPaths(previous, next *Cell) {
-	c.Lock()
-	defer c.Unlock()
-
 	if c.North == previous || c.North == next {
-		c.pathNorth = true
+		c.SetHavePath("north")
 	}
 	if c.South == previous || c.South == next {
-		c.pathSouth = true
+		c.SetHavePath("south")
 	}
 	if c.East == previous || c.East == next {
-		c.pathEast = true
+		c.SetHavePath("east")
 	}
 	if c.West == previous || c.West == next {
-		c.pathWest = true
+		c.SetHavePath("west")
 	}
 }
 
@@ -323,7 +362,7 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	pathWidth := c.pathWidth
 	PixelsPerCell := c.width
 
-	if c.pathEast {
+	if c.HavePath("east") {
 		path = &sdl.Rect{
 			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
@@ -331,7 +370,7 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 			int32(pathWidth)}
 		r.FillRect(path)
 	}
-	if c.pathWest {
+	if c.HavePath("west") {
 		path = &sdl.Rect{
 			int32(c.column*PixelsPerCell + c.wallWidth),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),
@@ -339,7 +378,7 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 			int32(pathWidth)}
 		r.FillRect(path)
 	}
-	if c.pathNorth {
+	if c.HavePath("north") {
 		path = &sdl.Rect{
 			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + c.wallWidth),
@@ -347,7 +386,7 @@ func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 			int32(PixelsPerCell/2 - c.wallWidth)}
 		r.FillRect(path)
 	}
-	if c.pathSouth {
+	if c.HavePath("south") {
 		path = &sdl.Rect{
 			int32(c.column*PixelsPerCell + PixelsPerCell/2),
 			int32(c.row*PixelsPerCell + PixelsPerCell/2),

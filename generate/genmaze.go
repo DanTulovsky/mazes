@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/pkg/profile"
 	"github.com/veandco/go-sdl2/sdl"
 
 	"flag"
@@ -15,6 +16,7 @@ import (
 
 	"mazes/maze"
 
+	"github.com/kardianos/osext"
 	"github.com/sasha-s/go-deadlock"
 )
 
@@ -52,6 +54,7 @@ var (
 	showGUI                 = flag.Bool("gui", true, "show gui maze")
 	showStats               = flag.Bool("stats", false, "show maze stats")
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
+	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 	markVisitedCells        = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo              = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	maskImage               = flag.String("mask_image", "", "file name of mask image")
@@ -233,6 +236,9 @@ func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
 }
 
 func main() {
+	filename, _ := osext.Executable()
+	fmt.Println(filename)
+
 	os.Exit(run())
 }
 
@@ -241,13 +247,16 @@ func run() int {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	if *enableDeadlockDetection {
+		log.Println("enabling deadlock detection, this slows things down considerably!")
 		deadlock.Opts.Disable = false
 	} else {
 		deadlock.Opts.Disable = true
 	}
 
-	// profiling
-	// defer profile.Start().Stop()
+	if *enableProfile {
+		log.Println("enabling profiling...")
+		defer profile.Start().Stop()
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid

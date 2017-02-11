@@ -26,11 +26,11 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	var currentCell *maze.Cell
 	var randomCell *maze.Cell
 	var walkPath []*maze.Cell
-	var visitedCells []*maze.Cell
+	var visitedCells = make(map[*maze.Cell]bool)
 
 	start := g.RandomCell()
 	start.SetVisited()
-	visitedCells = append(visitedCells, start)
+	visitedCells[start] = true
 
 	for len(g.UnvisitedCells()) > 0 {
 		time.Sleep(delay) // animation delay
@@ -41,7 +41,8 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 		g.SetGenCurrentLocation(currentCell)
 
 		// walk until you hit a visited cell
-		for !maze.CellInCellList(currentCell, visitedCells) {
+		// TODO(dan): Fix this, there is a possible race
+		for !maze.CellInCellMap(currentCell, visitedCells) {
 			time.Sleep(delay) // animation delay
 
 			// handle loop
@@ -64,7 +65,7 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 		walkPath = append(walkPath, currentCell)
 		g.ConnectCells(walkPath)
 		for _, c := range walkPath {
-			visitedCells = append(visitedCells, c)
+			visitedCells[c] = true
 			c.SetVisited()
 		}
 

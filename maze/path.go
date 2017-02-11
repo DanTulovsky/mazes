@@ -18,18 +18,8 @@ func NewSegment(c *Cell, f string) *PathSegment {
 	return &PathSegment{cell: c, facing: f}
 }
 
-// SegmentInSegmentList returns true if segment is in path
-func SegmentInPath(segment *PathSegment, path *Path) bool {
-	for _, s := range path.segments {
-		if segment == s {
-			return true
-		}
-	}
-	return false
-}
-
 func (ps *PathSegment) Cell() *Cell {
-	// no need to lock, this is never set after cration
+	// no need to lock, this is never set after creation
 	return ps.cell
 }
 
@@ -47,12 +37,29 @@ func (ps *PathSegment) UpdateFacingDirection(f string) {
 
 // Path is a path (ordered collection of cells) through the maze
 type Path struct {
-	segments []*PathSegment
+	segments   []*PathSegment
+	segmentMap map[*PathSegment]bool
+	cellMap    map[*Cell]bool
 	deadlock.RWMutex
 }
 
 func NewPath() *Path {
-	return &Path{segments: make([]*PathSegment, 0)}
+	return &Path{
+		segments:   make([]*PathSegment, 0),
+		segmentMap: make(map[*PathSegment]bool),
+		cellMap:    make(map[*Cell]bool),
+	}
+}
+
+// SegmentInSegmentList returns true if segment is in path
+func (p *Path) SegmentInPath(segment *PathSegment) bool {
+	p.RLock()
+	defer p.RUnlock()
+
+	if _, ok := p.segmentMap[segment]; ok {
+		return true
+	}
+	return false
 }
 
 func (p *Path) ReverseCells() {
@@ -65,7 +72,7 @@ func (p *Path) ReverseCells() {
 }
 
 // DrawPath draws the path as present in the cells
-func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isLast, isSolution bool) *sdl.Renderer {
+func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bool, isLast, isSolution bool) *sdl.Renderer {
 	cell := p.Cell()
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
@@ -111,7 +118,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 	}
 
 	colors.SetDrawColor(pathColor, r)
-	currentSegmentInSolution := SegmentInPath(p, solvePath)
+	currentSegmentInSolution := solvePath.SegmentInPath(p)
 
 	if isLast && !cell.Visited() {
 		switch p.Facing() {
@@ -128,7 +135,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 	} else {
 		if cell.pathEast && cell.East != nil {
 			// if current cell and neighbor is in the solution, solid color.
-			eastInSolution := CellInCellList(cell.East, solveCells)
+			eastInSolution := solvePath.CellInPath(cell.East)
 			if eastInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -139,7 +146,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 
 		}
 		if cell.pathWest && cell.West != nil {
-			westInSolution := CellInCellList(cell.West, solveCells)
+			westInSolution := solvePath.CellInPath(cell.West)
 			if westInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -150,7 +157,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 
 		}
 		if cell.pathNorth && p.cell.North != nil {
-			northInSolution := CellInCellList(cell.North, solveCells)
+			northInSolution := solvePath.CellInPath(cell.North)
 			if northInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -161,7 +168,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 
 		}
 		if cell.pathSouth && cell.South != nil {
-			southInSolution := CellInCellList(cell.South, solveCells)
+			southInSolution := solvePath.CellInPath(cell.South)
 			if southInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -179,7 +186,10 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 func (p *Path) AddSegement(s *PathSegment) {
 	p.Lock()
 	defer p.Unlock()
+
 	p.segments = append(p.segments, s)
+	p.segmentMap[s] = true
+	p.cellMap[s.Cell()] = true
 
 }
 
@@ -187,8 +197,21 @@ func (p *Path) AddSegements(s []*PathSegment) {
 	for _, seg := range s {
 		p.Lock()
 		defer p.Unlock()
+
 		p.segments = append(p.segments, seg)
+		p.segmentMap[seg] = true
+		p.cellMap[seg.Cell()] = true
 	}
+}
+
+func (p *Path) CellInPath(c *Cell) bool {
+	p.RLock()
+	defer p.RUnlock()
+
+	if _, ok := p.cellMap[c]; ok {
+		return true
+	}
+	return false
 }
 
 func (p *Path) LastSegment() *PathSegment {
@@ -205,12 +228,18 @@ func (p *Path) LastSegment() *PathSegment {
 func (p *Path) DelSegement() {
 	p.Lock()
 	defer p.Unlock()
+
+	seg := p.segments[len(p.segments)-1]
+
+	delete(p.segmentMap, seg)
+	delete(p.cellMap, seg.Cell())
 	p.segments = p.segments[:len(p.segments)-1]
 }
 
 func (p *Path) List() []*PathSegment {
 	p.RLock()
 	defer p.RUnlock()
+
 	return p.segments
 }
 
@@ -218,16 +247,14 @@ func (p *Path) List() []*PathSegment {
 func (p *Path) Length() int {
 	p.RLock()
 	defer p.RUnlock()
+
 	return len(p.segments)
 }
 
-func (p *Path) ListCells() []*Cell {
+// ListCells returns a map containing all the cells in the path
+func (p *Path) ListCells() map[*Cell]bool {
 	p.Lock()
 	defer p.Unlock()
 
-	var cells []*Cell
-	for _, s := range p.segments {
-		cells = append(cells, s.Cell())
-	}
-	return cells
+	return p.cellMap
 }

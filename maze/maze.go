@@ -438,7 +438,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		// cache state of this cell
 		alreadyDone[segment] = true
 
-		if SegmentInPath(segment, m.solvePath) {
+		if m.solvePath.SegmentInPath(segment) {
 			isSolution = true
 		} else {
 			isSolution = false
