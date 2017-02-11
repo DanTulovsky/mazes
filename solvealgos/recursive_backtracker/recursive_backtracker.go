@@ -67,8 +67,8 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, de
 func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var solvePath = g.SolvePath
-	travelPath = g.TravelPath
+	var solvePath = g.SolvePath()
+	travelPath = g.TravelPath()
 	startCell = fromCell
 
 	// DFS traversal of the grid

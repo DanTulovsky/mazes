@@ -16,8 +16,8 @@ type Dijkstra struct {
 func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = g.TravelPath
-	var solvePath = g.SolvePath
+	var travelPath = g.TravelPath()
+	var solvePath = g.SolvePath()
 
 	// Get all distances from this cell
 	d := fromCell.Distances()

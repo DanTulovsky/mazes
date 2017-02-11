@@ -71,7 +71,7 @@ func Step(g *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 // CheckGrid checks that the generated grid is valid
 func (a *Common) CheckGrid(g *maze.Maze) error {
 	log.Print("Checking for cycles and converting to a spanning tree...")
-	g.ResetVisited()
+	g.Reset()
 
 	// convert grid to a spanning tree and check for cycles
 

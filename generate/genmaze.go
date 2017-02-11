@@ -13,7 +13,6 @@ import (
 	"mazes/solvealgos"
 	"time"
 
-	"image"
 	_ "image/png"
 	"mazes/maze"
 
@@ -37,8 +36,6 @@ var (
 	// runningMutex sync.Mutex
 
 	solver solvealgos.Algorithmer
-
-	mask []maze.Location = make([]maze.Location, 0)
 
 	rows                    = flag.Int("r", 30, "number of rows in the maze")
 	columns                 = flag.Int("c", 60, "number of rows in the maze")
@@ -240,49 +237,6 @@ func main() {
 	os.Exit(run())
 }
 
-// addToMask adds location to grid mask (excluded cells) and checks for bounds errors
-func addToMask(x, y int) {
-	l := maze.Location{x, y}
-
-	if x >= *columns || y >= *rows || x < 0 || y < 0 {
-		log.Fatalf("invalid cell passed to mask: %v (grid size: %v %v)", l, *columns, *rows)
-	}
-
-	mask = append(mask, l)
-}
-
-// setupGridFromMaskImage reads in the mask image and creates the maze based on it.
-// The size of the maze is the size of the image, in pixels.
-// Any *black* pixel in the mask image becomes an orphan square.
-func setupGridFromMaskImage(f string) {
-
-	// read in image
-	reader, err := os.Open(f)
-	if err != nil {
-		log.Fatalf("failed to open mask image file: %v", err)
-	}
-
-	m, _, err := image.Decode(reader)
-	if err != nil {
-		log.Fatalf("error decoding image: %v", err)
-	}
-
-	bounds := m.Bounds()
-	*columns = bounds.Max.X
-	*rows = bounds.Max.Y
-
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, a := m.At(x, y).RGBA()
-			// this only works for black, fix my colors to use the go image package colors
-			if colors.Same(colors.GetColor("black"), colors.Color{uint8(r), uint8(g), uint8(b), uint8(a), ""}) {
-				addToMask(x, y)
-			}
-
-		}
-	}
-}
-
 func run() int {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -295,24 +249,6 @@ func run() int {
 
 	// profiling
 	// defer profile.Start().Stop()
-
-	// Mask image if provided.
-	// If the mask image is provided, use that as the dimensions of the grid
-	if *maskImage != "" {
-		log.Printf("Using %v as grid mask", *maskImage)
-		setupGridFromMaskImage(*maskImage)
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Setup SDL
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	setupSDL()
-
-	defer func() { sdl.Do(func() { w.Destroy() }) }()
-	defer func() { sdl.Do(func() { r.Destroy() }) }()
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// End Setup SDL
-	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
@@ -330,17 +266,43 @@ func run() int {
 		VisitedCellColor:     colors.GetColor(*visitedCellColor),
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
-		OrphanMask:           mask,
 		DarkMode:             *darkMode,
 	}
 
-	m, err := maze.NewMaze(config)
-	if err != nil {
-		fmt.Printf("invalid config: %v", err)
-		os.Exit(1)
+	var m *maze.Maze
+	var err error
+
+	// Mask image if provided.
+	// If the mask image is provided, use that as the dimensions of the grid
+	if *maskImage != "" {
+		log.Printf("Using %v as grid mask", *maskImage)
+		m, err = maze.NewMazeFromImage(config, *maskImage)
+		if err != nil {
+			fmt.Printf("invalid config: %v", err)
+			os.Exit(1)
+		}
+		// Set these for correct window size
+		*columns, *rows = m.Dimensions()
+	} else {
+		m, err = maze.NewMaze(config)
+		if err != nil {
+			fmt.Printf("invalid config: %v", err)
+			os.Exit(1)
+		}
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Configure new grid
+	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	setupSDL()
+
+	defer func() { sdl.Do(func() { w.Destroy() }) }()
+	defer func() { sdl.Do(func() { r.Destroy() }) }()
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	if !checkCreateAlgo(*createAlgo) {

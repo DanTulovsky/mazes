@@ -16,8 +16,8 @@ type Random struct {
 func (a *Random) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = g.TravelPath
-	var solvePath = g.SolvePath
+	var travelPath = g.TravelPath()
+	var solvePath = g.SolvePath()
 	currentCell := fromCell
 	facing := "north" // arbitrary
 

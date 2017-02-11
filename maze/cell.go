@@ -57,16 +57,6 @@ func CellInCellList(cell *Cell, cellList []*Cell) bool {
 	return false
 }
 
-// SegmentInSegmentList returns true if segment is in path
-func SegmentInPath(segment *PathSegment, path *Path) bool {
-	for _, s := range path.segments {
-		if segment == s {
-			return true
-		}
-	}
-	return false
-}
-
 // NewCell initializes a new cell
 func NewCell(x, y int, c *Config) *Cell {
 	cell := &Cell{

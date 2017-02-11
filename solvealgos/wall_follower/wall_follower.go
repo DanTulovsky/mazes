@@ -51,8 +51,8 @@ func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
 func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = m.TravelPath
-	var solvePath = m.SolvePath
+	var travelPath = m.TravelPath()
+	var solvePath = m.SolvePath()
 
 	currentCell := fromCell
 	facing := "north"

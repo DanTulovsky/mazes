@@ -56,7 +56,7 @@ func TestSolveAldousBroder(t *testing.T) {
 			t.Fatalf("grid is not valid: %v", err)
 		}
 
-		g.ResetVisited()
+		g.Reset()
 		fromCell := g.RandomCell()
 		toCell := g.RandomCell()
 		if g, err = solv.Solve(g, fromCell, toCell, 0); err != nil {
@@ -97,7 +97,7 @@ func TestSolveRecursiveBacktracker(t *testing.T) {
 			t.Fatalf("grid is not valid: %v", err)
 		}
 
-		m.ResetVisited()
+		m.Reset()
 		fromCell := m.RandomCell()
 		toCell := m.RandomCell()
 		if m, err = solv.Solve(m, fromCell, toCell, 0); err != nil {
@@ -107,11 +107,11 @@ func TestSolveRecursiveBacktracker(t *testing.T) {
 
 		for o := range m.OrphanCells() {
 			// make sure orphan cells are not in the solution
-			if maze.CellInCellList(o, m.SolvePath.ListCells()) {
-				t.Errorf("orpha cell %v is in solvePath [%v]", o, m.SolvePath)
+			if maze.CellInCellList(o, m.SolvePath().ListCells()) {
+				t.Errorf("orpha cell %v is in solvePath [%v]", o, m.SolvePath())
 			}
-			if maze.CellInCellList(o, m.TravelPath.ListCells()) {
-				t.Errorf("orpha cell %v is in travelPath [%v]", o, m.TravelPath)
+			if maze.CellInCellList(o, m.TravelPath().ListCells()) {
+				t.Errorf("orpha cell %v is in travelPath [%v]", o, m.TravelPath())
 			}
 		}
 	}

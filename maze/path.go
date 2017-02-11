@@ -18,6 +18,16 @@ func NewSegment(c *Cell, f string) *PathSegment {
 	return &PathSegment{cell: c, facing: f}
 }
 
+// SegmentInSegmentList returns true if segment is in path
+func SegmentInPath(segment *PathSegment, path *Path) bool {
+	for _, s := range path.segments {
+		if segment == s {
+			return true
+		}
+	}
+	return false
+}
+
 func (ps *PathSegment) Cell() *Cell {
 	// no need to lock, this is never set after cration
 	return ps.cell
@@ -59,6 +69,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 	cell := p.Cell()
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
+	solvePath := g.SolvePath()
 
 	getPathRect := func(d string, inSolution bool) *sdl.Rect {
 		if !inSolution {
@@ -100,7 +111,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells []*Cell, isL
 	}
 
 	colors.SetDrawColor(pathColor, r)
-	currentSegmentInSolution := SegmentInPath(p, g.SolvePath)
+	currentSegmentInSolution := SegmentInPath(p, solvePath)
 
 	if isLast && !cell.Visited() {
 		switch p.Facing() {
