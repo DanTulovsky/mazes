@@ -552,7 +552,7 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 	m.toCell = toCell
 }
 
-// SetPathFromTo draws the given path from fromCell to toCell
+// SetPathFromTo sets the given path in the cells from fromCell to toCell
 func (m *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 
 	var prev, next *Cell
