@@ -16,7 +16,8 @@ import (
 
 	"mazes/maze"
 
-	"github.com/kardianos/osext"
+	"sync"
+
 	"github.com/sasha-s/go-deadlock"
 )
 
@@ -230,8 +231,8 @@ func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
 }
 
 func main() {
-	filename, _ := osext.Executable()
-	fmt.Println(filename)
+	//filename, _ := osext.Executable()
+	//fmt.Println(filename)
 
 	os.Exit(run())
 }
@@ -361,9 +362,11 @@ func run() int {
 	///////////////////////////////////////////////////////////////////////////
 
 	runSolver := false
+	var wd sync.WaitGroup
 	///////////////////////////////////////////////////////////////////////////
 	// Generators/Solvers
 	///////////////////////////////////////////////////////////////////////////
+	wd.Add(1)
 	go func() {
 		for !runSolver {
 			log.Println("Maze not yet ready, sleeping 1s...")
@@ -376,6 +379,7 @@ func run() int {
 				log.Print(err)
 			}
 		}
+		wd.Done()
 	}()
 	///////////////////////////////////////////////////////////////////////////
 	// End Generators/Solvers
@@ -448,6 +452,11 @@ func run() int {
 			})
 		}
 
+	} else {
+
+		// wait for solver thread here, used if gui not shown
+		runSolver = true
+		wd.Wait()
 	}
 	return 0
 }
