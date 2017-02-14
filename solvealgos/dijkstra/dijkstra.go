@@ -33,7 +33,7 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 
 		currentCell.SetVisited()
 
-		smallest := math.MaxInt16
+		smallest := math.MaxInt64
 		var next *maze.Cell
 		for _, link := range currentCell.Links() {
 			dist, _ := d.Get(link)
