@@ -336,6 +336,7 @@ func run() int {
 	}
 
 	log.Printf("running generator %v", *createAlgo)
+	// TODO(dant): Show the screen while this is being generated if gen_draw_delay > 0
 	m, err = algo.Apply(m, delay)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -395,7 +396,6 @@ func run() int {
 
 	// gui maze
 	if *showGUI {
-
 		running := true
 
 		// create background texture, it is saved and re-rendered as a picture
@@ -405,15 +405,21 @@ func run() int {
 		}
 
 		// draw on the texture
-		r.SetRenderTarget(mTexture)
-		r.Clear()
+		sdl.Do(func() {
+			r.SetRenderTarget(mTexture)
+			r.Clear()
+		})
 		m.DrawMazeBackground(r)
-		r.Present()
+		sdl.Do(func() {
+			r.Present()
+		})
 
 		// Reset to drawing on the screen
-		r.SetRenderTarget(nil)
-		r.Copy(mTexture, nil, nil)
-		r.Present()
+		sdl.Do(func() {
+			r.SetRenderTarget(nil)
+			r.Copy(mTexture, nil, nil)
+			r.Present()
+		})
 
 		runSolver = true
 		for running {
@@ -451,6 +457,8 @@ func run() int {
 				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
 		}
+
+		// Save picture of solved maze
 
 	} else {
 
