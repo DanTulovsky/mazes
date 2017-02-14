@@ -260,6 +260,8 @@ func (c *Cell) SetBGColor(color colors.Color) {
 
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
+	// defer utils.TimeTrack(time.Now(), "CellDraw")
+
 	var bg *sdl.Rect
 
 	// Fill in background color
@@ -424,8 +426,6 @@ func (c *Cell) UnLink(cell *Cell) {
 // Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
-	log.Printf("%#v", c)
-	log.Printf("%v", c.links)
 	for _, k := range c.links.Keys() {
 		if c.Linked(k) {
 			keys = append(keys, k)

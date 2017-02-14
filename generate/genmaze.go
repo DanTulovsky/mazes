@@ -63,6 +63,8 @@ var (
 	frameRate      = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay   = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+
+	winWidth, winHeight int
 )
 
 func setupSDL() {
@@ -75,8 +77,8 @@ func setupSDL() {
 	})
 
 	// window
-	winWidth := (*columns)**cellWidth + *wallWidth*2
-	winHeight := (*rows)**cellWidth + *wallWidth*2
+	winWidth = (*columns)**cellWidth + *wallWidth*2
+	winHeight = (*rows)**cellWidth + *wallWidth*2
 
 	sdl.Do(func() {
 		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
@@ -208,14 +210,6 @@ func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
 
 	log.Printf("running solver %v", *solveAlgo)
 
-	// solve the longest path
-	if fromCell == nil || toCell == nil {
-		log.Print("No fromCella and toCell set, defaulting to longestPath.")
-		_, fromCell, toCell, _ = m.LongestPath()
-	}
-
-	m.SetDistanceColors(fromCell)
-	m.SetFromToColors(fromCell, toCell)
 	m.Reset()
 
 	solver = algos.SolveAlgorithms[*solveAlgo]
@@ -329,36 +323,51 @@ func run() int {
 	//
 	//}
 
-	isDrawn := false
+	///////////////////////////////////////////////////////////////////////////
+	// Generator
+	///////////////////////////////////////////////////////////////////////////
+	// apply algorithm
+	algo := algos.Algorithms[*createAlgo]
+
+	delay, err := time.ParseDuration(*genDrawDelay)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	log.Printf("running generator %v", *createAlgo)
+	m, err = algo.Apply(m, delay)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	if err := algo.CheckGrid(m); err != nil {
+		log.Fatalf("maze is not valid: %v", err)
+	}
+
+	if *showStats {
+		showMazeStats(m)
+	}
+
+	// solve the longest path
+	if fromCell == nil || toCell == nil {
+		log.Print("No fromCella and toCell set, defaulting to longestPath.")
+		_, fromCell, toCell, _ = m.LongestPath()
+	}
+
+	m.SetDistanceColors(fromCell)
+	m.SetFromToColors(fromCell, toCell)
+
+	///////////////////////////////////////////////////////////////////////////
+	// End Generator
+	///////////////////////////////////////////////////////////////////////////
+
+	runSolver := false
 	///////////////////////////////////////////////////////////////////////////
 	// Generators/Solvers
 	///////////////////////////////////////////////////////////////////////////
 	go func() {
-		for !isDrawn {
-			// sleep to allow grid to be drawn
-			// TODO(dant): Do this better, no sleep, channel?
-			time.Sleep(time.Second * 1)
-		}
-
-		// apply algorithm
-		algo := algos.Algorithms[*createAlgo]
-
-		delay, err := time.ParseDuration(*genDrawDelay)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		log.Printf("running generator %v", *createAlgo)
-		m, err = algo.Apply(m, delay)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-		if err := algo.CheckGrid(m); err != nil {
-			log.Fatalf("maze is not valid: %v", err)
-		}
-
-		if *showStats {
-			showMazeStats(m)
+		for !runSolver {
+			log.Println("Maze not yet ready, sleeping 1s...")
+			time.Sleep(time.Second)
 		}
 
 		if *solveAlgo != "" {
@@ -385,7 +394,24 @@ func run() int {
 
 		running := true
 
-		log.Printf("starting maze draw...")
+		// create background texture, it is saved and re-rendered as a picture
+		mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
+		if err != nil {
+			log.Fatalf("failed to create background: %v", err)
+		}
+
+		// draw on the texture
+		r.SetRenderTarget(mTexture)
+		r.Clear()
+		m.DrawMazeBackground(r)
+		r.Present()
+
+		// Reset to drawing on the screen
+		r.SetRenderTarget(nil)
+		r.Copy(mTexture, nil, nil)
+		r.Present()
+
+		runSolver = true
 		for running {
 			//sdl.Do(func() {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -404,7 +430,7 @@ func run() int {
 				colors.SetDrawColor(colors.GetColor("black"), r)
 
 				r.Clear()
-				m.DrawMaze(r)
+				m.DrawMaze(r, mTexture)
 			})
 
 			//	// wg := sync.WaitGroup{}
@@ -420,8 +446,6 @@ func run() int {
 				// fmt.Print("Press 'Enter' to continue...")
 				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
-
-			isDrawn = true // TODO(dan): Do this better
 		}
 
 	}

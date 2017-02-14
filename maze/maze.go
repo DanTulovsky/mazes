@@ -308,9 +308,9 @@ func (m *Maze) setToCell(c *Cell) {
 	m.toCell = c
 }
 
-// Draw renders the gui maze in memory, display by calling Present
-func (m *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
-	// utils.TimeTrack(time.Now(), "DrawMaze")
+// DrawMazeBackground renders the gui maze background in memory
+func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
+	// defer utils.TimeTrack(time.Now(), "DrawMaze")
 
 	fromCell := m.FromCell()
 	toCell := m.ToCell()
@@ -347,6 +347,15 @@ func (m *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 	// Draw outside border
 	m.drawBorder(r)
 
+	return r
+}
+
+// Draw renders the gui maze in memory, display by calling Present
+func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
+	// defer utils.TimeTrack(time.Now(), "DrawMaze")
+
+	r.Copy(bg, nil, nil) // copy the background texture
+
 	// Draw location of the generator algorithm
 	m.drawGenCurrentLocation(r)
 
@@ -358,6 +367,8 @@ func (m *Maze) DrawMaze(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawBorder renders the maze border in memory, display by calling Present
 func (m *Maze) drawBorder(r *sdl.Renderer) *sdl.Renderer {
+	// defer utils.TimeTrack(time.Now(), "drawBorder")
+
 	colors.SetDrawColor(m.borderColor, r)
 
 	var bg sdl.Rect
@@ -408,7 +419,7 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 // DrawPath renders the gui maze path in memory, display by calling Present
 // This is drawing g.TravelPath if path == nil
 func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
-	// utils.TimeTrack(time.Now(), "drawPath")
+	// defer utils.TimeTrack(time.Now(), "drawPath")
 	if path == nil {
 		path = m.travelPath
 	}
@@ -609,6 +620,8 @@ func (m *Maze) ConnectCells(cells []*Cell) {
 
 // LongestPath returns the longest path through the maze
 func (m *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
+	defer utils.TimeTrack(time.Now(), "LongestPath")
+
 	// pick random starting point
 	fromCell = m.RandomCell()
 
@@ -626,6 +639,8 @@ func (m *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 
 // SetFromToColors sets the opacity of the from and to cells to be highly visible
 func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
+	// defer utils.TimeTrack(time.Now(), "SetFromToColors")
+
 	// Set path start and end colors
 	fromCell.SetBGColor(colors.SetOpacity(fromCell.bgColor, 0))
 	toCell.SetBGColor(colors.SetOpacity(toCell.bgColor, 255))
@@ -655,6 +670,8 @@ func (m *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 
 // ShortestPath finds the shortest path from fromCell to toCell
 func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
+	defer utils.TimeTrack(time.Now(), "ShortestPath")
+
 	if path := fromCell.PathTo(toCell); path != nil {
 		return path.Length(), path
 	}
@@ -701,6 +718,7 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 
 // SetDistanceColors colors the graph based on distances from c
 func (m *Maze) SetDistanceColors(c *Cell) {
+	// defer utils.TimeTrack(time.Now(), "SetDistanceColors")
 	// figure out the distances if needed
 	c.Distances()
 
