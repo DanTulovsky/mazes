@@ -421,6 +421,8 @@ func (c *Cell) UnLink(cell *Cell) {
 // Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
+	log.Printf("%#v", c)
+	log.Printf("%v", c.links)
 	for _, k := range c.links.Keys() {
 		if c.Linked(k) {
 			keys = append(keys, k)
