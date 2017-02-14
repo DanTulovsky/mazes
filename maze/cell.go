@@ -44,6 +44,9 @@ type Cell struct {
 	// cell is isolated
 	orphan bool
 
+	// havePath cache; previous, next
+	havePath map[*Cell]*Cell
+
 	deadlock.RWMutex
 }
 
@@ -80,6 +83,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		paths:     NewSafeMap(),
 		config:    c,
 		orphan:    false,
+		havePath:  make(map[*Cell]*Cell),
 	}
 	cell.distances = NewDistances(cell)
 
@@ -186,6 +190,12 @@ func (c *Cell) SetUnVisited() {
 
 // SetPaths sets the paths present in the cell
 func (c *Cell) SetPaths(previous, next *Cell) {
+	// no lock needed, only ever called from one thread (for now)
+	if n, ok := c.havePath[previous]; ok {
+		if n == next {
+			return
+		}
+	}
 	if c.North == previous || c.North == next {
 		c.SetHavePath("north")
 	}
@@ -198,6 +208,8 @@ func (c *Cell) SetPaths(previous, next *Cell) {
 	if c.West == previous || c.West == next {
 		c.SetHavePath("west")
 	}
+
+	c.havePath[previous] = next
 }
 
 // FurthestCell returns the cell and distance of the cell that is furthest from this one

@@ -16,6 +16,9 @@ type Dijkstra struct {
 func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
+	// swap these for proper drawing colors
+	fromCell, toCell = toCell, fromCell
+
 	var travelPath = g.TravelPath()
 	var solvePath = g.SolvePath()
 

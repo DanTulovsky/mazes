@@ -48,7 +48,7 @@ func (a *RandomUnvisited) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay
 	facing = currentCell.GetFacingDirection(toCell)
 	segment := maze.NewSegment(currentCell, facing)
 	travelPath.AddSegement(segment)
-	travelPath.AddSegement(segment)
+	solvePath.AddSegement(segment)
 	g.SetPathFromTo(fromCell, toCell, solvePath)
 
 	// stats
