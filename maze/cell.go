@@ -408,6 +408,9 @@ func (c *Cell) unLinkOneWay(cell *Cell) {
 
 // Link links a cell to its neighbor (adds passage)
 func (c *Cell) Link(cell *Cell) {
+	if cell == nil {
+		log.Fatalf("linking %v to nil!", c)
+	}
 	c.linkOneWay(cell)
 	cell.linkOneWay(c)
 }
@@ -459,6 +462,9 @@ func (c *Cell) RandomUnvisitedLink() *Cell {
 
 // Linked returns true if the two cells are linked (joined by a passage)
 func (c *Cell) Linked(cell *Cell) bool {
+	if c == nil || cell == nil {
+		return false
+	}
 	linked, ok := c.links.Find(cell)
 	if !ok {
 		return false

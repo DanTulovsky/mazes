@@ -636,7 +636,7 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 
 }
 
-// SetPathFromTo draws the given path from fromCell to toCell
+// SetPathFromTo sets the given path in the cells from fromCell to toCell
 func (m *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 
 	var prev, next *Cell
@@ -668,10 +668,13 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	current := toCell
 
 	for current != d.root {
-		smallest := math.MaxInt16
+		smallest := math.MaxInt64
 		var next *Cell
 		for _, link := range current.Links() {
-			dist, _ := d.Get(link)
+			dist, err := d.Get(link)
+			if err != nil {
+				continue
+			}
 			if dist < smallest {
 				smallest = dist
 				next = link
@@ -679,6 +682,9 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 		}
 		segment := NewSegment(next, "north") // arbitrary facing
 		path.AddSegement(segment)
+		if next == nil {
+			log.Fatalf("failed to find next cell from: %v", current)
+		}
 		current = next
 	}
 

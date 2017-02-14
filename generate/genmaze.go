@@ -329,12 +329,16 @@ func run() int {
 	//
 	//}
 
+	isDrawn := false
 	///////////////////////////////////////////////////////////////////////////
 	// Generators/Solvers
 	///////////////////////////////////////////////////////////////////////////
 	go func() {
-		// sleep to allow grid to be drawn
-		time.Sleep(time.Second * 2)
+		for !isDrawn {
+			// sleep to allow grid to be drawn
+			// TODO(dant): Do this better, no sleep, channel?
+			time.Sleep(time.Second * 1)
+		}
 
 		// apply algorithm
 		algo := algos.Algorithms[*createAlgo]
@@ -378,8 +382,10 @@ func run() int {
 
 	// gui maze
 	if *showGUI {
+
 		running := true
 
+		log.Printf("starting maze draw...")
 		for running {
 			//sdl.Do(func() {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -414,6 +420,8 @@ func run() int {
 				// fmt.Print("Press 'Enter' to continue...")
 				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
+
+			isDrawn = true // TODO(dan): Do this better
 		}
 
 	}
