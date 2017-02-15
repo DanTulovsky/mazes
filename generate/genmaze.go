@@ -98,6 +98,7 @@ func setupSDL() {
 
 	// renderer
 	sdl.Do(func() {
+		//r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 	})
 	if sdlErr != nil {
@@ -160,6 +161,8 @@ func checkSolveAlgo(a string) bool {
 //}
 
 func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
+	return errors.New("exporting to file doesn't work yet...")
+
 	log.Printf("exporting maze to: %v", path)
 	if path == "" {
 		return errors.New("path to file is required!")
