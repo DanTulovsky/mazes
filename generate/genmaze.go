@@ -98,7 +98,6 @@ func setupSDL() {
 
 	// renderer
 	sdl.Do(func() {
-		//r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 	})
 	if sdlErr != nil {
