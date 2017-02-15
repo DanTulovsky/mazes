@@ -309,14 +309,14 @@ func (m *Maze) setToCell(c *Cell) {
 }
 
 // DrawMazeBackground renders the gui maze background in memory
-func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
+func (m *Maze) DrawMazeBackground(r *sdl.Renderer, distanceColors bool) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "DrawMaze")
 
 	fromCell := m.FromCell()
 	toCell := m.ToCell()
 
 	// If saved, draw distance colors
-	if fromCell != nil {
+	if fromCell != nil && distanceColors {
 		m.SetDistanceColors(fromCell)
 	}
 	if fromCell != nil && toCell != nil {
@@ -354,7 +354,9 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "DrawMaze")
 
-	r.Copy(bg, nil, nil) // copy the background texture
+	if bg != nil {
+		r.Copy(bg, nil, nil) // copy the background texture
+	}
 
 	// Draw location of the generator algorithm
 	m.drawGenCurrentLocation(r)
@@ -643,7 +645,7 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 
 	// Set path start and end colors
 	fromCell.SetBGColor(colors.SetOpacity(fromCell.bgColor, 0))
-	toCell.SetBGColor(colors.SetOpacity(toCell.bgColor, 255))
+	toCell.SetBGColor(colors.SetOpacity(toCell.bgColor, 128))
 
 	// save these for color refresh.
 	m.setFromCell(fromCell)

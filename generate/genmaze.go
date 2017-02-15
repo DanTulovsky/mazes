@@ -56,6 +56,7 @@ var (
 	showStats               = flag.Bool("stats", false, "show maze stats")
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
+	distanceColors          = flag.Bool("distance_colors", true, "show distance colors")
 	markVisitedCells        = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo              = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	maskImage               = flag.String("mask_image", "", "file name of mask image")
@@ -335,27 +336,52 @@ func run() int {
 		log.Fatalf(err.Error())
 	}
 
-	log.Printf("running generator %v", *createAlgo)
-	// TODO(dant): Show the screen while this is being generated if gen_draw_delay > 0
-	m, err = algo.Apply(m, delay)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	if err := algo.CheckGrid(m); err != nil {
-		log.Fatalf("maze is not valid: %v", err)
-	}
+	// Display generator while building
 
-	if *showStats {
-		showMazeStats(m)
-	}
+	generating := true
+	var wd sync.WaitGroup
 
-	// solve the longest path
-	if fromCell == nil || toCell == nil {
-		log.Print("No fromCella and toCell set, defaulting to longestPath.")
-		_, fromCell, toCell, _ = m.LongestPath()
-	}
+	wd.Add(1)
+	go func() {
+		log.Printf("running generator %v", *createAlgo)
 
-	m.SetDistanceColors(fromCell)
+		m, err = algo.Apply(m, delay)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+		if err := algo.CheckGrid(m); err != nil {
+			log.Fatalf("maze is not valid: %v", err)
+		}
+
+		if *showStats {
+			showMazeStats(m)
+		}
+
+		// solve the longest path
+		if fromCell == nil || toCell == nil {
+			log.Print("No fromCella and toCell set, defaulting to longestPath.")
+			_, fromCell, toCell, _ = m.LongestPath()
+		}
+
+		generating = false
+		wd.Done()
+	}()
+
+	if delay != 0 {
+		for generating {
+			// Displays the main maze while generating it
+			sdl.Do(func() {
+				// reset the clear color back to black
+				colors.SetDrawColor(colors.GetColor("white"), r)
+
+				r.Clear()
+				m.DrawMazeBackground(r, *distanceColors)
+				r.Present()
+				sdl.Delay(uint32(1000 / *frameRate))
+			})
+		}
+	}
+	wd.Wait()
 	m.SetFromToColors(fromCell, toCell)
 
 	///////////////////////////////////////////////////////////////////////////
@@ -363,7 +389,6 @@ func run() int {
 	///////////////////////////////////////////////////////////////////////////
 
 	runSolver := false
-	var wd sync.WaitGroup
 	///////////////////////////////////////////////////////////////////////////
 	// Generators/Solvers
 	///////////////////////////////////////////////////////////////////////////
@@ -409,7 +434,7 @@ func run() int {
 			r.SetRenderTarget(mTexture)
 			r.Clear()
 		})
-		m.DrawMazeBackground(r)
+		m.DrawMazeBackground(r, *distanceColors)
 		sdl.Do(func() {
 			r.Present()
 		})
