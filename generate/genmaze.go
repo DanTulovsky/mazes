@@ -18,7 +18,11 @@ import (
 
 	"sync"
 
+	"errors"
+	"unsafe"
+
 	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/sdl_image"
 )
 
 // For gui support
@@ -60,11 +64,11 @@ var (
 	markVisitedCells        = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo              = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	maskImage               = flag.String("mask_image", "", "file name of mask image")
-	// exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	solveAlgo      = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
-	frameRate      = flag.Uint("frame_rate", 120, "frame rate for animation")
-	genDrawDelay   = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
-	solveDrawDelay = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+	exportFile              = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	solveAlgo               = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
+	frameRate               = flag.Uint("frame_rate", 120, "frame rate for animation")
+	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
+	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 
 	winWidth, winHeight int
 )
@@ -85,7 +89,7 @@ func setupSDL() {
 	sdl.Do(func() {
 		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
 			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-			winWidth, winHeight, sdl.WINDOW_SHOWN)
+			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_OPENGL)
 	})
 	if sdlErr != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
@@ -155,31 +159,35 @@ func checkSolveAlgo(a string) bool {
 //
 //}
 
-//func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
-//	if path == "" {
-//		return errors.New("path to file is required!")
-//	}
-//
-//	w, h := window.GetSize()
-//	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
-//	if err != nil {
-//		return err
-//	}
-//
-//	rect := &sdl.Rect{0, 0, int32(w) - 1, int32(h) - 1}
-//	pixelFormat, err := window.GetPixelFormat()
-//	if err != nil {
-//		return err
-//	}
-//	pixels := s.Pixels()
-//	if err := r.ReadPixels(rect, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
-//		return err
-//	}
-//
-//	img.SavePNG(s, path)
-//	s.Free()
-//	return nil
-//}
+func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
+	log.Printf("exporting maze to: %v", path)
+	if path == "" {
+		return errors.New("path to file is required!")
+	}
+
+	w, h, err := r.GetRendererOutputSize()
+	if err != nil {
+		return err
+	}
+
+	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
+	if err != nil {
+		return err
+	}
+
+	pixelFormat, err := window.GetPixelFormat()
+	if err != nil {
+		return err
+	}
+	pixels := s.Pixels()
+	if err := r.ReadPixels(nil, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
+		return err
+	}
+
+	img.SavePNG(s, path)
+	s.Free()
+	return nil
+}
 
 // showMazeStats shows some states about the maze
 func showMazeStats(m *maze.Maze) {
@@ -337,7 +345,6 @@ func run() int {
 	}
 
 	// Display generator while building
-
 	generating := true
 	var wd sync.WaitGroup
 
@@ -367,7 +374,7 @@ func run() int {
 		wd.Done()
 	}()
 
-	if delay != 0 {
+	if *showGUI {
 		for generating {
 			// Displays the main maze while generating it
 			sdl.Do(func() {
@@ -382,16 +389,19 @@ func run() int {
 		}
 	}
 	wd.Wait()
+
+	// Set the colors for the from and to cells
 	m.SetFromToColors(fromCell, toCell)
 
 	///////////////////////////////////////////////////////////////////////////
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
 
+	///////////////////////////////////////////////////////////////////////////
+	// Solvers
+	///////////////////////////////////////////////////////////////////////////
 	runSolver := false
-	///////////////////////////////////////////////////////////////////////////
-	// Generators/Solvers
-	///////////////////////////////////////////////////////////////////////////
+
 	wd.Add(1)
 	go func() {
 		for !runSolver {
@@ -405,10 +415,18 @@ func run() int {
 				log.Print(err)
 			}
 		}
+
+		// Save picture of solved maze
+		if *exportFile != "" {
+			if err := SaveImage(r, w, *exportFile); err != nil {
+				log.Printf("error exporting image: %v", err.Error())
+			}
+		}
+
 		wd.Done()
 	}()
 	///////////////////////////////////////////////////////////////////////////
-	// End Generators/Solvers
+	// End Solvers
 	///////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////
@@ -446,7 +464,9 @@ func run() int {
 			r.Present()
 		})
 
+		// Allow solver to start
 		runSolver = true
+
 		for running {
 			//sdl.Do(func() {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -466,27 +486,12 @@ func run() int {
 
 				r.Clear()
 				m.DrawMaze(r, mTexture)
-			})
 
-			//	// wg := sync.WaitGroup{}
-			//	// wg.Add(1)
-			//
-			// Do things between drawing here
-			//
-			//	// wg.Wait()
-
-			sdl.Do(func() {
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
-				// fmt.Print("Press 'Enter' to continue...")
-				// bufio.NewReader(os.Stdin).ReadBytes('\n')
 			})
 		}
-
-		// Save picture of solved maze
-
 	} else {
-
 		// wait for solver thread here, used if gui not shown
 		runSolver = true
 		wd.Wait()
