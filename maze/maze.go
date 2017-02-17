@@ -519,6 +519,21 @@ func (m *Maze) Rows() [][]*Cell {
 	return rows
 }
 
+// OrderedCells returns the cells in the maze in a deterministic order, excludes orphaned cells
+func (m *Maze) OrderedCells() []*Cell {
+	cells := make([]*Cell, 0)
+
+	for y := m.rows - 1; y >= 0; y-- {
+		for x := m.columns - 1; x >= 0; x-- {
+			cell, _ := m.Cell(x, y)
+			if !cell.IsOrphan() {
+				cells = append(cells, cell)
+			}
+		}
+	}
+	return cells
+}
+
 // Cells returns a list of un-orphanded cells in the grid
 func (m *Maze) Cells() map[*Cell]bool {
 

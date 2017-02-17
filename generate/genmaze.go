@@ -65,7 +65,7 @@ var (
 	createAlgo              = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	maskImage               = flag.String("mask_image", "", "file name of mask image")
 	exportFile              = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	solveAlgo               = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
+	solveAlgo               = flag.String("solve_algo", "", "algorithm to solve the maze")
 	frameRate               = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
@@ -392,8 +392,10 @@ func run() int {
 	}
 	wd.Wait()
 
-	// Set the colors for the from and to cells
-	m.SetFromToColors(fromCell, toCell)
+	if *solveAlgo != "" {
+		// Set the colors for the from and to cells
+		m.SetFromToColors(fromCell, toCell)
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// End Generator
