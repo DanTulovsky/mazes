@@ -26,7 +26,7 @@ import (
 )
 
 // For gui support
-// brew install sdl2{,_image,_ttf,_mixer}
+// brew install sdl2{,_image,_ttf,_mixer,_gfx}
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 // if slow compile, run: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
@@ -69,6 +69,7 @@ var (
 	frameRate               = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+	avatarImage             = flag.String("avatar_image", "", "file name of avatar image")
 
 	winWidth, winHeight int
 )
@@ -281,6 +282,7 @@ func run() int {
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
 		DarkMode:             *darkMode,
+		AvatarImage:          *avatarImage,
 	}
 
 	var m *maze.Maze

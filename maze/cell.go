@@ -319,7 +319,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
-// DrawVisited draws the visited marker. If num is supplied and is not 0, use that as the times visited. Used for animation.
+// DrawVisited draws the visited marker.
 func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 	c.RLock()
 	defer c.RUnlock()
@@ -349,19 +349,29 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawCurrentLocation marks the current location of the user
-func (c *Cell) DrawCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+func (c *Cell) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) *sdl.Renderer {
 	c.RLock()
 	defer c.RUnlock()
 
 	PixelsPerCell := c.width
 	colors.SetDrawColor(c.config.CurrentLocationColor, r)
 
-	avatar := &sdl.Rect{
-		int32(c.column*PixelsPerCell + PixelsPerCell/2),
-		int32(c.row*PixelsPerCell + PixelsPerCell/2),
-		int32(c.pathWidth * 6),
-		int32(c.pathWidth * 6)}
-	r.FillRect(avatar)
+	if avatar == nil {
+		// draw a standard box
+		sq := &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(c.pathWidth * 6),
+			int32(c.pathWidth * 6)}
+		r.FillRect(sq)
+	} else {
+		sq := &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(c.pathWidth * 15),
+			int32(c.pathWidth * 15)}
+		r.Copy(avatar, nil, sq)
+	}
 
 	return r
 }

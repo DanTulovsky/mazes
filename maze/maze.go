@@ -17,6 +17,10 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 
 	_ "image/png"
+
+	"errors"
+
+	"github.com/veandco/go-sdl2/sdl_image"
 )
 
 func init() {
@@ -50,6 +54,8 @@ type Maze struct {
 	travelPath *Path // the travel path of the solver, update in real time
 
 	genCurrentLocation *Cell // the current location of generator
+
+	avatar *sdl.Texture
 
 	deadlock.RWMutex
 }
@@ -141,6 +147,27 @@ func NewMaze(c *Config) (*Maze, error) {
 	m.configureCells()
 
 	return m, nil
+}
+
+// loadAvatar reads in the avatar image
+func (m *Maze) loadAvatar(r *sdl.Renderer) {
+	if m.avatar != nil {
+		return
+	}
+
+	var err error
+	m.avatar, err = img.LoadTexture(r, m.config.AvatarImage)
+	if err != nil {
+		Fail(err)
+	}
+}
+
+// getAvatar returns the avatar texture
+func (m *Maze) getAvatar() *sdl.Texture {
+	if m.avatar == nil && m.config.AvatarImage != "" {
+		Fail(errors.New("calling getAvatar() before loadVatar()"))
+	}
+	return m.avatar
 }
 
 // prepareGrid initializes the grid with cells
@@ -347,6 +374,11 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer, distanceColors bool) *sdl.Ren
 	// Draw outside border
 	m.drawBorder(r)
 
+	// Load avatar if needed
+	if m.config.AvatarImage != "" {
+		m.loadAvatar(r)
+	}
+
 	return r
 }
 
@@ -441,7 +473,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		}
 
 		if isLast {
-			cell.DrawCurrentLocation(r)
+			cell.DrawCurrentLocation(r, m.getAvatar())
 		}
 
 		if _, ok := alreadyDone[segment]; ok {

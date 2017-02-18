@@ -15,6 +15,7 @@ type Config struct {
 	MarkVisitedCells     bool
 	DarkMode             bool       // only show cells the solver has seen
 	OrphanMask           []Location // these cells are turned off and are not part of the grid
+	AvatarImage          string
 	VisitedCellColor     colors.Color
 	BgColor              colors.Color
 	BorderColor          colors.Color
