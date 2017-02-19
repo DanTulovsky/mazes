@@ -21,11 +21,16 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 
 	var travelPath = g.TravelPath()
 	var solvePath = g.SolvePath()
+	var facing string = "north"
 
 	// Get all distances from this cell
 	d := fromCell.Distances()
 
 	currentCell := toCell
+
+	segment := maze.NewSegment(toCell, facing)
+	travelPath.AddSegement(segment)
+	solvePath.AddSegement(segment)
 
 	for currentCell != d.Root() {
 		// animation delay
@@ -34,26 +39,33 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 		currentCell.SetVisited()
 
 		smallest := math.MaxInt64
-		var next *maze.Cell
+		var nextCell *maze.Cell
 		for _, link := range currentCell.Links() {
 			dist, _ := d.Get(link)
 			if dist < smallest {
 				smallest = dist
-				next = link
+				nextCell = link
 			}
 		}
-		segment := maze.NewSegment(next, "north") // arbitrary facing
+
+		facing = currentCell.GetFacingDirection(nextCell)
+
+		segment := maze.NewSegment(nextCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
+
 		g.SetPathFromTo(fromCell, currentCell, travelPath)
-		currentCell = next
+		currentCell = nextCell
 	}
 
 	// add toCell to path
 	travelPath.ReverseCells()
-	segment := maze.NewSegment(toCell, "north") // arbitrary facing
+	facing = currentCell.GetFacingDirection(toCell)
+
+	segment = maze.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
+
 	g.SetPathFromTo(fromCell, toCell, travelPath)
 
 	// stats
