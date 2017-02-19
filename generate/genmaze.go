@@ -69,7 +69,7 @@ var (
 	frameRate               = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
-	avatarImage             = flag.String("avatar_image", "", "file name of avatar image")
+	avatarImage             = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
 
 	winWidth, winHeight int
 )

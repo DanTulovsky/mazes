@@ -348,34 +348,6 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
-// DrawCurrentLocation marks the current location of the user
-func (c *Cell) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) *sdl.Renderer {
-	c.RLock()
-	defer c.RUnlock()
-
-	PixelsPerCell := c.width
-	colors.SetDrawColor(c.config.CurrentLocationColor, r)
-
-	if avatar == nil {
-		// draw a standard box
-		sq := &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(c.pathWidth * 6),
-			int32(c.pathWidth * 6)}
-		r.FillRect(sq)
-	} else {
-		sq := &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(c.pathWidth * 15),
-			int32(c.pathWidth * 15)}
-		r.Copy(avatar, nil, sq)
-	}
-
-	return r
-}
-
 // DrawPath draws the path as present in the cells
 func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
 	c.RLock()

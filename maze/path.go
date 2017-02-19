@@ -71,6 +71,63 @@ func (p *Path) ReverseCells() {
 	}
 }
 
+// DrawCurrentLocation marks the current location of the user
+func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) *sdl.Renderer {
+	p.RLock()
+	defer p.RUnlock()
+
+	c := p.Cell()
+	PixelsPerCell := c.width
+
+	// rotateAngle returns the angle of rotation based on facing direction
+	// the texture used for the avatar is assumed to be "facing" "west"
+	rotateAngle := func(f string) (angle float64, flip sdl.RendererFlip) {
+
+		switch f {
+		case "north":
+			angle = 90
+			flip = sdl.FLIP_NONE
+
+		case "east":
+			angle = 180
+			flip = sdl.FLIP_VERTICAL
+
+		case "south":
+			angle = -90
+			flip = sdl.FLIP_NONE
+
+		case "west":
+			angle = 0
+			flip = sdl.FLIP_NONE
+		}
+
+		return angle, flip
+	}
+
+	if avatar == nil {
+		colors.SetDrawColor(c.config.CurrentLocationColor, r)
+		// draw a standard box
+		sq := &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/2),
+			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(c.pathWidth * 6),
+			int32(c.pathWidth * 6)}
+		r.FillRect(sq)
+	} else {
+		angle, flip := rotateAngle(p.Facing())
+
+		sq := &sdl.Rect{
+			int32(c.column*PixelsPerCell + PixelsPerCell/4),
+			int32(c.row*PixelsPerCell + PixelsPerCell/4),
+			int32(c.pathWidth * 15),
+			int32(c.pathWidth * 15)}
+
+		r.CopyEx(avatar, nil, sq, angle, nil, flip)
+	}
+
+	return r
+}
+
 // DrawPath draws the path as present in the cells
 func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bool, isLast, isSolution bool) *sdl.Renderer {
 	cell := p.Cell()

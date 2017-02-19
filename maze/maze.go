@@ -473,7 +473,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		}
 
 		if isLast {
-			cell.DrawCurrentLocation(r, m.getAvatar())
+			segment.DrawCurrentLocation(r, m.getAvatar())
 		}
 
 		if _, ok := alreadyDone[segment]; ok {
