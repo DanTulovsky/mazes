@@ -160,6 +160,8 @@ func (m *Maze) loadAvatar(r *sdl.Renderer) {
 	if err != nil {
 		Fail(err)
 	}
+	m.avatar.SetBlendMode(sdl.BLENDMODE_BLEND)
+	m.avatar.SetAlphaMod(255)
 }
 
 // getAvatar returns the avatar texture
