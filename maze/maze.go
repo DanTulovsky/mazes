@@ -474,11 +474,10 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 			isLast = true // last segment is drawn slightly different
 		}
 
-		if isLast {
-			segment.DrawCurrentLocation(r, m.getAvatar())
-		}
-
 		if _, ok := alreadyDone[segment]; ok {
+			if isLast {
+				segment.DrawCurrentLocation(r, m.getAvatar())
+			}
 			continue
 		}
 
@@ -492,6 +491,10 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		}
 
 		segment.DrawPath(r, m, solvepathCells, isLast, isSolution) // solution is colored by a different color
+
+		if isLast {
+			segment.DrawCurrentLocation(r, m.getAvatar())
+		}
 
 		if markVisited {
 			cell.DrawVisited(r)
