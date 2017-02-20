@@ -23,10 +23,12 @@ import (
 
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl_image"
+	"github.com/veandco/go-sdl2/sdl_mixer"
 )
 
 // For gui support
-// brew install sdl2{,_image,_ttf,_mixer,_gfx}
+// brew install sdl2{,_image,_ttf,_gfx}
+// brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 // if slow compile, run: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
@@ -70,6 +72,7 @@ var (
 	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 	avatarImage             = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
+	bgMusic                 = flag.String("bg_music", "", "file name of background music to play")
 
 	winWidth, winHeight int
 )
@@ -336,6 +339,24 @@ func run() int {
 	//	}
 	//
 	//}
+
+	if *bgMusic != "" {
+
+		if err := mix.Init(mix.INIT_MP3); err != nil {
+			log.Fatalf("error initialing mp3: %v", err)
+		}
+
+		if err := mix.OpenAudio(44100, mix.DEFAULT_FORMAT, 2, 2048); err != nil {
+			log.Fatalf("cannot initialize audio: %v", err)
+		}
+
+		music, err := mix.LoadMUS(*bgMusic)
+		if err != nil {
+			log.Fatalf("cannot load music file %v: %v", *bgMusic, err)
+		}
+
+		music.Play(-1) // loop forever
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// Generator

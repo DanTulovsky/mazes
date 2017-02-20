@@ -305,6 +305,9 @@ func (p *Path) List() []*PathSegment {
 
 // Length returns the length of the path
 func (p *Path) Length() int {
+	p.RLock()
+	defer p.RUnlock()
+
 	return len(p.segments)
 }
 
