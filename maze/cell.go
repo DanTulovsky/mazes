@@ -348,52 +348,6 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 	return r
 }
 
-// DrawPath draws the path as present in the cells
-func (c *Cell) DrawPath(r *sdl.Renderer) *sdl.Renderer {
-	c.RLock()
-	defer c.RUnlock()
-
-	var path *sdl.Rect
-	colors.SetDrawColor(c.pathColor, r)
-	pathWidth := c.pathWidth
-	PixelsPerCell := c.width
-
-	if c.HavePath("east") {
-		path = &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell/2 + c.wallWidth),
-			int32(pathWidth)}
-		r.FillRect(path)
-	}
-	if c.HavePath("west") {
-		path = &sdl.Rect{
-			int32(c.column*PixelsPerCell + c.wallWidth),
-			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(PixelsPerCell/2 + pathWidth - c.wallWidth),
-			int32(pathWidth)}
-		r.FillRect(path)
-	}
-	if c.HavePath("north") {
-		path = &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row*PixelsPerCell + c.wallWidth),
-			int32(pathWidth),
-			int32(PixelsPerCell/2 - c.wallWidth)}
-		r.FillRect(path)
-	}
-	if c.HavePath("south") {
-		path = &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row*PixelsPerCell + PixelsPerCell/2),
-			int32(pathWidth),
-			int32(PixelsPerCell/2 + c.wallWidth)}
-		r.FillRect(path)
-	}
-
-	return r
-}
-
 func (c *Cell) linkOneWay(cell *Cell) {
 	c.links.Insert(cell, true)
 }

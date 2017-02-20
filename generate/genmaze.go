@@ -27,7 +27,7 @@ import (
 )
 
 // For gui support
-// brew install sdl2{,_image,_ttf,_gfx}
+// brew install sdl2{_image,_ttf,_gfx}
 // brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
 // if slow compile, run: go install -a mazes/generate
