@@ -1,27 +1,23 @@
 package main
 
 import (
-	"github.com/pkg/profile"
-	"github.com/veandco/go-sdl2/sdl"
-
+	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"mazes/algos"
-	"mazes/colors"
 	"os"
-
-	"mazes/solvealgos"
-	"time"
-
-	"mazes/maze"
-
 	"sync"
-
-	"errors"
+	"time"
 	"unsafe"
 
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	"mazes/solvealgos"
+
+	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 )
@@ -73,6 +69,7 @@ var (
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 	avatarImage             = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
 	bgMusic                 = flag.String("bg_music", "", "file name of background music to play")
+	braid                   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
 
 	winWidth, winHeight int
 )
@@ -387,6 +384,11 @@ func run() int {
 
 		if *showStats {
 			showMazeStats(m)
+		}
+
+		// braid if requested
+		if *braid > 0 {
+			m.Braid(*braid)
 		}
 
 		// solve the longest path

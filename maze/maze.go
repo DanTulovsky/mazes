@@ -149,6 +149,24 @@ func NewMaze(c *Config) (*Maze, error) {
 	return m, nil
 }
 
+// Braid removes deadends from the maze with a probability p (p = 1 means no dead ends)
+func (m *Maze) Braid(p float64) {
+	log.Printf("Removing loops with probability %v", p)
+
+	for _, c := range m.DeadEnds() {
+		if utils.Random(0, 100) > int(p*100) {
+			return
+		}
+
+		// make sure still dead end
+		if len(c.Links()) == 1 {
+			n := c.RandomUnLinkPreferDeadends()
+			c.Link(n)
+		}
+
+	}
+}
+
 // loadAvatar reads in the avatar image
 func (m *Maze) loadAvatar(r *sdl.Renderer) {
 	if m.avatar != nil {
@@ -490,6 +508,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 			isSolution = false
 		}
 
+		// TODO(dan): Change this to draw path between any two cells
 		segment.DrawPath(r, m, solvepathCells, isLast, isSolution) // solution is colored by a different color
 
 		if isLast {
@@ -793,7 +812,7 @@ func (m *Maze) SetDistanceColors(c *Cell) {
 	m.setFromCell(c)
 }
 
-// DeadEnds returns a list of cells that are deadends (only linked to one neighbor
+// DeadEnds returns a list of cells that are deadends (only linked to one neighbor)
 func (m *Maze) DeadEnds() []*Cell {
 	var deadends []*Cell
 

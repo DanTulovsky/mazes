@@ -3,8 +3,6 @@ package maze
 import (
 	"mazes/colors"
 
-	"log"
-
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -180,7 +178,6 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 	currentSegmentInSolution := solvePath.SegmentInPath(p)
 
 	if isLast && !cell.Visited() {
-		log.Print("fds")
 		switch p.Facing() {
 		case "east":
 			r.FillRect(getPathRect("west", currentSegmentInSolution))
