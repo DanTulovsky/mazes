@@ -67,9 +67,10 @@ var (
 	frameRate               = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
-	avatarImage             = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
+	avatarImage             = flag.String("avatar_image", "avatars/whale1.png", "file name of avatar image, the avatar should be facing to the left in the image")
 	bgMusic                 = flag.String("bg_music", "", "file name of background music to play")
 	braid                   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
+	randomFromTo            = flag.Bool("random_path", true, "show a random path through the maze")
 
 	winWidth, winHeight int
 )
@@ -389,6 +390,20 @@ func run() int {
 		// braid if requested
 		if *braid > 0 {
 			m.Braid(*braid)
+		}
+
+		// set weight
+		c, _ := m.Cell(1, 5)
+		c.SetWeight(10)
+		c, _ = m.Cell(4, 5)
+		c.SetWeight(10)
+		c, _ = m.Cell(10, 9)
+		c.SetWeight(10)
+
+		if *randomFromTo {
+			fromCell, _ = m.Cell(0, 0)
+			toCell, _ = m.Cell(10, 10)
+			m.SetDistanceColors(fromCell)
 		}
 
 		// solve the longest path

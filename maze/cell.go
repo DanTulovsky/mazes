@@ -6,6 +6,8 @@ import (
 	"mazes/colors"
 	"mazes/utils"
 
+	"math"
+
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -47,6 +49,9 @@ type Cell struct {
 	// havePath cache; previous, next
 	havePath map[*Cell]*Cell
 
+	// weight of the cell, how expensive it is to traverse it
+	weight int64
+
 	deadlock.RWMutex
 }
 
@@ -84,6 +89,7 @@ func NewCell(x, y int, c *Config) *Cell {
 		config:    c,
 		orphan:    false,
 		havePath:  make(map[*Cell]*Cell),
+		weight:    1,
 	}
 	cell.distances = NewDistances(cell)
 
@@ -122,6 +128,20 @@ func (c *Cell) SetHavePath(s string) {
 	case "west":
 		c.pathWest = true
 	}
+}
+
+// Weight returns the weight of the cell
+func (c *Cell) Weight() int64 {
+	c.RLock()
+	defer c.RUnlock()
+	return c.weight
+}
+
+// SetWeight returns the weight of the cell
+func (c *Cell) SetWeight(w int64) {
+	c.Lock()
+	defer c.Unlock()
+	c.weight = w
 }
 
 func (c *Cell) String() string {
@@ -220,37 +240,101 @@ func (c *Cell) FurthestCell() (*Cell, int) {
 // Distances finds the distances of all cells to *this* cell
 // Implements simplified Dijkstra’s algorithm
 // Shades the cells
+//func (c *Cell) Distances() *Distances {
+//	if c.distances.cells.Len() > 1 {
+//		// Already have this info
+//		return c.distances
+//	}
+//
+//	frontier := []*Cell{c}
+//
+//	for len(frontier) > 0 {
+//		newFrontier := []*Cell{}
+//
+//		for _, cell := range frontier {
+//
+//			for _, l := range cell.Links() {
+//				if _, err := c.distances.Get(l); err == nil {
+//					continue // already been
+//				}
+//				d, err := c.distances.Get(cell)
+//				if err != nil {
+//					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
+//				}
+//
+//				// sets distance to new cell
+//				c.distances.Set(l, d+1)
+//				newFrontier = append(newFrontier, l)
+//
+//			}
+//		}
+//		frontier = newFrontier
+//
+//	}
+//	return c.distances
+//}
+
+// Distances finds the distances of all cells to *this* cell
+// Includes weight information
+// Shades the cells
 func (c *Cell) Distances() *Distances {
+	log.Printf("getting distances for %v", c)
 	if c.distances.cells.Len() > 1 {
 		// Already have this info
+		log.Println("cached")
 		return c.distances
 	}
 
-	frontier := []*Cell{c}
+	lowestCost := func(cells []*Cell) *Cell {
+		var lowest int64 = math.MaxInt64
+		var lowestCell *Cell
 
-	for len(frontier) > 0 {
-		newFrontier := []*Cell{}
-
-		for _, cell := range frontier {
-
-			for _, l := range cell.Links() {
-				if _, err := c.distances.Get(l); err == nil {
-					continue // already been
-				}
-				d, err := c.distances.Get(cell)
-				if err != nil {
-					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
-				}
-
-				// sets distance to new cell
-				c.distances.Set(l, d+1)
-				newFrontier = append(newFrontier, l)
-
+		for _, c := range cells {
+			if c.Weight() < lowest {
+				lowestCell = c
 			}
 		}
-		frontier = newFrontier
+		return lowestCell
+	}
+
+	// delete Cell c from list cells
+	delCell := func(c *Cell, cells []*Cell) []*Cell {
+		var newCells = make([]*Cell, 0)
+		for _, cell := range cells {
+			if c != cell {
+				newCells = append(newCells, cell)
+			}
+		}
+		return newCells
+	}
+
+	pending := []*Cell{c}
+
+	for len(pending) > 0 {
+		// log.Printf("l: %v", len(pending))
+		cell := lowestCost(pending)
+		pending = delCell(cell, pending)
+
+		for _, l := range cell.Links() {
+
+			d, err := c.distances.Get(cell)
+			if err != nil {
+				log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
+			}
+
+			totalWeight := int64(d) + l.Weight()
+
+			prevDistance, err := c.distances.Get(l)
+
+			if totalWeight < int64(prevDistance) || err != nil {
+				pending = append(pending, l)
+				// sets distance to new cell
+				c.distances.Set(l, int(totalWeight))
+			}
+		}
 
 	}
+	log.Printf("got distances: %v", c.distances)
 	return c.distances
 }
 
@@ -278,6 +362,10 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// Fill in background color
 	colors.SetDrawColor(c.BGColor(), r)
+
+	if c.Weight() > 2 {
+		colors.SetDrawColor(colors.GetColor("green"), r)
+	}
 
 	bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
 		int32(c.width), int32(c.width)}

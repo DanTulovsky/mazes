@@ -151,7 +151,7 @@ func NewMaze(c *Config) (*Maze, error) {
 
 // Braid removes deadends from the maze with a probability p (p = 1 means no dead ends)
 func (m *Maze) Braid(p float64) {
-	log.Printf("Removing loops with probability %v", p)
+	log.Printf("Removing dead ends with probability %v", p)
 
 	for _, c := range m.DeadEnds() {
 		if utils.Random(0, 100) > int(p*100) {
@@ -796,6 +796,7 @@ func (m *Maze) SetDistanceColors(c *Cell) {
 	c.Distances()
 
 	_, longestPath := c.FurthestCell()
+	log.Printf("longest: %v", longestPath)
 
 	// use alpha blending, works for any color
 	for cell := range m.Cells() {
