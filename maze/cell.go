@@ -6,10 +6,11 @@ import (
 	"mazes/colors"
 	"mazes/utils"
 
-	"math"
+	"container/heap"
 
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_gfx"
 )
 
 // Cell defines a single cell in the grid
@@ -18,7 +19,7 @@ type Cell struct {
 	// keep track of neighborgs
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
-	links SafeMap
+	links *safeMap2
 	// distances to other cells
 	distances *Distances
 	// How many times has this cell been visited?
@@ -41,7 +42,7 @@ type Cell struct {
 	pathNorth, pathSouth, pathEast, pathWest bool
 
 	// keep track of paths to specific cells
-	paths SafeMap
+	paths *safeMap2
 
 	// cell is isolated
 	orphan bool
@@ -51,6 +52,9 @@ type Cell struct {
 
 	// weight of the cell, how expensive it is to traverse it
 	weight int64
+
+	// distance of this cell from the beginning
+	distance int64
 
 	deadlock.RWMutex
 }
@@ -78,14 +82,14 @@ func NewCell(x, y int, c *Config) *Cell {
 	cell := &Cell{
 		row:       y,
 		column:    x,
-		links:     NewSafeMap(),
+		links:     NewSafeMap2(),
 		bgColor:   c.BgColor,   // default
 		wallColor: c.WallColor, // default
 		pathColor: c.PathColor, //default
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
-		paths:     NewSafeMap(),
+		paths:     NewSafeMap2(),
 		config:    c,
 		orphan:    false,
 		havePath:  make(map[*Cell]*Cell),
@@ -142,6 +146,20 @@ func (c *Cell) SetWeight(w int64) {
 	c.Lock()
 	defer c.Unlock()
 	c.weight = w
+}
+
+// Distance returns the distance of the cell
+func (c *Cell) Distance() int64 {
+	c.RLock()
+	defer c.RUnlock()
+	return c.distance
+}
+
+// SetDistance sets the distance of the cell
+func (c *Cell) SetDistance(d int64) {
+	c.Lock()
+	defer c.Unlock()
+	c.distance = d
 }
 
 func (c *Cell) String() string {
@@ -285,50 +303,29 @@ func (c *Cell) Distances() *Distances {
 		return c.distances
 	}
 
-	lowestCost := func(cells []*Cell) *Cell {
-		var lowest int64 = math.MaxInt64
-		var lowestCell *Cell
+	pending := make(CellPriorityQueue, 0)
+	heap.Init(&pending)
+	heap.Push(&pending, c)
 
-		for _, c := range cells {
-			if c.Weight() < lowest {
-				lowestCell = c
-			}
-		}
-		return lowestCell
-	}
-
-	// delete Cell c from list cells
-	delCell := func(c *Cell, cells []*Cell) []*Cell {
-		var newCells = make([]*Cell, 0)
-		for _, cell := range cells {
-			if c != cell {
-				newCells = append(newCells, cell)
-			}
-		}
-		return newCells
-	}
-
-	pending := []*Cell{c}
-
-	for len(pending) > 0 {
-		// log.Printf("l: %v", len(pending))
-		cell := lowestCost(pending)
-		pending = delCell(cell, pending)
+	for pending.Len() > 0 {
+		cell := heap.Pop(&pending).(*Cell)
 
 		for _, l := range cell.Links() {
 
 			d, err := c.distances.Get(cell)
+			// log.Printf("d: %v", d)
 			if err != nil {
 				log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 			}
 
-			totalWeight := int64(d) + l.Weight()
+			totalWeight := int64(d) + l.weight // never changes once set
 
 			prevDistance, err := c.distances.Get(l)
 
 			if totalWeight < int64(prevDistance) || err != nil {
-				pending = append(pending, l)
+				heap.Push(&pending, l)
 				// sets distance to new cell
+				// log.Printf("totalWeight: %v", totalWeight)
 				c.distances.Set(l, int(totalWeight))
 			}
 		}
@@ -363,13 +360,21 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// Fill in background color
 	colors.SetDrawColor(c.BGColor(), r)
 
-	if c.Weight() > 2 {
-		colors.SetDrawColor(colors.GetColor("green"), r)
+	// TODO(dan): Remove?
+	if c.weight > 1 {
+		colors.SetDrawColor(colors.GetColor("yellow"), r)
 	}
 
 	bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
 		int32(c.width), int32(c.width)}
 	r.FillRect(bg)
+
+	// Display distance value
+	if c.config.ShowDistanceValues {
+		x := c.column*c.width + c.wallWidth + 1
+		y := c.row*c.width + c.wallWidth + 1
+		gfx.StringRGBA(r, x, y, fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
+	}
 
 	// Draw walls as needed
 	// East

@@ -1,5 +1,7 @@
 package maze
 
+// This is slower than the map with locks
+
 const (
 	remove commandAction = iota
 	end

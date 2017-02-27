@@ -4,13 +4,13 @@ import "fmt"
 
 type Distances struct {
 	root                 *Cell // the root cell
-	cells                SafeMap
+	cells                *safeMap2
 	furthestCell         *Cell
 	furthestCellDistance int
 }
 
 func NewDistances(c *Cell) *Distances {
-	sm := NewSafeMap()
+	sm := NewSafeMap2()
 	sm.Insert(c, 0)
 
 	return &Distances{
@@ -20,7 +20,7 @@ func NewDistances(c *Cell) *Distances {
 }
 
 func (d *Distances) String() string {
-	// TODO(dan): Implenet
+	// TODO(dan): Implement
 	return "TODO"
 }
 
@@ -40,9 +40,7 @@ func (d *Distances) Cells() []*Cell {
 
 // Set sets the distance to the provided cell
 func (d *Distances) Set(c *Cell, dist int) {
-	d.cells.Update(c, func(d interface{}, exists bool) interface{} {
-		return dist
-	})
+	d.cells.Update(c, dist)
 }
 
 // Get returns the distance to c
@@ -65,6 +63,8 @@ func (d *Distances) Furthest() (*Cell, int) {
 	longest := 0
 	for _, cell := range d.Cells() {
 		dist, _ := d.Get(cell)
+		//dist = dist - int(cell.Weight()) // ignore weights
+
 		if dist > longest {
 			furthest = cell
 			longest = dist

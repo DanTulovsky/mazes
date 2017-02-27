@@ -356,15 +356,15 @@ func (m *Maze) setToCell(c *Cell) {
 }
 
 // DrawMazeBackground renders the gui maze background in memory
-func (m *Maze) DrawMazeBackground(r *sdl.Renderer, distanceColors bool) *sdl.Renderer {
+func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "DrawMaze")
 
 	fromCell := m.FromCell()
 	toCell := m.ToCell()
 
 	// If saved, draw distance colors
-	if fromCell != nil && distanceColors {
-		m.SetDistanceColors(fromCell)
+	if fromCell != nil && m.config.ShowDistanceColors {
+		m.SetDistanceInfo(fromCell)
 	}
 	if fromCell != nil && toCell != nil {
 		m.SetFromToColors(fromCell, toCell)
@@ -789,8 +789,8 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	return toCellDist, path
 }
 
-// SetDistanceColors colors the graph based on distances from c
-func (m *Maze) SetDistanceColors(c *Cell) {
+// SetDistanceInfo sets distance info based on fromCell
+func (m *Maze) SetDistanceInfo(c *Cell) {
 	// defer utils.TimeTrack(time.Now(), "SetDistanceColors")
 	// figure out the distances if needed
 	c.Distances()
@@ -805,9 +805,15 @@ func (m *Maze) SetDistanceColors(c *Cell) {
 			log.Printf("failed to get distance from %v to %v", c, cell)
 			return
 		}
-		// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
-		adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
-		cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
+		// dColor := d - int(cell.Weight()) // ignore weights when coloring distance
+
+		if m.config.ShowDistanceColors {
+			// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
+			adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
+			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
+		}
+
+		cell.SetDistance(int64(d))
 	}
 
 	m.setFromCell(c)
@@ -831,6 +837,7 @@ func (m *Maze) Reset() {
 	m.SetTravelPath(NewPath())
 	m.SetSolvePath(NewPath())
 	m.resetVisited()
+	m.resetDistances()
 }
 
 func (m *Maze) TravelPath() *Path {
@@ -861,10 +868,17 @@ func (m *Maze) SetSolvePath(p *Path) {
 	m.solvePath = p
 }
 
-// ResetVisited sets all cells to be unvisited
+// resetVisited sets all cells to be unvisited
 func (m *Maze) resetVisited() {
 	for c := range m.Cells() {
 		c.SetUnVisited()
+	}
+}
+
+// resetDistances resets distances on all cells
+func (m *Maze) resetDistances() {
+	for c := range m.Cells() {
+		c.SetDistance(0)
 	}
 }
 

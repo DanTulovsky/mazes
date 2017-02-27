@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 	"unsafe"
@@ -14,6 +15,8 @@ import (
 	"mazes/colors"
 	"mazes/maze"
 	"mazes/solvealgos"
+
+	"strings"
 
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
@@ -58,7 +61,7 @@ var (
 	showStats               = flag.Bool("stats", false, "show maze stats")
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
-	distanceColors          = flag.Bool("distance_colors", true, "show distance colors")
+	showDistanceColors      = flag.Bool("show_distance_colors", true, "show distance colors")
 	markVisitedCells        = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
 	createAlgo              = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	maskImage               = flag.String("mask_image", "", "file name of mask image")
@@ -67,10 +70,14 @@ var (
 	frameRate               = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay            = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	solveDrawDelay          = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
-	avatarImage             = flag.String("avatar_image", "avatars/whale1.png", "file name of avatar image, the avatar should be facing to the left in the image")
+	avatarImage             = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
 	bgMusic                 = flag.String("bg_music", "", "file name of background music to play")
 	braid                   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
-	randomFromTo            = flag.Bool("random_path", true, "show a random path through the maze")
+	randomFromTo            = flag.Bool("random_path", false, "show a random path through the maze")
+	showDistanceValues      = flag.Bool("show_distance_values", false, "show distance values")
+
+	fromCellStr = flag.String("from_cell", "", "path from cell")
+	toCellStr   = flag.String("to_cell", "", "path to cell")
 
 	winWidth, winHeight int
 )
@@ -284,6 +291,8 @@ func run() int {
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
 		DarkMode:             *darkMode,
 		AvatarImage:          *avatarImage,
+		ShowDistanceValues:   *showDistanceValues,
+		ShowDistanceColors:   *showDistanceColors,
 	}
 
 	var m *maze.Maze
@@ -392,25 +401,56 @@ func run() int {
 			m.Braid(*braid)
 		}
 
-		// set weight
-		c, _ := m.Cell(1, 5)
-		c.SetWeight(10)
-		c, _ = m.Cell(4, 5)
-		c.SetWeight(10)
-		c, _ = m.Cell(10, 9)
-		c.SetWeight(10)
+		for x := 0; x < *columns; x++ {
+			if x == *columns-1 {
+				continue
+			}
+			c, _ := m.Cell(x, 200)
+			c.SetWeight(90000000000000000)
+		}
+
+		if *fromCellStr != "" {
+			from := strings.Split(*fromCellStr, ",")
+			if len(from) != 2 {
+				log.Fatalf("%v is not a valid coordinate", *fromCellStr)
+			}
+			x, _ := strconv.Atoi(from[0])
+			y, _ := strconv.Atoi(from[1])
+			fromCell, err = m.Cell(x, y)
+			if err != nil {
+				log.Fatalf("invalid fromCell: %v", err)
+			}
+		}
+
+		if *toCellStr != "" {
+			from := strings.Split(*toCellStr, ",")
+			if len(from) != 2 {
+				log.Fatalf("%v is not a valid coordinate", *toCellStr)
+			}
+			x, _ := strconv.Atoi(from[0])
+			y, _ := strconv.Atoi(from[1])
+			toCell, err = m.Cell(x, y)
+			if err != nil {
+				log.Fatalf("invalid toCell: %v", err)
+			}
+		}
 
 		if *randomFromTo {
-			fromCell, _ = m.Cell(0, 0)
-			toCell, _ = m.Cell(10, 10)
-			m.SetDistanceColors(fromCell)
+			if fromCell == nil {
+				fromCell = m.RandomCell()
+			}
+			if toCell == nil {
+				toCell = m.RandomCell()
+			}
 		}
 
 		// solve the longest path
 		if fromCell == nil || toCell == nil {
-			log.Print("No fromCella and toCell set, defaulting to longestPath.")
+			log.Print("No fromCella and/or toCell set, defaulting to longestPath.")
 			_, fromCell, toCell, _ = m.LongestPath()
 		}
+
+		m.SetDistanceInfo(fromCell)
 
 		generating = false
 		wd.Done()
@@ -424,7 +464,7 @@ func run() int {
 				colors.SetDrawColor(colors.GetColor("white"), r)
 
 				r.Clear()
-				m.DrawMazeBackground(r, *distanceColors)
+				m.DrawMazeBackground(r)
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
 			})
@@ -436,7 +476,6 @@ func run() int {
 		// Set the colors for the from and to cells
 		m.SetFromToColors(fromCell, toCell)
 	}
-
 	///////////////////////////////////////////////////////////////////////////
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
@@ -496,7 +535,7 @@ func run() int {
 			r.SetRenderTarget(mTexture)
 			r.Clear()
 		})
-		m.DrawMazeBackground(r, *distanceColors)
+		m.DrawMazeBackground(r)
 		sdl.Do(func() {
 			r.Present()
 		})

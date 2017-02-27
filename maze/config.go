@@ -13,7 +13,9 @@ type Config struct {
 	WallWidth            int
 	PathWidth            int
 	MarkVisitedCells     bool
-	DarkMode             bool       // only show cells the solver has seen
+	DarkMode             bool // only show cells the solver has seen
+	ShowDistanceValues   bool
+	ShowDistanceColors   bool
 	OrphanMask           []Location // these cells are turned off and are not part of the grid
 	AvatarImage          string
 	VisitedCellColor     colors.Color
