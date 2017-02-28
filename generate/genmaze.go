@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"unsafe"
 
 	"mazes/algos"
 	"mazes/colors"
@@ -21,7 +20,6 @@ import (
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 )
 
@@ -171,33 +169,33 @@ func checkSolveAlgo(a string) bool {
 func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
 	return errors.New("exporting to file doesn't work yet...")
 
-	log.Printf("exporting maze to: %v", path)
-	if path == "" {
-		return errors.New("path to file is required!")
-	}
-
-	w, h, err := r.GetRendererOutputSize()
-	if err != nil {
-		return err
-	}
-
-	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
-	if err != nil {
-		return err
-	}
-
-	pixelFormat, err := window.GetPixelFormat()
-	if err != nil {
-		return err
-	}
-	pixels := s.Pixels()
-	if err := r.ReadPixels(nil, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
-		return err
-	}
-
-	img.SavePNG(s, path)
-	s.Free()
-	return nil
+	//log.Printf("exporting maze to: %v", path)
+	//if path == "" {
+	//	return errors.New("path to file is required!")
+	//}
+	//
+	//w, h, err := r.GetRendererOutputSize()
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//pixelFormat, err := window.GetPixelFormat()
+	//if err != nil {
+	//	return err
+	//}
+	//pixels := s.Pixels()
+	//if err := r.ReadPixels(nil, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
+	//	return err
+	//}
+	//
+	//img.SavePNG(s, path)
+	//s.Free()
+	//return nil
 }
 
 // showMazeStats shows some states about the maze
@@ -406,7 +404,7 @@ func run() int {
 				continue
 			}
 			c, _ := m.Cell(x, 200)
-			c.SetWeight(90000000000000000)
+			c.SetWeight(900000)
 		}
 
 		if *fromCellStr != "" {

@@ -51,10 +51,10 @@ type Cell struct {
 	havePath map[*Cell]*Cell
 
 	// weight of the cell, how expensive it is to traverse it
-	weight int64
+	weight int
 
 	// distance of this cell from the beginning
-	distance int64
+	distance int
 
 	deadlock.RWMutex
 }
@@ -135,28 +135,28 @@ func (c *Cell) SetHavePath(s string) {
 }
 
 // Weight returns the weight of the cell
-func (c *Cell) Weight() int64 {
+func (c *Cell) Weight() int {
 	c.RLock()
 	defer c.RUnlock()
 	return c.weight
 }
 
 // SetWeight returns the weight of the cell
-func (c *Cell) SetWeight(w int64) {
+func (c *Cell) SetWeight(w int) {
 	c.Lock()
 	defer c.Unlock()
 	c.weight = w
 }
 
 // Distance returns the distance of the cell
-func (c *Cell) Distance() int64 {
+func (c *Cell) Distance() int {
 	c.RLock()
 	defer c.RUnlock()
 	return c.distance
 }
 
 // SetDistance sets the distance of the cell
-func (c *Cell) SetDistance(d int64) {
+func (c *Cell) SetDistance(d int) {
 	c.Lock()
 	defer c.Unlock()
 	c.distance = d
@@ -318,11 +318,11 @@ func (c *Cell) Distances() *Distances {
 				log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 			}
 
-			totalWeight := int64(d) + l.weight // never changes once set
+			totalWeight := int(d) + l.weight // never changes once set
 
 			prevDistance, err := c.distances.Get(l)
 
-			if totalWeight < int64(prevDistance) || err != nil {
+			if totalWeight < int(prevDistance) || err != nil {
 				heap.Push(&pending, l)
 				// sets distance to new cell
 				// log.Printf("totalWeight: %v", totalWeight)
@@ -361,9 +361,9 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	colors.SetDrawColor(c.BGColor(), r)
 
 	// TODO(dan): Remove?
-	if c.weight > 1 {
-		colors.SetDrawColor(colors.GetColor("yellow"), r)
-	}
+	//if c.weight > 1 {
+	//	colors.SetDrawColor(colors.GetColor("yellow"), r)
+	//}
 
 	bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
 		int32(c.width), int32(c.width)}
@@ -467,9 +467,9 @@ func (c *Cell) UnLink(cell *Cell) {
 // Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
-	for _, k := range c.links.Keys() {
-		if c.Linked(k) {
-			keys = append(keys, k)
+	for item := range c.links.Iter() {
+		if c.Linked(item.Key) {
+			keys = append(keys, item.Key)
 		}
 	}
 	return keys
@@ -478,9 +478,9 @@ func (c *Cell) Links() []*Cell {
 // RandomLink returns a random cell linked to this one
 func (c *Cell) RandomLink() *Cell {
 	var keys []*Cell
-	for _, k := range c.links.Keys() {
-		if c.Linked(k) {
-			keys = append(keys, k)
+	for item := range c.links.Iter() {
+		if c.Linked(item.Key) {
+			keys = append(keys, item.Key)
 		}
 	}
 	return keys[utils.Random(0, len(keys))]
@@ -520,10 +520,10 @@ func (c *Cell) RandomUnLinkPreferDeadends() *Cell {
 // RandomUnvisitedLink returns a random cell linked to this one that has not been visited
 func (c *Cell) RandomUnvisitedLink() *Cell {
 	var keys []*Cell
-	for _, k := range c.links.Keys() {
-		linked := c.Linked(k)
-		if linked && !k.Visited() {
-			keys = append(keys, k)
+	for item := range c.links.Iter() {
+		linked := c.Linked(item.Key)
+		if linked && !item.Key.Visited() {
+			keys = append(keys, item.Key)
 		}
 	}
 	if len(keys) == 0 {

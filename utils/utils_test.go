@@ -3,9 +3,9 @@ package utils
 import "testing"
 
 var affinetransformtests = []struct {
-	in         float32
+	in         float64
 	out        int
-	a, b, c, d float32 // [a,b] -> [c,d]
+	a, b, c, d float64 // [a,b] -> [c,d]
 }{
 	{in: -5, out: 0, a: 0, b: 10, c: 0, d: 100},
 	{in: 50, out: 100, a: 0, b: 10, c: 0, d: 100},

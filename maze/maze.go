@@ -758,7 +758,7 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	current := toCell
 
 	for current != d.root {
-		smallest := math.MaxInt64
+		var smallest int = math.MaxInt64
 		var next *Cell
 		for _, link := range current.Links() {
 			dist, err := d.Get(link)
@@ -809,11 +809,11 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 
 		if m.config.ShowDistanceColors {
 			// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
-			adjustedColor := utils.AffineTransform(float32(d), 0, float32(longestPath), 0, 228)
+			adjustedColor := utils.AffineTransform(float64(d), 0, float64(longestPath), 0, 228)
 			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 		}
 
-		cell.SetDistance(int64(d))
+		cell.SetDistance(d)
 	}
 
 	m.setFromCell(c)

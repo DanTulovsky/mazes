@@ -32,8 +32,8 @@ func (d *Distances) Root() *Cell {
 // Cells returns a list of cells that we have distance information for
 func (d *Distances) Cells() []*Cell {
 	var cells []*Cell
-	for _, c := range d.cells.Keys() {
-		cells = append(cells, c)
+	for item := range d.cells.Iter() {
+		cells = append(cells, item.Key)
 	}
 	return cells
 }
@@ -60,7 +60,7 @@ func (d *Distances) Furthest() (*Cell, int) {
 
 	var furthest *Cell = d.root
 
-	longest := 0
+	var longest int
 	for _, cell := range d.Cells() {
 		dist, _ := d.Get(cell)
 		//dist = dist - int(cell.Weight()) // ignore weights

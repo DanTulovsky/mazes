@@ -7,7 +7,12 @@ type safeMap2 struct {
 	data map[*Cell]interface{}
 }
 
-func (sm safeMap2) Keys() []*Cell {
+type safeMapItem struct {
+	Key   *Cell
+	Value interface{}
+}
+
+func (sm *safeMap2) Keys() []*Cell {
 	sm.RLock()
 	defer sm.RUnlock()
 
@@ -18,32 +23,48 @@ func (sm safeMap2) Keys() []*Cell {
 	return keys
 }
 
-func (sm safeMap2) Insert(key *Cell, value interface{}) {
+func (sm *safeMap2) Iter() <-chan safeMapItem {
+	c := make(chan safeMapItem)
+
+	f := func() {
+		sm.RLock()
+		defer sm.RUnlock()
+		for k, v := range sm.data {
+			c <- safeMapItem{k, v}
+		}
+		close(c)
+	}
+	go f()
+
+	return c
+}
+
+func (sm *safeMap2) Insert(key *Cell, value interface{}) {
 	sm.Lock()
 	defer sm.Unlock()
 	sm.data[key] = value
 }
 
-func (sm safeMap2) Delete(key *Cell) {
+func (sm *safeMap2) Delete(key *Cell) {
 	sm.Lock()
 	defer sm.Unlock()
 	delete(sm.data, key)
 }
 
-func (sm safeMap2) Find(key *Cell) (interface{}, bool) {
+func (sm *safeMap2) Find(key *Cell) (interface{}, bool) {
 	sm.RLock()
 	defer sm.RUnlock()
 	v, ok := sm.data[key]
 	return v, ok
 }
 
-func (sm safeMap2) Len() int {
+func (sm *safeMap2) Len() int {
 	sm.RLock()
 	defer sm.RUnlock()
 	return len(sm.data)
 }
 
-func (sm safeMap2) Update(key *Cell, value interface{}) {
+func (sm *safeMap2) Update(key *Cell, value interface{}) {
 	sm.Lock()
 	defer sm.Unlock()
 	sm.data[key] = value

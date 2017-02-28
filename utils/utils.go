@@ -12,7 +12,7 @@ func Random(min, max int) int {
 }
 
 // AffineTransform x (in the range [a, b] to a number in [c, d]
-func AffineTransform(x, a, b, c, d float32) int {
+func AffineTransform(x, a, b, c, d float64) int {
 	// log.Printf("in: %v [%v, %v] -> [%v, %v]", x, a, b, c, d)
 	if x < a {
 		log.Print("invalid input into AffineTransform, returning min.")
