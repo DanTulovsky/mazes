@@ -19,6 +19,7 @@ import (
 
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
+	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 )
@@ -375,7 +376,8 @@ func run() int {
 	}
 
 	// Display generator while building
-	generating := true
+	generating := abool.New()
+	generating.Set()
 	var wd sync.WaitGroup
 
 	wd.Add(1)
@@ -454,12 +456,12 @@ func run() int {
 
 		m.SetDistanceInfo(fromCell)
 
-		generating = false
+		generating.UnSet()
 		wd.Done()
 	}()
 
 	if *showGUI {
-		for generating {
+		for generating.IsSet() {
 			// Displays the main maze while generating it
 			sdl.Do(func() {
 				// reset the clear color back to black
@@ -485,11 +487,11 @@ func run() int {
 	///////////////////////////////////////////////////////////////////////////
 	// Solvers
 	///////////////////////////////////////////////////////////////////////////
-	runSolver := false
+	runSolver := abool.New()
 
 	wd.Add(1)
 	go func() {
-		for !runSolver {
+		for !runSolver.IsSet() {
 			log.Println("Maze not yet ready, sleeping 1s...")
 			time.Sleep(time.Second)
 		}
@@ -524,7 +526,8 @@ func run() int {
 
 	// gui maze
 	if *showGUI {
-		running := true
+		running := abool.New()
+		running.Set()
 
 		// create background texture, it is saved and re-rendered as a picture
 		mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
@@ -550,9 +553,9 @@ func run() int {
 		})
 
 		// Allow solver to start
-		runSolver = true
+		runSolver.Set()
 
-		for running {
+		for running.IsSet() {
 			//sdl.Do(func() {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			//		switch event.(type) {
@@ -578,7 +581,7 @@ func run() int {
 		}
 	} else {
 		// wait for solver thread here, used if gui not shown
-		runSolver = true
+		runSolver.Set()
 		wd.Wait()
 	}
 	return 0

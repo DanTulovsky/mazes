@@ -475,7 +475,7 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "drawPath")
 	if path == nil {
-		path = m.travelPath
+		path = m.TravelPath()
 	}
 
 	alreadyDone := make(map[*PathSegment]bool)
@@ -483,7 +483,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 	var isSolution bool
 	var isLast bool
 	pathLength := len(path.segments)
-	solvepathCells := m.solvePath.ListCells()
+	solvepathCells := m.SolvePath().ListCells()
 
 	for x, segment := range path.segments {
 		cell := segment.Cell()
@@ -502,7 +502,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		// cache state of this cell
 		alreadyDone[segment] = true
 
-		if m.solvePath.SegmentInPath(segment) {
+		if m.SolvePath().SegmentInPath(segment) {
 			isSolution = true
 		} else {
 			isSolution = false
