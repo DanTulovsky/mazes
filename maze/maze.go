@@ -38,7 +38,7 @@ type Maze struct {
 	rows             int
 	columns          int
 	cells            [][]*Cell
-	mazeCells        map[*Cell]bool // cells that are in the maze, not orphaned (for cachine)
+	mazeCells        map[*Cell]bool // cells that are in the maze, not orphaned (for caching)
 	orphanCells      map[*Cell]bool // cells that are orphaned (for caching)
 	cellWidth        int            // cell width
 	wallWidth        int
@@ -414,7 +414,7 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	m.drawGenCurrentLocation(r)
 
 	// Draw the path and location of solver
-	m.drawPath(r, m.travelPath, m.config.MarkVisitedCells)
+	m.drawPath(r, m.TravelPath(), m.config.MarkVisitedCells)
 
 	return r
 }
@@ -844,7 +844,9 @@ func (m *Maze) TravelPath() *Path {
 	m.RLock()
 	defer m.RUnlock()
 
-	return m.travelPath
+	p := *m.travelPath
+
+	return &p
 }
 
 func (m *Maze) SetTravelPath(p *Path) {
@@ -858,7 +860,9 @@ func (m *Maze) SolvePath() *Path {
 	m.RLock()
 	defer m.RUnlock()
 
-	return m.solvePath
+	p := *m.solvePath
+
+	return &p
 }
 
 func (m *Maze) SetSolvePath(p *Path) {

@@ -99,12 +99,12 @@ func (a *Common) CheckGrid(g *maze.Maze) error {
 }
 
 // Cleanup cleans up after generator is done
-func (a *Common) Cleanup(g *maze.Maze) {
-	g.SetGenCurrentLocation(nil)
+func (a *Common) Cleanup(m *maze.Maze) {
+	m.SetGenCurrentLocation(nil)
 }
 
-func TimeTrack(g *maze.Maze, start time.Time) {
-	g.SetCreateTime(time.Since(start))
+func TimeTrack(m *maze.Maze, start time.Time) {
+	m.SetCreateTime(time.Since(start))
 }
 
 // RandomUnvisitedCellFromList returns a random cell from n that has not been visited

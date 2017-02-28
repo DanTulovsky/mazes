@@ -384,7 +384,8 @@ func run() int {
 	go func() {
 		log.Printf("running generator %v", *createAlgo)
 
-		m, err = algo.Apply(m, delay)
+		// TODO(dan): Change Apply to not return the maze, causes a race.
+		_, err = algo.Apply(m, delay)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
