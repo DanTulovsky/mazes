@@ -155,7 +155,7 @@ func (m *Maze) Braid(p float64) {
 
 	for _, c := range m.DeadEnds() {
 		if utils.Random(0, 100) > int(p*100) {
-			return
+			continue
 		}
 
 		// make sure still dead end

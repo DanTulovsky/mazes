@@ -399,13 +399,17 @@ func run() int {
 			m.Braid(*braid)
 		}
 
-		for x := 0; x < *columns; x++ {
-			if x == *columns-1 {
-				continue
-			}
-			c, _ := m.Cell(x, 200)
-			c.SetWeight(900000)
+		if *showStats {
+			showMazeStats(m)
 		}
+
+		//for x := 0; x < *columns; x++ {
+		//	if x == *columns-1 {
+		//		continue
+		//	}
+		//	c, _ := m.Cell(x, 200)
+		//	c.SetWeight(900000)
+		//}
 
 		if *fromCellStr != "" {
 			from := strings.Split(*fromCellStr, ",")
