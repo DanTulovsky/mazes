@@ -12,6 +12,12 @@ type safeMapItem struct {
 	Value interface{}
 }
 
+func NewSafeMap2() *safeMap2 {
+	return &safeMap2{
+		data: make(map[*Cell]interface{}),
+	}
+}
+
 func (sm *safeMap2) Keys() []*Cell {
 	sm.RLock()
 	defer sm.RUnlock()
@@ -24,7 +30,7 @@ func (sm *safeMap2) Keys() []*Cell {
 }
 
 func (sm *safeMap2) Iter() <-chan safeMapItem {
-	c := make(chan safeMapItem)
+	c := make(chan safeMapItem, 10)
 
 	f := func() {
 		sm.RLock()
@@ -68,10 +74,4 @@ func (sm *safeMap2) Update(key *Cell, value interface{}) {
 	sm.Lock()
 	defer sm.Unlock()
 	sm.data[key] = value
-}
-
-func NewSafeMap2() *safeMap2 {
-	return &safeMap2{
-		data: make(map[*Cell]interface{}),
-	}
 }

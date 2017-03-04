@@ -288,7 +288,7 @@ func run() int {
 
 	if *enableProfile {
 		log.Println("enabling profiling...")
-		defer profile.Start(profile.BlockProfile).Stop()
+		defer profile.Start().Stop()
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
