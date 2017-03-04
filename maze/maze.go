@@ -482,9 +482,11 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 
 	var isSolution bool
 	var isLast bool
-	pathLength := len(path.segments)
+	pathLength := path.Length()
 	solvepathCells := m.SolvePath().ListCells()
 
+	path.RLock()
+	defer path.RUnlock()
 	for x, segment := range path.segments {
 		cell := segment.Cell()
 
@@ -844,9 +846,7 @@ func (m *Maze) TravelPath() *Path {
 	m.RLock()
 	defer m.RUnlock()
 
-	p := *m.travelPath
-
-	return &p
+	return m.travelPath
 }
 
 func (m *Maze) SetTravelPath(p *Path) {
@@ -860,9 +860,7 @@ func (m *Maze) SolvePath() *Path {
 	m.RLock()
 	defer m.RUnlock()
 
-	p := *m.solvePath
-
-	return &p
+	return m.solvePath
 }
 
 func (m *Maze) SetSolvePath(p *Path) {
