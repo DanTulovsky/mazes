@@ -43,36 +43,54 @@ var (
 
 	solver solvealgos.Algorithmer
 
-	rows                 = flag.Int("r", 30, "number of rows in the maze")
-	columns              = flag.Int("c", 60, "number of rows in the maze")
+	// maze
+	maskImage    = flag.String("mask_image", "", "file name of mask image")
+	braid        = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
+	randomFromTo = flag.Bool("random_path", false, "show a random path through the maze")
+
+	// dimensions
+	rows    = flag.Int("r", 30, "number of rows in the maze")
+	columns = flag.Int("c", 60, "number of rows in the maze")
+
+	// colors
 	bgColor              = flag.String("bgcolor", "white", "background color")
-	wallColor            = flag.String("wall_color", "black", "wall color")
 	borderColor          = flag.String("border_color", "black", "border color")
 	currentLocationColor = flag.String("location_color", "lime", "border color")
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
-	cellWidth            = flag.Int("w", 20, "cell width (best as multiple of 2)")
-	wallWidth            = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	pathWidth            = flag.Int("path_width", 2, "path width")
-	showAscii            = flag.Bool("ascii", false, "show ascii maze")
-	darkMode             = flag.Bool("dark_mode", false, "only show cells solver has seen")
-	showGUI              = flag.Bool("gui", true, "show gui maze")
-	showStats            = flag.Bool("stats", false, "show maze stats")
-	showDistanceColors   = flag.Bool("show_distance_colors", true, "show distance colors")
-	markVisitedCells     = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	createAlgo           = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	maskImage            = flag.String("mask_image", "", "file name of mask image")
-	exportFile           = flag.String("export_file", "", "file to save maze to (does not work yet)")
-	solveAlgo            = flag.String("solve_algo", "", "algorithm to solve the maze")
-	frameRate            = flag.Uint("frame_rate", 120, "frame rate for animation")
-	genDrawDelay         = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
-	solveDrawDelay       = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
-	avatarImage          = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
-	bgMusic              = flag.String("bg_music", "", "file name of background music to play")
-	braid                = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
-	randomFromTo         = flag.Bool("random_path", false, "show a random path through the maze")
-	showDistanceValues   = flag.Bool("show_distance_values", false, "show distance values")
+	wallColor            = flag.String("wall_color", "black", "wall color")
 
+	// width
+	cellWidth = flag.Int("w", 20, "cell width (best as multiple of 2)")
+	pathWidth = flag.Int("path_width", 2, "path width")
+	wallWidth = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+
+	// maze draw
+	showAscii = flag.Bool("ascii", false, "show ascii maze")
+	showGUI   = flag.Bool("gui", true, "show gui maze")
+
+	// display
+	avatarImage        = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
+	darkMode           = flag.Bool("dark_mode", false, "only show cells solver has seen")
+	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
+	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
+	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
+	showDistanceColors = flag.Bool("show_distance_colors", true, "show distance colors")
+	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
+	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+
+	// algo
+	createAlgo = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
+	solveAlgo  = flag.String("solve_algo", "", "algorithm to solve the maze")
+
+	// misc
+	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	bgMusic    = flag.String("bg_music", "", "file name of background music to play")
+
+	// stats
+	showStats = flag.Bool("stats", false, "show maze stats")
+
+	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
