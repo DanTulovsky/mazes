@@ -717,8 +717,8 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 	// defer utils.TimeTrack(time.Now(), "SetFromToColors")
 
 	// Set path start and end colors
-	fromCell.SetBGColor(colors.SetOpacity(fromCell.bgColor, 0))
-	toCell.SetBGColor(colors.SetOpacity(toCell.bgColor, 128))
+	fromCell.SetBGColor(m.config.FromCellColor)
+	toCell.SetBGColor(m.config.ToCellColor)
 
 	// save these for color refresh.
 	m.setFromCell(fromCell)
@@ -811,7 +811,7 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 
 		if m.config.ShowDistanceColors {
 			// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
-			adjustedColor := utils.AffineTransform(float64(d), 0, float64(longestPath), 0, 228)
+			adjustedColor := 255 - utils.AffineTransform(float64(d), 0, float64(longestPath), 0, 228)
 			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 		}
 

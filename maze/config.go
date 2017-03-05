@@ -25,6 +25,8 @@ type Config struct {
 	WallColor            colors.Color
 	PathColor            colors.Color
 	CurrentLocationColor colors.Color
+	FromCellColor        colors.Color
+	ToCellColor          colors.Color
 }
 
 // CheckConfig makes sure the config is valid

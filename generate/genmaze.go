@@ -59,6 +59,8 @@ var (
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
 	wallColor            = flag.String("wall_color", "black", "wall color")
+	fromCellColor        = flag.String("from_cell_color", "gold", "wall color")
+	toCellColor          = flag.String("to_cell_color", "yellow", "wall color")
 
 	// width
 	cellWidth = flag.Int("w", 20, "cell width (best as multiple of 2)")
@@ -313,6 +315,8 @@ func run() int {
 		AvatarImage:          *avatarImage,
 		ShowDistanceValues:   *showDistanceValues,
 		ShowDistanceColors:   *showDistanceColors,
+		FromCellColor:        colors.GetColor(*fromCellColor),
+		ToCellColor:          colors.GetColor(*toCellColor),
 	}
 
 	var m *maze.Maze
@@ -427,13 +431,13 @@ func run() int {
 			showMazeStats(m)
 		}
 
-		for x := 0; x < *columns; x++ {
-			if x == *columns-1 {
-				continue
-			}
-			c, _ := m.Cell(x, *rows/2)
-			c.SetWeight(1000)
-		}
+		//for x := 0; x < *columns; x++ {
+		//	if x == *columns-1 {
+		//		continue
+		//	}
+		//	c, _ := m.Cell(x, *rows/2)
+		//	c.SetWeight(1000)
+		//}
 
 		if *fromCellStr != "" {
 			from := strings.Split(*fromCellStr, ",")
@@ -560,6 +564,7 @@ func run() int {
 		// draw on the texture
 		sdl.Do(func() {
 			r.SetRenderTarget(mTexture)
+			// background is black so that transparency works
 			colors.SetDrawColor(colors.GetColor("white"), r)
 			r.Clear()
 		})
@@ -591,6 +596,7 @@ func run() int {
 			// Displays the main maze, no paths or other markers
 			sdl.Do(func() {
 				// reset the clear color back to white
+				// but it doesn't matter, as background texture takes up the enitire view
 				colors.SetDrawColor(colors.GetColor("white"), r)
 
 				r.Clear()
