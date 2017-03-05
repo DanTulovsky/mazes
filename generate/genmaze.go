@@ -64,6 +64,7 @@ var (
 	cellWidth = flag.Int("w", 20, "cell width (best as multiple of 2)")
 	pathWidth = flag.Int("path_width", 2, "path width")
 	wallWidth = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	wallSpace = flag.Int("wall_space", 0, "how much space between two side by side walls (min of 2)")
 
 	// maze draw
 	showAscii = flag.Bool("ascii", false, "show ascii maze")
@@ -75,7 +76,7 @@ var (
 	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	showDistanceColors = flag.Bool("show_distance_colors", true, "show distance colors")
+	showDistanceColors = flag.Bool("show_distance_colors", false, "show distance colors")
 	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
 	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 
@@ -299,6 +300,7 @@ func run() int {
 		Columns:              *columns,
 		CellWidth:            *cellWidth,
 		WallWidth:            *wallWidth,
+		WallSpace:            *wallSpace,
 		PathWidth:            *pathWidth,
 		BgColor:              colors.GetColor(*bgColor),
 		BorderColor:          colors.GetColor(*borderColor),
@@ -425,13 +427,13 @@ func run() int {
 			showMazeStats(m)
 		}
 
-		//for x := 0; x < *columns; x++ {
-		//	if x == *columns-1 {
-		//		continue
-		//	}
-		//	c, _ := m.Cell(x, 200)
-		//	c.SetWeight(900000)
-		//}
+		for x := 0; x < *columns; x++ {
+			if x == *columns-1 {
+				continue
+			}
+			c, _ := m.Cell(x, *rows/2)
+			c.SetWeight(1000)
+		}
 
 		if *fromCellStr != "" {
 			from := strings.Split(*fromCellStr, ",")
@@ -484,7 +486,7 @@ func run() int {
 		for generating.IsSet() {
 			// Displays the main maze while generating it
 			sdl.Do(func() {
-				// reset the clear color back to black
+				// reset the clear color back to white
 				colors.SetDrawColor(colors.GetColor("white"), r)
 
 				r.Clear()
@@ -558,6 +560,7 @@ func run() int {
 		// draw on the texture
 		sdl.Do(func() {
 			r.SetRenderTarget(mTexture)
+			colors.SetDrawColor(colors.GetColor("white"), r)
 			r.Clear()
 		})
 		m.DrawMazeBackground(r)
@@ -580,17 +583,15 @@ func run() int {
 			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			//		switch event.(type) {
 			//		case *sdl.QuitEvent:
-			//			runningMutex.Lock()
-			//			running = false
-			//			runningMutex.Unlock()
+			//			running.UnSet()
 			//		}
 			//	}
 			//})
 
 			// Displays the main maze, no paths or other markers
 			sdl.Do(func() {
-				// reset the clear color back to black
-				colors.SetDrawColor(colors.GetColor("black"), r)
+				// reset the clear color back to white
+				colors.SetDrawColor(colors.GetColor("white"), r)
 
 				r.Clear()
 				m.DrawMaze(r, mTexture)

@@ -354,59 +354,196 @@ func (c *Cell) SetBGColor(color colors.Color) {
 // Draw draws one cell on renderer.
 func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "CellDraw")
-
-	var bg *sdl.Rect
+	wallSpace := c.config.WallSpace / 2
 
 	// Fill in background color
 	colors.SetDrawColor(c.BGColor(), r)
 
-	// TODO(dan): Remove?
-	//if c.weight > 1 {
-	//	colors.SetDrawColor(colors.GetColor("yellow"), r)
-	//}
+	var x, y, w, h int
 
-	bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
-		int32(c.width), int32(c.width)}
-	r.FillRect(bg)
+	x = c.column*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+	y = c.row*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+	w = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
+	h = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
 
-	// Display distance value
-	if c.config.ShowDistanceValues {
-		x := c.column*c.width + c.wallWidth + 1
-		y := c.row*c.width + c.wallWidth + 1
-		gfx.StringRGBA(r, x, y, fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
-	}
+	r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	linkEast, linkWest, linkSouth, linkNorth := c.Linked(c.East), c.Linked(c.West), c.Linked(c.South), c.Linked(c.North)
 
 	// Draw walls as needed
-	// East
-	if !c.Linked(c.East) {
+
+	// draw stubs
+	if linkNorth {
+		// background
+		colors.SetDrawColor(c.BGColor(), r)
+		// colors.SetDrawColor(colors.GetColor("yellow"), r)
+		x = c.column*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+		y = c.row*c.width + c.wallWidth
+		w = c.width - wallSpace*2 - c.wallWidth
+		h = wallSpace + c.wallWidth/2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
 		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth), int32(c.row*c.width + c.wallWidth),
-			int32(c.wallWidth / 2), int32(c.width + c.wallWidth/2)}
-		r.FillRect(bg)
+		// colors.SetDrawColor(colors.GetColor("red"), r)
+
+		// east
+		x = c.column*c.width + c.width - wallSpace + c.wallWidth/2
+		// log.Printf("c.width: %v", c.width)
+		y = c.row*c.width + c.wallWidth
+		w = c.wallWidth / 2
+		h = wallSpace + c.wallWidth/2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		// west
+		x = c.column*c.width + c.wallWidth + wallSpace
+		y = c.row*c.width + c.wallWidth
+		w = c.wallWidth / 2
+		h = wallSpace + c.wallWidth/2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
+
+	if linkSouth {
+		// background
+		colors.SetDrawColor(c.BGColor(), r)
+		// colors.SetDrawColor(colors.GetColor("red"), r)
+		x = c.column*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+		y = c.row*c.width + c.width - wallSpace + c.wallWidth/2
+		w = c.width - wallSpace*2 - c.wallWidth
+		h = wallSpace + c.wallWidth/2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		colors.SetDrawColor(c.wallColor, r)
+		// colors.SetDrawColor(colors.GetColor("green"), r)
+		// east
+		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.row*c.width + c.width - wallSpace + c.wallWidth/2
+		w = c.wallWidth / 2
+		h = wallSpace + c.wallWidth/2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		// west
+		x = c.column*c.width + c.wallWidth + wallSpace
+		y = c.row*c.width + wallSpace + c.width + c.wallWidth/2 - wallSpace*2
+		w = c.wallWidth / 2
+		h = wallSpace + c.wallWidth/2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
+
+	if linkEast {
+		// background
+		colors.SetDrawColor(c.BGColor(), r)
+		// colors.SetDrawColor(colors.GetColor("blue"), r)
+		x = c.column*c.width + c.wallWidth/2 + wallSpace + c.width - wallSpace*2
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = wallSpace + c.wallWidth/2
+		h = c.width - wallSpace*2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		colors.SetDrawColor(c.wallColor, r)
+		//colors.SetDrawColor(colors.GetColor("green"), r)
+
+		// north
+		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = wallSpace + c.wallWidth/2
+		h = c.wallWidth / 2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		// south
+		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		w = wallSpace + c.wallWidth/2
+		h = c.wallWidth / 2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
+
+	if linkWest {
+		// background
+		colors.SetDrawColor(c.BGColor(), r)
+		// colors.SetDrawColor(colors.GetColor("pink"), r)
+		x = c.column*c.width + c.wallWidth
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = wallSpace + c.wallWidth/2
+		h = c.width - wallSpace*2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		colors.SetDrawColor(c.wallColor, r)
+		//colors.SetDrawColor(colors.GetColor("red"), r)
+
+		// north
+		x = c.column*c.width + c.wallWidth
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = wallSpace + c.wallWidth/2
+		h = c.wallWidth / 2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+
+		// south
+		x = c.column*c.width + c.wallWidth
+		y = c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		w = wallSpace + c.wallWidth/2
+		h = c.wallWidth / 2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
+
+	// walls
+	colors.SetDrawColor(c.wallColor, r)
+
+	// East
+	if !linkEast {
+		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = c.wallWidth / 2
+		h = c.width - wallSpace*2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 	}
 
 	// West
-	if !c.Linked(c.West) {
-		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
-			int32(c.wallWidth / 2), int32(c.width + c.wallWidth/2)}
-		r.FillRect(bg)
+	if !linkWest {
+		x = c.column*c.width + c.wallWidth + wallSpace
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = c.wallWidth / 2
+		h = c.width - wallSpace*2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 	}
 
 	// North
-	if !c.Linked(c.North) {
-		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.wallWidth),
-			int32(c.width), int32(c.wallWidth / 2)}
-		r.FillRect(bg)
+	if !linkNorth {
+		x = c.column*c.width + c.wallWidth + wallSpace
+		y = c.row*c.width + c.wallWidth + wallSpace
+		w = c.width - wallSpace*2
+		h = c.wallWidth / 2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 	}
 
 	// South
-	if !c.Linked(c.South) {
-		colors.SetDrawColor(c.wallColor, r)
-		bg = &sdl.Rect{int32(c.column*c.width + c.wallWidth), int32(c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth),
-			int32(c.width), int32(c.wallWidth / 2)}
-		r.FillRect(bg)
+	if !linkSouth {
+		x = c.column*c.width + c.wallWidth + wallSpace
+		y = c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		w = c.width - wallSpace*2
+		h = c.wallWidth / 2
+
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
+
+	// Display distance value
+	if c.config.ShowDistanceValues {
+		x := c.column*c.width + c.wallWidth + 1 + wallSpace
+		y := c.row*c.width + c.wallWidth + 1 + wallSpace
+		gfx.StringRGBA(r, x, y, fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
 	}
 
 	return r
@@ -425,7 +562,9 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 		times := c.VisitedTimes()
 		factor := times * 3
 
-		offset := int32(c.wallWidth/4 + c.wallWidth)
+		wallSpace := c.config.WallSpace / 2
+
+		offset := int32(c.wallWidth/4 + c.wallWidth + wallSpace)
 		h, w := int32(c.width/10+factor), int32(c.width/10+factor)
 
 		if h > int32(PixelsPerCell-c.wallWidth)-offset {

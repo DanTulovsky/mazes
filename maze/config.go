@@ -11,6 +11,7 @@ type Config struct {
 	Columns              int
 	CellWidth            int // cell width
 	WallWidth            int
+	WallSpace            int
 	PathWidth            int
 	MarkVisitedCells     bool
 	DarkMode             bool // only show cells the solver has seen
