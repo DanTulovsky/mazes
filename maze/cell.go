@@ -695,6 +695,23 @@ func (c *Cell) Neighbors() []*Cell {
 			n = append(n, cell)
 		}
 	}
+
+	// if weaving is allowed, add additional possibilities for neighbors
+	if c.config.AllowWeaving {
+		if c.canTunnelNorth() {
+			n = append(n, c.North.North)
+		}
+		if c.canTunnelSouth() {
+			n = append(n, c.South.South)
+		}
+		if c.canTunnelEast() {
+			n = append(n, c.East.East)
+		}
+		if c.canTunnelWest() {
+			n = append(n, c.West.West)
+		}
+	}
+
 	return n
 }
 
@@ -762,4 +779,28 @@ func (c *Cell) IsOrphan() bool {
 	defer c.RUnlock()
 
 	return c.orphan
+}
+
+func (c *Cell) isHorizontalPassage() bool {
+	return c.Linked(c.East) && c.Linked(c.West) && !c.Linked(c.North) && !c.Linked(c.South)
+}
+
+func (c *Cell) isVerticalPassage() bool {
+	return !c.Linked(c.East) && !c.Linked(c.West) && c.Linked(c.North) && c.Linked(c.South)
+}
+
+func (c *Cell) canTunnelNorth() bool {
+	return c.North != nil && c.North.North != nil && c.North.isHorizontalPassage()
+}
+
+func (c *Cell) canTunnelSouth() bool {
+	return c.South != nil && c.South.South != nil && c.South.isHorizontalPassage()
+}
+
+func (c *Cell) canTunnelEast() bool {
+	return c.East != nil && c.East.East != nil && c.East.isVerticalPassage()
+}
+
+func (c *Cell) canTunnelWest() bool {
+	return c.West != nil && c.West.West != nil && c.West.isVerticalPassage()
 }
