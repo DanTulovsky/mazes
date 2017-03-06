@@ -383,10 +383,6 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 				continue
 			}
 
-			if cell.config.DarkMode && !cell.Visited() {
-				// in dark mode don't draw unvisited cells
-				continue
-			}
 			cell.Draw(r)
 		}
 	}

@@ -74,7 +74,6 @@ var (
 
 	// display
 	avatarImage        = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
-	darkMode           = flag.Bool("dark_mode", false, "only show cells solver has seen")
 	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
@@ -311,7 +310,6 @@ func run() int {
 		VisitedCellColor:     colors.GetColor(*visitedCellColor),
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
-		DarkMode:             *darkMode,
 		AvatarImage:          *avatarImage,
 		ShowDistanceValues:   *showDistanceValues,
 		ShowDistanceColors:   *showDistanceColors,
