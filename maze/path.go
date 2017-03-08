@@ -108,8 +108,8 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 		colors.SetDrawColor(c.config.CurrentLocationColor, r)
 		// draw a standard box
 		sq := &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/2),
-			int32(c.row*PixelsPerCell + PixelsPerCell/2),
+			int32(c.x *PixelsPerCell + PixelsPerCell/2),
+			int32(c.y *PixelsPerCell + PixelsPerCell/2),
 			int32(c.pathWidth * 6),
 			int32(c.pathWidth * 6)}
 		r.FillRect(sq)
@@ -117,8 +117,8 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 		angle, flip := rotateAngle(p.Facing())
 
 		sq := &sdl.Rect{
-			int32(c.column*PixelsPerCell + PixelsPerCell/4),
-			int32(c.row*PixelsPerCell + PixelsPerCell/4),
+			int32(c.x *PixelsPerCell + PixelsPerCell/4),
+			int32(c.y *PixelsPerCell + PixelsPerCell/4),
 			int32(c.pathWidth * 15),
 			int32(c.pathWidth * 15)}
 
@@ -147,23 +147,23 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 		// these are the path segments from the middle towards the given direction
 		paths := map[string]*sdl.Rect{
 			"east": {
-				int32(cell.column*PixelsPerCell + PixelsPerCell/2),
-				int32(cell.row*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x *PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y *PixelsPerCell + PixelsPerCell/2),
 				int32(PixelsPerCell/2 + cell.wallWidth),
 				int32(pathWidth)},
 			"west": {
-				int32(cell.column*PixelsPerCell + cell.wallWidth),
-				int32(cell.row*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x *PixelsPerCell + cell.wallWidth),
+				int32(cell.y *PixelsPerCell + PixelsPerCell/2),
 				int32(PixelsPerCell/2 + pathWidth - cell.wallWidth),
 				int32(pathWidth)},
 			"north": {
-				int32(cell.column*PixelsPerCell + PixelsPerCell/2),
-				int32(cell.row*PixelsPerCell + cell.wallWidth),
+				int32(cell.x *PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y *PixelsPerCell + cell.wallWidth),
 				int32(pathWidth),
 				int32(PixelsPerCell/2 - cell.wallWidth)},
 			"south": {
-				int32(cell.column*PixelsPerCell + PixelsPerCell/2),
-				int32(cell.row*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x *PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y *PixelsPerCell + PixelsPerCell/2),
 				int32(pathWidth),
 				int32(PixelsPerCell/2 + cell.wallWidth)},
 		}

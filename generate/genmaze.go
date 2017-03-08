@@ -45,6 +45,7 @@ var (
 
 	// maze
 	maskImage    = flag.String("mask_image", "", "file name of mask image")
+	allowWeaving = flag.Bool("weaving", false, "allow weaving")
 	braid        = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
 	randomFromTo = flag.Bool("random_path", false, "show a random path through the maze")
 
@@ -308,6 +309,7 @@ func run() int {
 		WallColor:            colors.GetColor(*wallColor),
 		PathColor:            colors.GetColor(*pathColor),
 		VisitedCellColor:     colors.GetColor(*visitedCellColor),
+		AllowWeaving:         *allowWeaving,
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
 		AvatarImage:          *avatarImage,
@@ -444,7 +446,7 @@ func run() int {
 			}
 			x, _ := strconv.Atoi(from[0])
 			y, _ := strconv.Atoi(from[1])
-			fromCell, err = m.Cell(x, y)
+			fromCell, err = m.Cell(x, y, 0)
 			if err != nil {
 				log.Fatalf("invalid fromCell: %v", err)
 			}
@@ -457,7 +459,7 @@ func run() int {
 			}
 			x, _ := strconv.Atoi(from[0])
 			y, _ := strconv.Atoi(from[1])
-			toCell, err = m.Cell(x, y)
+			toCell, err = m.Cell(x, y, 0)
 			if err != nil {
 				log.Fatalf("invalid toCell: %v", err)
 			}

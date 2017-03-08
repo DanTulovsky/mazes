@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Rows                 int
 	Columns              int
+	AllowWeaving         bool
 	CellWidth            int // cell width
 	WallWidth            int
 	WallSpace            int
