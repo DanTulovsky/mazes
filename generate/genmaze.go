@@ -414,9 +414,9 @@ func run() int {
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
-		//if err := algo.CheckGrid(m); err != nil {
-		//	log.Fatalf("maze is not valid: %v", err)
-		//}
+		if err := algo.CheckGrid(m); err != nil {
+			log.Fatalf("maze is not valid: %v", err)
+		}
 
 		if *showStats {
 			showMazeStats(m)

@@ -23,10 +23,10 @@ func (a *Bintree) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 		m.SetGenCurrentLocation(currentCell)
 
 		neighbors := []*maze.Cell{}
-		if currentCell.North != nil {
+		if currentCell.North() != nil {
 			neighbors = append(neighbors, currentCell.North())
 		}
-		if currentCell.East != nil {
+		if currentCell.East() != nil {
 			neighbors = append(neighbors, currentCell.East())
 		}
 
