@@ -69,9 +69,9 @@ func Step(g *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 }
 
 // CheckGrid checks that the generated grid is valid
-func (a *Common) CheckGrid(g *maze.Maze) error {
+func (a *Common) CheckGrid(m *maze.Maze) error {
 	log.Print("Checking for cycles and converting to a spanning tree...")
-	g.Reset()
+	m.Reset()
 
 	// convert grid to a spanning tree and check for cycles
 
@@ -80,19 +80,21 @@ func (a *Common) CheckGrid(g *maze.Maze) error {
 	// find such an adjacent for any vertex, we say that there is no cycle. The assumption of this approach
 	// is that there are no parallel edges between any two vertices.
 
-	start := g.RandomCell()
+	start := m.RandomCell()
 	rootNode := tree.NewNode(start.String())
 	t, err := tree.NewTree(rootNode)
 	if err != nil {
 		return fmt.Errorf(err.Error())
 	}
 
-	Step(g, t, start, start)
+	Step(m, t, start, start)
 
 	// verify t has the same number of nodes as g
-	if t.NodeCount() != len(g.Cells()) {
-		log.Printf("tree:\n%v\n", t)
-		return fmt.Errorf("tree node count != grid node count; tree=%v; grid=%v", t.NodeCount(), len(g.Cells()))
+	if !m.Config().AllowWeaving {
+		if t.NodeCount() != len(m.Cells()) {
+			log.Printf("tree:\n%v\n", t)
+			return fmt.Errorf("tree node count != grid node count; tree=%v; grid=%v", t.NodeCount(), len(m.Cells()))
+		}
 	}
 
 	return nil

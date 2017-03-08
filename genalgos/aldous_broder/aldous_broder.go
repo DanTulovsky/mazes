@@ -15,29 +15,29 @@ type AldousBroder struct {
 }
 
 // Apply applies the adlous-broder algorithm to generate the maze.
-func (a *AldousBroder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
-	defer genalgos.TimeTrack(g, time.Now())
+func (a *AldousBroder) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+	defer genalgos.TimeTrack(m, time.Now())
 
 	var visitedCells int
-	currentCell := g.RandomCell()
+	currentCell := m.RandomCell()
 	currentCell.SetVisited()
 	visitedCells++
 
-	for visitedCells < len(g.Cells()) {
+	for visitedCells < len(m.Cells()) {
 		time.Sleep(delay) // animation delay
-		g.SetGenCurrentLocation(currentCell)
+		m.SetGenCurrentLocation(currentCell)
 
 		neighbors := currentCell.Neighbors()
 
-		randomNeighbor := g.RandomCellFromList(neighbors)
+		randomNeighbor := m.RandomCellFromList(neighbors)
 		if !randomNeighbor.Visited() {
 			visitedCells++
-			currentCell.Link(randomNeighbor)
+			m.Link(currentCell, randomNeighbor)
 			randomNeighbor.SetVisited()
 		}
 		currentCell = randomNeighbor
 	}
 
-	a.Cleanup(g)
-	return g, nil
+	a.Cleanup(m)
+	return m, nil
 }

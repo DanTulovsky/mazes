@@ -1,8 +1,9 @@
 package maze
 
 import (
-	"fmt"
+	"log"
 	"os"
+	"runtime/debug"
 )
 
 // LocInLocList returns true if lo is in locList
@@ -17,7 +18,8 @@ func LocInLocList(l Location, locList []Location) bool {
 
 // Fail fails the process due to an unrecoverable error
 func Fail(err error) {
-	fmt.Println(err)
+	log.Println(err)
+	debug.PrintStack()
 	os.Exit(1)
 
 }

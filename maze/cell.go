@@ -17,7 +17,7 @@ import (
 type Cell struct {
 	x, y, z int
 	// keep track of neighborgs
-	North, South, East, West *Cell
+	north, south, east, west, below *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
 	links *safeMap2
 	// distances to other cells
@@ -101,6 +101,66 @@ func NewCell(x, y, z int, c *Config) *Cell {
 	return cell
 }
 
+func (c *Cell) SetBelow(cell *Cell) {
+	c.Lock()
+	defer c.Unlock()
+	c.below = cell
+}
+
+func (c *Cell) SetNorth(cell *Cell) {
+	c.Lock()
+	defer c.Unlock()
+	c.north = cell
+}
+
+func (c *Cell) SetSouth(cell *Cell) {
+	c.Lock()
+	defer c.Unlock()
+	c.south = cell
+}
+
+func (c *Cell) SetEast(cell *Cell) {
+	c.Lock()
+	defer c.Unlock()
+	c.east = cell
+}
+
+func (c *Cell) SetWest(cell *Cell) {
+	c.Lock()
+	defer c.Unlock()
+	c.west = cell
+}
+
+func (c *Cell) Below() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+	return c.below
+}
+
+func (c *Cell) North() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+	return c.north
+}
+
+func (c *Cell) South() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+	return c.south
+}
+
+func (c *Cell) East() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+	return c.east
+}
+
+func (c *Cell) West() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+	return c.west
+}
+
 // HavePath returns true if there is a path to s (north, south, east, west)
 func (c *Cell) HavePath(s string) (have bool) {
 	c.RLock()
@@ -166,7 +226,7 @@ func (c *Cell) SetDistance(d int) {
 func (c *Cell) String() string {
 	c.RLock()
 	defer c.RUnlock()
-	return fmt.Sprintf("(%v, %v)", c.x, c.y)
+	return fmt.Sprintf("(%v, %v, %v)", c.x, c.y, c.z)
 }
 
 // PathTo returns the path to the toCell or nil if not available
@@ -235,16 +295,16 @@ func (c *Cell) SetPaths(previous, next *Cell) {
 			return
 		}
 	}
-	if c.North == previous || c.North == next {
+	if c.North() == previous || c.North() == next {
 		c.SetHavePath("north")
 	}
-	if c.South == previous || c.South == next {
+	if c.South() == previous || c.South() == next {
 		c.SetHavePath("south")
 	}
-	if c.East == previous || c.East == next {
+	if c.East() == previous || c.East() == next {
 		c.SetHavePath("east")
 	}
-	if c.West == previous || c.West == next {
+	if c.West() == previous || c.West() == next {
 		c.SetHavePath("west")
 	}
 
@@ -297,10 +357,8 @@ func (c *Cell) FurthestCell() (*Cell, int) {
 // Includes weight information
 // Shades the cells
 func (c *Cell) Distances() *Distances {
-	log.Printf("getting distances for %v", c)
 	if c.distances.cells.Len() > 1 {
 		// Already have this info
-		log.Println("cached")
 		return c.distances
 	}
 
@@ -326,13 +384,11 @@ func (c *Cell) Distances() *Distances {
 			if totalWeight < int(prevDistance) || err != nil {
 				heap.Push(&pending, l)
 				// sets distance to new cell
-				// log.Printf("totalWeight: %v", totalWeight)
 				c.distances.Set(l, int(totalWeight))
 			}
 		}
 
 	}
-	log.Printf("got distances: %v", c.distances)
 	return c.distances
 }
 
@@ -368,7 +424,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	h = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
 
 	r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
-	linkEast, linkWest, linkSouth, linkNorth := c.Linked(c.East), c.Linked(c.West), c.Linked(c.South), c.Linked(c.North)
+	linkEast, linkWest, linkSouth, linkNorth := c.Linked(c.East()), c.Linked(c.West()), c.Linked(c.South()), c.Linked(c.North())
 
 	// Draw walls as needed
 
@@ -376,7 +432,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	if linkNorth {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
-		// colors.SetDrawColor(colors.GetColor("yellow"), r)
 		x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
 		y = c.y*c.width + c.wallWidth
 		w = c.width - wallSpace*2 - c.wallWidth
@@ -389,7 +444,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 		// east
 		x = c.x*c.width + c.width - wallSpace + c.wallWidth/2
-		// log.Printf("c.width: %v", c.width)
 		y = c.y*c.width + c.wallWidth
 		w = c.wallWidth / 2
 		h = wallSpace + c.wallWidth/2
@@ -408,7 +462,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	if linkSouth {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
-		// colors.SetDrawColor(colors.GetColor("red"), r)
 		x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
 		y = c.y*c.width + c.width - wallSpace + c.wallWidth/2
 		w = c.width - wallSpace*2 - c.wallWidth
@@ -417,7 +470,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		colors.SetDrawColor(c.wallColor, r)
-		// colors.SetDrawColor(colors.GetColor("green"), r)
 		// east
 		x = c.x*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
 		y = c.y*c.width + c.width - wallSpace + c.wallWidth/2
@@ -447,7 +499,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		colors.SetDrawColor(c.wallColor, r)
-		//colors.SetDrawColor(colors.GetColor("green"), r)
 
 		// north
 		x = c.x*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
@@ -469,7 +520,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	if linkWest {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
-		// colors.SetDrawColor(colors.GetColor("pink"), r)
 		x = c.x*c.width + c.wallWidth
 		y = c.y*c.width + c.wallWidth + wallSpace
 		w = wallSpace + c.wallWidth/2
@@ -478,7 +528,6 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		colors.SetDrawColor(c.wallColor, r)
-		//colors.SetDrawColor(colors.GetColor("red"), r)
 
 		// north
 		x = c.x*c.width + c.wallWidth
@@ -495,6 +544,11 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		h = c.wallWidth / 2
 
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
+
+	// Don't draw anything below here for cells below other cells
+	if c.z < 0 {
+		return r
 	}
 
 	// walls
@@ -587,26 +641,6 @@ func (c *Cell) linkOneWay(cell *Cell) {
 
 func (c *Cell) unLinkOneWay(cell *Cell) {
 	c.links.Delete(cell)
-}
-
-// Link links a cell to its neighbor (adds passage)
-func (c *Cell) Link(cell *Cell) {
-	if cell == nil {
-		log.Fatalf("linking %v to nil!", c)
-	}
-
-	// if weaving, check if we need to link through a hidden cell
-	if c.config.AllowWeaving {
-		var loc Location
-		// is there a cell between this one and the link to cell?
-		if c.North && c.North == c.North.South {
-			loc = Location{c.North.x, c.North.y, c.North.z - 1} // under
-		}
-
-	}
-
-	c.linkOneWay(cell)
-	cell.linkOneWay(c)
 }
 
 // UnLink unlinks a cell from its neighbor (removes passage)
@@ -702,7 +736,7 @@ func (c *Cell) Neighbors() []*Cell {
 
 	var n []*Cell
 
-	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
+	for _, cell := range []*Cell{c.North(), c.South(), c.East(), c.West()} {
 		if cell != nil {
 			n = append(n, cell)
 		}
@@ -711,16 +745,16 @@ func (c *Cell) Neighbors() []*Cell {
 	// if weaving is allowed, add additional possibilities for neighbors
 	if c.config.AllowWeaving {
 		if c.canTunnelNorth() {
-			n = append(n, c.North.North)
+			n = append(n, c.North().North())
 		}
 		if c.canTunnelSouth() {
-			n = append(n, c.South.South)
+			n = append(n, c.South().South())
 		}
 		if c.canTunnelEast() {
-			n = append(n, c.East.East)
+			n = append(n, c.East().East())
 		}
 		if c.canTunnelWest() {
-			n = append(n, c.West.West)
+			n = append(n, c.West().West())
 		}
 	}
 
@@ -734,7 +768,7 @@ func (c *Cell) RandomNeighbor() *Cell {
 
 	var n []*Cell
 
-	for _, cell := range []*Cell{c.North, c.South, c.East, c.West} {
+	for _, cell := range []*Cell{c.North(), c.South(), c.East(), c.West()} {
 		if cell != nil {
 			n = append(n, cell)
 		}
@@ -750,16 +784,16 @@ func (c *Cell) GetFacingDirection(toCell *Cell) string {
 
 	facing := ""
 
-	if c.North == toCell {
+	if c.North() == toCell {
 		facing = "north"
 	}
-	if c.East == toCell {
+	if c.East() == toCell {
 		facing = "east"
 	}
-	if c.West == toCell {
+	if c.West() == toCell {
 		facing = "west"
 	}
-	if c.South == toCell {
+	if c.South() == toCell {
 		facing = "south"
 	}
 	return facing
@@ -767,21 +801,25 @@ func (c *Cell) GetFacingDirection(toCell *Cell) string {
 
 // Orphan isolates the cell from all of its neighbors
 func (c *Cell) Orphan() {
+	if c.East() != nil {
+		c.East().SetWest(nil)
+	}
+	if c.West() != nil {
+		c.West().SetEast(nil)
+	}
+	if c.North() != nil {
+		c.North().SetSouth(nil)
+	}
+	if c.South() != nil {
+		c.South().SetNorth(nil)
+	}
+
+	c.SetOrphan()
+}
+
+func (c *Cell) SetOrphan() {
 	c.Lock()
 	defer c.Unlock()
-
-	if c.East != nil {
-		c.East.West = nil
-	}
-	if c.West != nil {
-		c.West.East = nil
-	}
-	if c.North != nil {
-		c.North.South = nil
-	}
-	if c.South != nil {
-		c.South.North = nil
-	}
 
 	c.orphan = true
 }
@@ -794,25 +832,25 @@ func (c *Cell) IsOrphan() bool {
 }
 
 func (c *Cell) isHorizontalPassage() bool {
-	return c.Linked(c.East) && c.Linked(c.West) && !c.Linked(c.North) && !c.Linked(c.South)
+	return c.Linked(c.East()) && c.Linked(c.West()) && !c.Linked(c.North()) && !c.Linked(c.South())
 }
 
 func (c *Cell) isVerticalPassage() bool {
-	return !c.Linked(c.East) && !c.Linked(c.West) && c.Linked(c.North) && c.Linked(c.South)
+	return !c.Linked(c.East()) && !c.Linked(c.West()) && c.Linked(c.North()) && c.Linked(c.South())
 }
 
 func (c *Cell) canTunnelNorth() bool {
-	return c.North != nil && c.North.North != nil && c.North.isHorizontalPassage()
+	return c.North() != nil && c.North().North() != nil && c.North().isHorizontalPassage()
 }
 
 func (c *Cell) canTunnelSouth() bool {
-	return c.South != nil && c.South.South != nil && c.South.isHorizontalPassage()
+	return c.South() != nil && c.South().South() != nil && c.South().isHorizontalPassage()
 }
 
 func (c *Cell) canTunnelEast() bool {
-	return c.East != nil && c.East.East != nil && c.East.isVerticalPassage()
+	return c.East() != nil && c.East().East() != nil && c.East().isVerticalPassage()
 }
 
 func (c *Cell) canTunnelWest() bool {
-	return c.West != nil && c.West.West != nil && c.West.isVerticalPassage()
+	return c.West() != nil && c.West().West() != nil && c.West().isVerticalPassage()
 }

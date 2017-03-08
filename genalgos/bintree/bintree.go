@@ -15,19 +15,19 @@ type Bintree struct {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *Bintree) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
-	defer genalgos.TimeTrack(g, time.Now())
+func (a *Bintree) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+	defer genalgos.TimeTrack(m, time.Now())
 
-	for _, currentCell := range g.OrderedCells() {
+	for _, currentCell := range m.OrderedCells() {
 		time.Sleep(delay) // animation delay
-		g.SetGenCurrentLocation(currentCell)
+		m.SetGenCurrentLocation(currentCell)
 
 		neighbors := []*maze.Cell{}
 		if currentCell.North != nil {
-			neighbors = append(neighbors, currentCell.North)
+			neighbors = append(neighbors, currentCell.North())
 		}
 		if currentCell.East != nil {
-			neighbors = append(neighbors, currentCell.East)
+			neighbors = append(neighbors, currentCell.East())
 		}
 
 		if len(neighbors) == 0 {
@@ -36,10 +36,10 @@ func (a *Bintree) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 		index := utils.Random(0, len(neighbors))
 		neighbor := neighbors[index]
 		if neighbor != nil {
-			currentCell.Link(neighbor)
+			m.Link(currentCell, neighbor)
 		}
 	}
 
-	a.Cleanup(g)
-	return g, nil
+	a.Cleanup(m)
+	return m, nil
 }

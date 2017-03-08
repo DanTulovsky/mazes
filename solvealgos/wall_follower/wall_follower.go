@@ -21,13 +21,13 @@ func getDirections(c *maze.Cell, facing string) []*maze.Cell {
 
 	switch facing {
 	case "north":
-		return []*maze.Cell{c.East, c.North, c.West, c.South}
+		return []*maze.Cell{c.East(), c.North(), c.West(), c.South()}
 	case "east":
-		return []*maze.Cell{c.South, c.East, c.North, c.West}
+		return []*maze.Cell{c.South(), c.East(), c.North(), c.West()}
 	case "south":
-		return []*maze.Cell{c.West, c.South, c.East, c.North}
+		return []*maze.Cell{c.West(), c.South(), c.East(), c.North()}
 	case "west":
-		return []*maze.Cell{c.North, c.West, c.South, c.East}
+		return []*maze.Cell{c.North(), c.West(), c.South(), c.East()}
 	}
 	return nil
 }
@@ -74,16 +74,16 @@ func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay ti
 		}
 
 		if nextCell := pickNextCell(currentCell, facing); nextCell != nil {
-			if currentCell.North == nextCell {
+			if currentCell.North() == nextCell {
 				facing = "north"
 			}
-			if currentCell.East == nextCell {
+			if currentCell.East() == nextCell {
 				facing = "east"
 			}
-			if currentCell.West == nextCell {
+			if currentCell.West() == nextCell {
 				facing = "west"
 			}
-			if currentCell.South == nextCell {
+			if currentCell.South() == nextCell {
 				facing = "south"
 			}
 

@@ -17,19 +17,19 @@ type Sidewinder struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *Sidewinder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
-	defer genalgos.TimeTrack(g, time.Now())
+func (a *Sidewinder) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+	defer genalgos.TimeTrack(m, time.Now())
 
-	gridWidth, _ := g.Dimensions()
+	gridWidth, _ := m.Dimensions()
 
-	for _, row := range g.Rows() {
+	for _, row := range m.Rows() {
 		var run []*maze.Cell
 
 		for x := len(row) - 1; x >= 0; x-- {
 			time.Sleep(delay) // animation delay
 
 			cell := row[x]
-			g.SetGenCurrentLocation(cell)
+			m.SetGenCurrentLocation(cell)
 
 			run = append(run, cell)
 
@@ -38,8 +38,8 @@ func (a *Sidewinder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error
 
 			if rand == 1 {
 				// if possible, open passage east
-				if cell.East != nil {
-					cell.Link(cell.East)
+				if cell.East() != nil {
+					m.Link(cell, cell.East())
 					continue
 				} else if cell.North != nil {
 					// close out run, we are at the far right wall
@@ -47,9 +47,9 @@ func (a *Sidewinder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error
 						// something went wrong!
 						log.Fatalf("x=%v; expected x=%v (should be at far right)", x, len(row)-1)
 					}
-					c := g.RandomCellFromList(run)
-					if c.North != nil {
-						c.Link(c.North)
+					c := m.RandomCellFromList(run)
+					if c.North() != nil {
+						m.Link(c, c.North())
 					}
 					// clear out run
 					run = []*maze.Cell{} // not strictly necessary
@@ -67,13 +67,13 @@ func (a *Sidewinder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error
 
 			if rand == 0 {
 				// close out run, pick random cell
-				c := g.RandomCellFromList(run)
-				if c.North != nil {
+				c := m.RandomCellFromList(run)
+				if c.North() != nil {
 					// open north passage
-					c.Link(c.North)
-				} else if cell.East != nil {
+					m.Link(c, c.North())
+				} else if cell.East() != nil {
 					// unless you can't, then open the east passage
-					cell.Link(cell.East)
+					m.Link(cell, cell.East())
 				}
 				// clear out run
 				run = []*maze.Cell{}
@@ -83,6 +83,6 @@ func (a *Sidewinder) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error
 
 	}
 
-	a.Cleanup(g)
-	return g, nil
+	a.Cleanup(m)
+	return m, nil
 }

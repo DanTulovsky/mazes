@@ -41,7 +41,7 @@ func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration) (*maze.M
 			continue
 		}
 
-		currentCell.Link(randomNeighbor)
+		m.Link(currentCell, randomNeighbor)
 		cells.Push(randomNeighbor)
 	}
 

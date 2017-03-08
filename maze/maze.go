@@ -60,6 +60,10 @@ type Maze struct {
 	deadlock.RWMutex
 }
 
+func (m *Maze) Config() *Config {
+	return m.config
+}
+
 // setupMazeMask reads in the mask image and creates the maze based on it.
 // The size of the maze is the size of the image, in pixels.
 // Any *black* pixel in the mask image becomes an orphan square.
@@ -115,6 +119,7 @@ func NewMazeFromImage(c *Config, f string) (*Maze, error) {
 	}
 	c.OrphanMask = mask
 
+	log.Printf("done here")
 	return NewMaze(c)
 }
 
@@ -143,13 +148,15 @@ func NewMaze(c *Config) (*Maze, error) {
 		orphanCells: make(map[*Cell]bool),
 	}
 
+	log.Printf("preparing grid")
 	m.prepareGrid()
+	log.Printf("configuring cells")
 	m.configureCells()
 
 	return m, nil
 }
 
-// Braid removes deadends from the maze with a probability p (p = 1 means no dead ends)
+// Braid removes dead ends from the maze with a probability p (p = 1 means no dead ends)
 func (m *Maze) Braid(p float64) {
 	log.Printf("Removing dead ends with probability %v", p)
 
@@ -161,10 +168,70 @@ func (m *Maze) Braid(p float64) {
 		// make sure still dead end
 		if len(c.Links()) == 1 {
 			n := c.RandomUnLinkPreferDeadends()
-			c.Link(n)
+			m.Link(c, n)
 		}
 
 	}
+}
+
+// Link links c1 to c2 to its neighbor (adds passage)
+func (m *Maze) Link(c1, c2 *Cell) {
+	if c1 == nil || c2 == nil {
+		log.Fatalf("failure linking %v to %v!", c1, c2)
+	}
+
+	var linkCell *Cell
+	// if weaving, check if we need to link through a hidden cell
+	if m.config.AllowWeaving {
+
+		// is there a cell between this one and the link to cell?
+		if c1.North() != nil && c2.South() != nil && c1.North() == c2.South() {
+			linkCell = NewCell(c1.North().x, c1.North().y, c1.North().z-1, m.config) // under
+			c1.North().SetBelow(linkCell)
+			// rework neighbor links
+			c1.SetNorth(linkCell)
+			c2.SetSouth(linkCell)
+			linkCell.SetSouth(c1)
+			linkCell.SetNorth(c2)
+		} else if c1.South() != nil && c2.North() != nil && c1.South() == c2.North() {
+			linkCell = NewCell(c1.South().x, c1.South().y, c1.South().z-1, m.config) // under
+			c1.South().SetBelow(linkCell)
+			c1.SetSouth(linkCell)
+			c2.SetNorth(linkCell)
+			linkCell.SetSouth(c2)
+			linkCell.SetNorth(c1)
+		} else if c1.East() != nil && c2.West() != nil && c1.East() == c2.West() {
+			linkCell = NewCell(c1.East().x, c1.East().y, c1.East().z-1, m.config) // under
+			c1.East().SetBelow(linkCell)
+			c1.SetEast(linkCell)
+			c2.SetWest(linkCell)
+			linkCell.SetEast(c2)
+			linkCell.SetWest(c1)
+		} else if c1.West() != nil && c2.East() != nil && c1.West() == c2.East() {
+			linkCell = NewCell(c1.West().x, c1.West().y, c1.West().z-1, m.config) // under
+			c1.West().SetBelow(linkCell)
+			c1.SetWest(linkCell)
+			c2.SetEast(linkCell)
+			linkCell.SetEast(c1)
+			linkCell.SetWest(c2)
+		}
+
+		if linkCell != nil {
+			c1.linkOneWay(linkCell)
+			linkCell.linkOneWay(c1)
+
+			c2.linkOneWay(linkCell)
+			linkCell.linkOneWay(c2)
+		} else {
+			c1.linkOneWay(c2)
+			c2.linkOneWay(c1)
+		}
+
+	} else {
+		c1.linkOneWay(c2)
+		c2.linkOneWay(c1)
+	}
+
 }
 
 // loadAvatar reads in the avatar image
@@ -212,19 +279,28 @@ func (m *Maze) configureCells() {
 	m.Lock()
 	defer m.Unlock()
 
+	z := 0
+
 	for x := 0; x < m.columns; x++ {
 		for y := 0; y < m.rows; y++ {
-			for z := -1; z <= 1; z++ {
-				cell, err := m.Cell(x, y, z)
-				if err != nil {
-					log.Fatalf("failed to initialize grid: %v", err)
-				}
-				// error is ignored, we just set nil if there is no neighbor
-				cell.North, _ = m.Cell(x, y-1, z)
-				cell.South, _ = m.Cell(x, y+1, z)
-				cell.West, _ = m.Cell(x-1, y, z)
-				cell.East, _ = m.Cell(x+1, y, z)
+			cell, err := m.Cell(x, y, z)
+			if err != nil {
+				log.Fatalf("failed to initialize grid: %v", err)
 			}
+			var c *Cell
+			// error is ignored, we just set nil if there is no neighbor
+			c, _ = m.Cell(x, y-1, z)
+			cell.SetNorth(c)
+
+			c, _ = m.Cell(x, y+1, z)
+			cell.SetSouth(c)
+
+			c, _ = m.Cell(x-1, y, z)
+			cell.SetWest(c)
+
+			c, _ = m.Cell(x+1, y, z)
+			cell.SetEast(c)
+
 		}
 	}
 
@@ -299,13 +375,13 @@ func (m *Maze) String() string {
 			}
 			body := "   "
 			east_boundary := " "
-			if !cell.Linked(cell.East) {
+			if !cell.Linked(cell.East()) {
 				east_boundary = "│"
 			}
 			top = fmt.Sprintf("%v%v%v", top, body, east_boundary)
 
 			south_boundary := "   "
-			if !cell.Linked(cell.South) {
+			if !cell.Linked(cell.South()) {
 				south_boundary = "───"
 			}
 			corner := "┼"
@@ -386,12 +462,19 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 				continue
 			}
 
+			// draw the below cell if it exists
+			if cell.Below() != nil {
+				// cell exists
+				cell.Below().Draw(r)
+			}
+
 			cell.Draw(r)
+
 		}
 	}
 
 	// Draw outside border
-	m.drawBorder(r)
+	// m.drawBorder(r)
 
 	// Load avatar if needed
 	if m.config.AvatarImage != "" {
@@ -585,6 +668,10 @@ func (m *Maze) OrderedCells() []*Cell {
 			cell, _ := m.Cell(x, y, 0)
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
+
+				if cell.Below() != nil {
+					cells = append(cells, cell.Below())
+				}
 			}
 		}
 	}
@@ -594,11 +681,11 @@ func (m *Maze) OrderedCells() []*Cell {
 // Cells returns a list of un-orphanded cells in the grid
 func (m *Maze) Cells() map[*Cell]bool {
 
-	mazeCells := m.getMazeCells()
+	// mazeCells := m.getMazeCells()
 
-	if len(mazeCells) != 0 {
-		return mazeCells
-	}
+	//if len(mazeCells) != 0 {
+	//	return mazeCells
+	//}
 
 	cells := make(map[*Cell]bool)
 	for y := m.rows - 1; y >= 0; y-- {
@@ -606,7 +693,14 @@ func (m *Maze) Cells() map[*Cell]bool {
 			cell := m.cells[x][y]
 			if !cell.IsOrphan() {
 				cells[cell] = true
+
+				if cell.Below() != nil {
+					if !cell.Below().IsOrphan() {
+						cells[cell.Below()] = true
+					}
+				}
 			}
+
 		}
 	}
 
@@ -643,6 +737,12 @@ func (m *Maze) OrphanCells() map[*Cell]bool {
 			cell := m.cells[x][y]
 			if cell.IsOrphan() {
 				cells[cell] = true
+
+				if cell.Below() != nil {
+					if cell.Below().IsOrphan() {
+						cells[cell.Below()] = true
+					}
+				}
 			}
 		}
 	}
@@ -683,9 +783,9 @@ func (m *Maze) ConnectCells(cells []*Cell) {
 	for x := 0; x < len(cells)-1; x++ {
 		cell := cells[x]
 		// no lock, does not change
-		for _, n := range []*Cell{cell.North, cell.South, cell.East, cell.West} {
+		for _, n := range []*Cell{cell.North(), cell.South(), cell.East(), cell.West()} {
 			if n == cells[x+1] {
-				cell.Link(n)
+				m.Link(cell, n)
 				break
 			}
 		}
@@ -888,16 +988,16 @@ func (m *Maze) resetDistances() {
 func (m *Maze) GetFacingDirection(fromCell, toCell *Cell) string {
 	facing := ""
 
-	if fromCell.North == toCell {
+	if fromCell.North() == toCell {
 		facing = "north"
 	}
-	if fromCell.East == toCell {
+	if fromCell.East() == toCell {
 		facing = "east"
 	}
-	if fromCell.West == toCell {
+	if fromCell.West() == toCell {
 		facing = "west"
 	}
-	if fromCell.South == toCell {
+	if fromCell.South() == toCell {
 		facing = "south"
 	}
 	return facing

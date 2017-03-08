@@ -15,15 +15,15 @@ type HuntAndKill struct {
 
 // Hunt scans the grid from left to right and returns the first unvisited cell with at least one visited neighbor
 // Returns nil if there are no more
-func HuntAndLink(g *maze.Maze) *maze.Cell {
-	for cell := range g.Cells() {
+func HuntAndLink(m *maze.Maze) *maze.Cell {
+	for cell := range m.Cells() {
 		if cell.Visited() {
 			continue
 		}
 		// shuffle the neighbors so we get a random one for linking
 		for _, n := range Shuffle(cell.Neighbors()) {
 			if n.Visited() {
-				cell.Link(n) // link to random neighbor
+				m.Link(cell, n) // link to random neighbor
 				return cell
 			}
 		}
@@ -40,15 +40,15 @@ func Shuffle(cells []*maze.Cell) []*maze.Cell {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *HuntAndKill) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 
-	defer genalgos.TimeTrack(g, time.Now())
+	defer genalgos.TimeTrack(m, time.Now())
 
-	currentCell := g.RandomCell()
+	currentCell := m.RandomCell()
 
 	for currentCell != nil {
 		time.Sleep(delay) // animation delay
-		g.SetGenCurrentLocation(currentCell)
+		m.SetGenCurrentLocation(currentCell)
 
 		currentCell.SetVisited()
 		neighbors := currentCell.Neighbors()
@@ -56,14 +56,14 @@ func (a *HuntAndKill) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, erro
 		randomNeighbor := genalgos.RandomUnvisitedCellFromList(neighbors)
 		if randomNeighbor == nil {
 			// no more unvisited neighbors
-			currentCell = HuntAndLink(g)
+			currentCell = HuntAndLink(m)
 			continue
 		}
 
-		currentCell.Link(randomNeighbor)
+		m.Link(currentCell, randomNeighbor)
 		currentCell = randomNeighbor
 	}
 
-	a.Cleanup(g)
-	return g, nil
+	a.Cleanup(m)
+	return m, nil
 }

@@ -108,17 +108,17 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 		colors.SetDrawColor(c.config.CurrentLocationColor, r)
 		// draw a standard box
 		sq := &sdl.Rect{
-			int32(c.x *PixelsPerCell + PixelsPerCell/2),
-			int32(c.y *PixelsPerCell + PixelsPerCell/2),
-			int32(c.pathWidth * 6),
-			int32(c.pathWidth * 6)}
+			int32(c.x*PixelsPerCell + PixelsPerCell/2),
+			int32(c.y*PixelsPerCell + PixelsPerCell/2),
+			int32(PixelsPerCell/2 - c.wallWidth/2),
+			int32(PixelsPerCell/2 - c.wallWidth/2)}
 		r.FillRect(sq)
 	} else {
 		angle, flip := rotateAngle(p.Facing())
 
 		sq := &sdl.Rect{
-			int32(c.x *PixelsPerCell + PixelsPerCell/4),
-			int32(c.y *PixelsPerCell + PixelsPerCell/4),
+			int32(c.x*PixelsPerCell + PixelsPerCell/4),
+			int32(c.y*PixelsPerCell + PixelsPerCell/4),
 			int32(c.pathWidth * 15),
 			int32(c.pathWidth * 15)}
 
@@ -131,6 +131,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 // DrawPath draws the path as present in the cells
 func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bool, isLast, isSolution bool) *sdl.Renderer {
 	cell := p.Cell()
+
 	cell.RLock()
 	defer cell.RUnlock()
 
@@ -147,26 +148,63 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 		// these are the path segments from the middle towards the given direction
 		paths := map[string]*sdl.Rect{
 			"east": {
-				int32(cell.x *PixelsPerCell + PixelsPerCell/2),
-				int32(cell.y *PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
 				int32(PixelsPerCell/2 + cell.wallWidth),
-				int32(pathWidth)},
+				int32(pathWidth),
+			},
 			"west": {
-				int32(cell.x *PixelsPerCell + cell.wallWidth),
-				int32(cell.y *PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell + cell.wallWidth),
+				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
 				int32(PixelsPerCell/2 + pathWidth - cell.wallWidth),
-				int32(pathWidth)},
+				int32(pathWidth),
+			},
 			"north": {
-				int32(cell.x *PixelsPerCell + PixelsPerCell/2),
-				int32(cell.y *PixelsPerCell + cell.wallWidth),
+				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell + cell.wallWidth),
 				int32(pathWidth),
-				int32(PixelsPerCell/2 - cell.wallWidth)},
+				int32(PixelsPerCell/2 - cell.wallWidth),
+			},
 			"south": {
-				int32(cell.x *PixelsPerCell + PixelsPerCell/2),
-				int32(cell.y *PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
 				int32(pathWidth),
-				int32(PixelsPerCell/2 + cell.wallWidth)},
+				int32(PixelsPerCell/2 + cell.wallWidth),
+			},
 		}
+
+		// stubs are for cells below other cells, we only draw a small part of the path
+		stubs := map[string]*sdl.Rect{
+			"east": {
+				int32(cell.x*PixelsPerCell + PixelsPerCell + cell.wallWidth - cell.config.WallSpace/2),
+				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.config.WallSpace / 2),
+				int32(pathWidth),
+			},
+			"west": {
+				int32(cell.x*PixelsPerCell + cell.wallWidth),
+				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.config.WallSpace / 2),
+				int32(pathWidth),
+			},
+			"north": {
+				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell + cell.wallWidth),
+				int32(pathWidth),
+				int32(cell.config.WallSpace / 2),
+			},
+			"south": {
+				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell + PixelsPerCell + cell.wallWidth - cell.config.WallSpace/2),
+				int32(pathWidth),
+				int32(cell.config.WallSpace / 2),
+			},
+		}
+
+		if l := cell.Location(); l.Z == -1 {
+			return stubs[d]
+		}
+
 		return paths[d]
 	}
 
@@ -178,6 +216,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 	}
 
 	colors.SetDrawColor(pathColor, r)
+
 	currentSegmentInSolution := solvePath.SegmentInPath(p)
 
 	if isLast && !cell.Visited() {
@@ -193,9 +232,9 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 		}
 
 	} else {
-		if cell.pathEast && cell.East != nil {
+		if cell.pathEast && cell.East() != nil {
 			// if current cell and neighbor is in the solution, solid color.
-			eastInSolution := solvePath.CellInPath(cell.East)
+			eastInSolution := solvePath.CellInPath(cell.East())
 			if eastInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -205,8 +244,8 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 			r.FillRect(getPathRect("east", eastInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathWest && cell.West != nil {
-			westInSolution := solvePath.CellInPath(cell.West)
+		if cell.pathWest && cell.West() != nil {
+			westInSolution := solvePath.CellInPath(cell.West())
 			if westInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -216,8 +255,8 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 			r.FillRect(getPathRect("west", westInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathNorth && p.cell.North != nil {
-			northInSolution := solvePath.CellInPath(cell.North)
+		if cell.pathNorth && p.cell.North() != nil {
+			northInSolution := solvePath.CellInPath(cell.North())
 			if northInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -227,8 +266,8 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 			r.FillRect(getPathRect("north", northInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathSouth && cell.South != nil {
-			southInSolution := solvePath.CellInPath(cell.South)
+		if cell.pathSouth && cell.South() != nil {
+			southInSolution := solvePath.CellInPath(cell.South())
 			if southInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
