@@ -21,8 +21,8 @@ var applytests = []struct {
 			Columns: utils.Random(5, 20),
 		},
 		orphanCells: []*maze.Location{
-			{0, 0},
-			{4, 4},
+			{0, 0, 0},
+			{4, 4, 0},
 		},
 		wantErr: false,
 	}, {
@@ -81,7 +81,7 @@ func TestSolveRecursiveBacktracker(t *testing.T) {
 
 		// orphan cells
 		for _, l := range tt.orphanCells {
-			cell, err := m.Cell(l.X, l.Y)
+			cell, err := m.Cell(l.X, l.Y, l.Z)
 			if err != nil {
 				t.Fatalf(err.Error())
 			}

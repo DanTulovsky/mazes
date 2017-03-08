@@ -448,7 +448,7 @@ func run() int {
 			}
 			x, _ := strconv.Atoi(from[0])
 			y, _ := strconv.Atoi(from[1])
-			fromCell, err = m.Cell(x, y)
+			fromCell, err = m.Cell(x, y, 0)
 			if err != nil {
 				log.Fatalf("invalid fromCell: %v", err)
 			}
@@ -461,7 +461,7 @@ func run() int {
 			}
 			x, _ := strconv.Atoi(from[0])
 			y, _ := strconv.Atoi(from[1])
-			toCell, err = m.Cell(x, y)
+			toCell, err = m.Cell(x, y, 0)
 			if err != nil {
 				log.Fatalf("invalid toCell: %v", err)
 			}

@@ -15,7 +15,7 @@ import (
 
 // Cell defines a single cell in the grid
 type Cell struct {
-	column, row int
+	x, y, z int
 	// keep track of neighborgs
 	North, South, East, West *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
@@ -78,10 +78,11 @@ func CellInCellList(cell *Cell, cellList []*Cell) bool {
 }
 
 // NewCell initializes a new cell
-func NewCell(x, y int, c *Config) *Cell {
+func NewCell(x, y, z int, c *Config) *Cell {
 	cell := &Cell{
-		row:       y,
-		column:    x,
+		y:         y,
+		x:         x,
+		z:         z,
 		links:     NewSafeMap2(),
 		bgColor:   c.BgColor,   // default
 		wallColor: c.WallColor, // default
@@ -165,7 +166,7 @@ func (c *Cell) SetDistance(d int) {
 func (c *Cell) String() string {
 	c.RLock()
 	defer c.RUnlock()
-	return fmt.Sprintf("(%v, %v)", c.column, c.row)
+	return fmt.Sprintf("(%v, %v)", c.x, c.y)
 }
 
 // PathTo returns the path to the toCell or nil if not available
@@ -191,7 +192,7 @@ func (c *Cell) Location() Location {
 	c.RLock()
 	defer c.RUnlock()
 
-	return Location{c.column, c.row}
+	return Location{c.x, c.y, c.z}
 }
 
 // Visited returns true if the cell has been visited
@@ -361,8 +362,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	var x, y, w, h int
 
-	x = c.column*c.width + c.wallWidth + wallSpace + c.wallWidth/2
-	y = c.row*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+	x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+	y = c.y*c.width + c.wallWidth + wallSpace + c.wallWidth/2
 	w = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
 	h = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
 
@@ -376,8 +377,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
 		// colors.SetDrawColor(colors.GetColor("yellow"), r)
-		x = c.column*c.width + c.wallWidth + wallSpace + c.wallWidth/2
-		y = c.row*c.width + c.wallWidth
+		x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+		y = c.y*c.width + c.wallWidth
 		w = c.width - wallSpace*2 - c.wallWidth
 		h = wallSpace + c.wallWidth/2
 
@@ -387,17 +388,17 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		// colors.SetDrawColor(colors.GetColor("red"), r)
 
 		// east
-		x = c.column*c.width + c.width - wallSpace + c.wallWidth/2
+		x = c.x*c.width + c.width - wallSpace + c.wallWidth/2
 		// log.Printf("c.width: %v", c.width)
-		y = c.row*c.width + c.wallWidth
+		y = c.y*c.width + c.wallWidth
 		w = c.wallWidth / 2
 		h = wallSpace + c.wallWidth/2
 
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		// west
-		x = c.column*c.width + c.wallWidth + wallSpace
-		y = c.row*c.width + c.wallWidth
+		x = c.x*c.width + c.wallWidth + wallSpace
+		y = c.y*c.width + c.wallWidth
 		w = c.wallWidth / 2
 		h = wallSpace + c.wallWidth/2
 
@@ -408,8 +409,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
 		// colors.SetDrawColor(colors.GetColor("red"), r)
-		x = c.column*c.width + c.wallWidth + wallSpace + c.wallWidth/2
-		y = c.row*c.width + c.width - wallSpace + c.wallWidth/2
+		x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+		y = c.y*c.width + c.width - wallSpace + c.wallWidth/2
 		w = c.width - wallSpace*2 - c.wallWidth
 		h = wallSpace + c.wallWidth/2
 
@@ -418,16 +419,16 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		colors.SetDrawColor(c.wallColor, r)
 		// colors.SetDrawColor(colors.GetColor("green"), r)
 		// east
-		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
-		y = c.row*c.width + c.width - wallSpace + c.wallWidth/2
+		x = c.x*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.y*c.width + c.width - wallSpace + c.wallWidth/2
 		w = c.wallWidth / 2
 		h = wallSpace + c.wallWidth/2
 
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		// west
-		x = c.column*c.width + c.wallWidth + wallSpace
-		y = c.row*c.width + wallSpace + c.width + c.wallWidth/2 - wallSpace*2
+		x = c.x*c.width + c.wallWidth + wallSpace
+		y = c.y*c.width + wallSpace + c.width + c.wallWidth/2 - wallSpace*2
 		w = c.wallWidth / 2
 		h = wallSpace + c.wallWidth/2
 
@@ -438,8 +439,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
 		// colors.SetDrawColor(colors.GetColor("blue"), r)
-		x = c.column*c.width + c.wallWidth/2 + wallSpace + c.width - wallSpace*2
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.wallWidth/2 + wallSpace + c.width - wallSpace*2
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = wallSpace + c.wallWidth/2
 		h = c.width - wallSpace*2
 
@@ -449,16 +450,16 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		//colors.SetDrawColor(colors.GetColor("green"), r)
 
 		// north
-		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = wallSpace + c.wallWidth/2
 		h = c.wallWidth / 2
 
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		// south
-		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
-		y = c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		x = c.x*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.y*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
 		w = wallSpace + c.wallWidth/2
 		h = c.wallWidth / 2
 
@@ -469,8 +470,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		// background
 		colors.SetDrawColor(c.BGColor(), r)
 		// colors.SetDrawColor(colors.GetColor("pink"), r)
-		x = c.column*c.width + c.wallWidth
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.wallWidth
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = wallSpace + c.wallWidth/2
 		h = c.width - wallSpace*2
 
@@ -480,16 +481,16 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		//colors.SetDrawColor(colors.GetColor("red"), r)
 
 		// north
-		x = c.column*c.width + c.wallWidth
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.wallWidth
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = wallSpace + c.wallWidth/2
 		h = c.wallWidth / 2
 
 		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
 
 		// south
-		x = c.column*c.width + c.wallWidth
-		y = c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		x = c.x*c.width + c.wallWidth
+		y = c.y*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
 		w = wallSpace + c.wallWidth/2
 		h = c.wallWidth / 2
 
@@ -501,8 +502,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// East
 	if !linkEast {
-		x = c.column*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = c.wallWidth / 2
 		h = c.width - wallSpace*2
 
@@ -511,8 +512,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// West
 	if !linkWest {
-		x = c.column*c.width + c.wallWidth + wallSpace
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.wallWidth + wallSpace
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = c.wallWidth / 2
 		h = c.width - wallSpace*2
 
@@ -521,8 +522,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// North
 	if !linkNorth {
-		x = c.column*c.width + c.wallWidth + wallSpace
-		y = c.row*c.width + c.wallWidth + wallSpace
+		x = c.x*c.width + c.wallWidth + wallSpace
+		y = c.y*c.width + c.wallWidth + wallSpace
 		w = c.width - wallSpace*2
 		h = c.wallWidth / 2
 
@@ -531,8 +532,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// South
 	if !linkSouth {
-		x = c.column*c.width + c.wallWidth + wallSpace
-		y = c.row*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
+		x = c.x*c.width + c.wallWidth + wallSpace
+		y = c.y*c.width + c.width - c.wallWidth/2 + c.wallWidth - wallSpace
 		w = c.width - wallSpace*2
 		h = c.wallWidth / 2
 
@@ -541,8 +542,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	// Display distance value
 	if c.config.ShowDistanceValues {
-		x := c.column*c.width + c.wallWidth + 1 + wallSpace
-		y := c.row*c.width + c.wallWidth + 1 + wallSpace
+		x := c.x*c.width + c.wallWidth + 1 + wallSpace
+		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 		gfx.StringRGBA(r, x, y, fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
 	}
 
@@ -573,7 +574,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 		}
 
 		// draw a small box to mark visited cells
-		box := &sdl.Rect{int32(c.column*PixelsPerCell+c.wallWidth) + offset, int32(c.row*PixelsPerCell+c.wallWidth) + offset, h, w}
+		box := &sdl.Rect{int32(c.x*PixelsPerCell+c.wallWidth) + offset, int32(c.y*PixelsPerCell+c.wallWidth) + offset, h, w}
 		r.FillRect(box)
 	}
 
@@ -593,6 +594,17 @@ func (c *Cell) Link(cell *Cell) {
 	if cell == nil {
 		log.Fatalf("linking %v to nil!", c)
 	}
+
+	// if weaving, check if we need to link through a hidden cell
+	if c.config.AllowWeaving {
+		var loc Location
+		// is there a cell between this one and the link to cell?
+		if c.North && c.North == c.North.South {
+			loc = Location{c.North.x, c.North.y, c.North.z - 1} // under
+		}
+
+	}
+
 	c.linkOneWay(cell)
 	cell.linkOneWay(c)
 }

@@ -29,7 +29,7 @@ func init() {
 
 // Location is x,y coordinate of a cell
 type Location struct {
-	X, Y int
+	X, Y, Z int
 }
 
 // Grid defines the maze grid
@@ -66,7 +66,7 @@ type Maze struct {
 func setupMazeMask(f string, c *Config, mask []Location) ([]Location, error) {
 
 	addToMask := func(mask []Location, x, y int) ([]Location, error) {
-		l := Location{x, y}
+		l := Location{x, y, 0}
 
 		if x >= c.Columns || y >= c.Rows || x < 0 || y < 0 {
 			return nil, fmt.Errorf("invalid cell passed to mask: %v (grid size: %v %v)", l, c.Columns, c.Rows)
@@ -195,13 +195,14 @@ func (m *Maze) prepareGrid() {
 	m.Lock()
 	defer m.Unlock()
 
+	z := 0
 	m.cells = make([][]*Cell, m.columns)
 
 	for x := 0; x < m.columns; x++ {
 		m.cells[x] = make([]*Cell, m.rows)
 
 		for y := 0; y < m.rows; y++ {
-			m.cells[x][y] = NewCell(x, y, m.config)
+			m.cells[x][y] = NewCell(x, y, z, m.config)
 		}
 	}
 }
@@ -213,20 +214,22 @@ func (m *Maze) configureCells() {
 
 	for x := 0; x < m.columns; x++ {
 		for y := 0; y < m.rows; y++ {
-			cell, err := m.Cell(x, y)
-			if err != nil {
-				log.Fatalf("failed to initialize grid: %v", err)
+			for z := -1; z <= 1; z++ {
+				cell, err := m.Cell(x, y, z)
+				if err != nil {
+					log.Fatalf("failed to initialize grid: %v", err)
+				}
+				// error is ignored, we just set nil if there is no neighbor
+				cell.North, _ = m.Cell(x, y-1, z)
+				cell.South, _ = m.Cell(x, y+1, z)
+				cell.West, _ = m.Cell(x-1, y, z)
+				cell.East, _ = m.Cell(x+1, y, z)
 			}
-			// error is ignored, we just set nil if there is no neighbor
-			cell.North, _ = m.Cell(x, y-1)
-			cell.South, _ = m.Cell(x, y+1)
-			cell.West, _ = m.Cell(x-1, y)
-			cell.East, _ = m.Cell(x+1, y)
 		}
 	}
 
 	for _, o := range m.config.OrphanMask {
-		cell, err := m.Cell(o.X, o.Y)
+		cell, err := m.Cell(o.X, o.Y, 0)
 		if err != nil {
 			Fail(err)
 		}
@@ -290,7 +293,7 @@ func (m *Maze) String() string {
 		bottom := "   ├"
 
 		for x := 0; x < m.columns; x++ {
-			cell, err := m.Cell(x, y)
+			cell, err := m.Cell(x, y, 0)
 			if err != nil {
 				continue
 			}
@@ -373,7 +376,7 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	// Each cell draws its background, half the wall as well as anything inside it
 	for x := 0; x < m.columns; x++ {
 		for y := 0; y < m.rows; y++ {
-			cell, err := m.Cell(x, y)
+			cell, err := m.Cell(x, y, 0)
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
 			}
@@ -527,7 +530,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 }
 
 // Cell returns the cell at r,c
-func (m *Maze) Cell(x, y int) (*Cell, error) {
+func (m *Maze) Cell(x, y, z int) (*Cell, error) {
 	if x < 0 || x >= m.columns || y < 0 || y >= m.rows {
 		return nil, fmt.Errorf("(%v, %v) is outside the grid", x, y)
 	}
@@ -567,7 +570,7 @@ func (m *Maze) Rows() [][]*Cell {
 	for y := m.rows - 1; y >= 0; y-- {
 		cells := []*Cell{}
 		for x := m.columns - 1; x >= 0; x-- {
-			cell, _ := m.Cell(x, y)
+			cell, _ := m.Cell(x, y, 0)
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
 			}
@@ -583,7 +586,7 @@ func (m *Maze) OrderedCells() []*Cell {
 
 	for y := m.rows - 1; y >= 0; y-- {
 		for x := m.columns - 1; x >= 0; x-- {
-			cell, _ := m.Cell(x, y)
+			cell, _ := m.Cell(x, y, 0)
 			if !cell.IsOrphan() {
 				cells = append(cells, cell)
 			}

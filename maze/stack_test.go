@@ -11,9 +11,9 @@ var stacktests = []struct {
 	cells []*Cell
 }{
 	{cells: []*Cell{
-		NewCell(0, 0, config),
-		NewCell(1, 8, config),
-		NewCell(5, 7, config)},
+		NewCell(0, 0, 0, config),
+		NewCell(1, 8, 0, config),
+		NewCell(5, 7, 0, config)},
 	},
 }
 
