@@ -815,6 +815,10 @@ func (m *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 	// defer utils.TimeTrack(time.Now(), "SetFromToColors")
 
+	if fromCell == nil || toCell == nil {
+		log.Printf("not setting fromToColors on nil: from: %v, to: %v", fromCell, toCell)
+		return
+	}
 	// Set path start and end colors
 	fromCell.SetBGColor(m.config.FromCellColor)
 	toCell.SetBGColor(m.config.ToCellColor)
