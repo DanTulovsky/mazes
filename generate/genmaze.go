@@ -502,7 +502,7 @@ func run() int {
 	}
 	wd.Wait()
 
-	if *solveAlgo != "" {
+	if *showDistanceColors {
 		// Set the colors for the from and to cells
 		m.SetFromToColors(fromCell, toCell)
 	}

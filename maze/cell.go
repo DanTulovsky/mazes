@@ -418,12 +418,14 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 
 	var x, y, w, h int
 
-	x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
-	y = c.y*c.width + c.wallWidth + wallSpace + c.wallWidth/2
-	w = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
-	h = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
+	if c.z >= 0 { // don't color below cells
+		x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+		y = c.y*c.width + c.wallWidth + wallSpace + c.wallWidth/2
+		w = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
+		h = c.width - wallSpace*2 - c.wallWidth/2 - c.wallWidth/2
 
-	r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+		r.FillRect(&sdl.Rect{int32(x), int32(y), int32(w), int32(h)})
+	}
 	linkEast, linkWest, linkSouth, linkNorth := c.Linked(c.East()), c.Linked(c.West()), c.Linked(c.South()), c.Linked(c.North())
 
 	// Draw walls as needed
