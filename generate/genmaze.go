@@ -98,7 +98,7 @@ var (
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
 	fromCellStr = flag.String("from_cell", "", "path from cell")
-	toCellStr   = flag.String("to_cell", "", "path to cell")
+	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 
 	winWidth, winHeight int
 )
@@ -453,12 +453,18 @@ func run() int {
 		}
 
 		if *toCellStr != "" {
-			from := strings.Split(*toCellStr, ",")
-			if len(from) != 2 {
-				log.Fatalf("%v is not a valid coordinate", *toCellStr)
+			var x, y int
+			if *toCellStr == "max" {
+				x = *columns - 1
+				y = *rows - 1
+			} else {
+				from := strings.Split(*toCellStr, ",")
+				if len(from) != 2 {
+					log.Fatalf("%v is not a valid coordinate", *toCellStr)
+				}
+				x, _ = strconv.Atoi(from[0])
+				y, _ = strconv.Atoi(from[1])
 			}
-			x, _ := strconv.Atoi(from[0])
-			y, _ := strconv.Atoi(from[1])
 			toCell, err = m.Cell(x, y, 0)
 			if err != nil {
 				log.Fatalf("invalid toCell: %v", err)
