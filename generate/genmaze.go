@@ -294,6 +294,15 @@ func run() int {
 		defer profile.Start().Stop()
 	}
 
+	if *allowWeaving && *wallSpace == 0 {
+		// weaving requires some wall space to look nice
+		*wallSpace = 2
+	}
+
+	if *showDistanceColors && *bgColor == "white" {
+		*bgColor = "black"
+	}
+
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -571,7 +580,7 @@ func run() int {
 		sdl.Do(func() {
 			r.SetRenderTarget(mTexture)
 			// background is black so that transparency works
-			colors.SetDrawColor(colors.GetColor("black"), r)
+			colors.SetDrawColor(colors.GetColor("white"), r)
 			r.Clear()
 		})
 		m.DrawMazeBackground(r)
@@ -603,7 +612,7 @@ func run() int {
 			sdl.Do(func() {
 				// reset the clear color back to white
 				// but it doesn't matter, as background texture takes up the enitire view
-				colors.SetDrawColor(colors.GetColor("white"), r)
+				colors.SetDrawColor(colors.GetColor("black"), r)
 
 				r.Clear()
 				m.DrawMaze(r, mTexture)

@@ -26,19 +26,17 @@ func newState(m *maze.Maze) *state {
 		cellsInSet: cellsInSet,
 	}
 
-	for cell := range m.Cells() {
+	for c := range m.Cells() {
 		set := len(setForCell)
 
 		// add cell into its own set
-		setForCell[cell] = set
-		cellsInSet[set] = []*maze.Cell{cell}
+		setForCell[c] = set
+		cellsInSet[set] = []*maze.Cell{c}
 
-		// add neighbors
-		if cell.South() != nil {
-			neighbors.Push(&neighborPair{cell, cell.South()})
-		}
-		if cell.East() != nil {
-			neighbors.Push(&neighborPair{cell, cell.East()})
+		// This does duplicate work by checking all neighbors of all cells,
+		// but this is required due to how drawing is implemented
+		for _, n := range c.Neighbors() {
+			neighbors.Push(&neighborPair{c, n})
 		}
 
 	}
