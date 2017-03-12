@@ -571,7 +571,7 @@ func run() int {
 		sdl.Do(func() {
 			r.SetRenderTarget(mTexture)
 			// background is black so that transparency works
-			colors.SetDrawColor(colors.GetColor("white"), r)
+			colors.SetDrawColor(colors.GetColor("black"), r)
 			r.Clear()
 		})
 		m.DrawMazeBackground(r)

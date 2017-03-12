@@ -119,7 +119,6 @@ func NewMazeFromImage(c *Config, f string) (*Maze, error) {
 	}
 	c.OrphanMask = mask
 
-	log.Printf("done here")
 	return NewMaze(c)
 }
 
@@ -148,9 +147,7 @@ func NewMaze(c *Config) (*Maze, error) {
 		orphanCells: make(map[*Cell]bool),
 	}
 
-	log.Printf("preparing grid")
 	m.prepareGrid()
-	log.Printf("configuring cells")
 	m.configureCells()
 
 	return m, nil
@@ -914,7 +911,7 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 
 		if m.config.ShowDistanceColors {
 			// decrease the last parameter to make the longest cells brighter. max = 255 (good = 228)
-			adjustedColor := 255 - utils.AffineTransform(float64(d), 0, float64(longestPath), 0, 228)
+			adjustedColor := utils.AffineTransform(float64(d), 0, float64(longestPath), 0, 228)
 			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 		}
 
