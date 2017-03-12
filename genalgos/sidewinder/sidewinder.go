@@ -1,4 +1,4 @@
-// Package sidewinder implements the widewinder algorithm for maze generation
+// Package sidewinder implements the sidewinder algorithm for maze generation
 
 // Binary Tree chooses between north and east at every cell; Sidewinder, on the other hand, tries to group adjacent
 // cells together before carving a passage north from one of them.
