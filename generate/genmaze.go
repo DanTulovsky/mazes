@@ -300,7 +300,17 @@ func run() int {
 	}
 
 	if *showDistanceColors && *bgColor == "white" {
+		log.Print("Setting bgcolor to 'black' and adjusting wall color since distance colors don't work with white right now.")
 		*bgColor = "black"
+		if *wallColor == "black" {
+			*wallColor = "white"
+		}
+	}
+
+	if *bgColor == "black" {
+		if *wallColor == "black" {
+			*wallColor = "white"
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
