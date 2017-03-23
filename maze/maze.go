@@ -911,8 +911,8 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 
 		if m.config.ShowDistanceColors {
 			// decrease bridghtnessAdjustto make the longest cells brighter. max = 255 (good = 228)
-			bridghtnessAdjust := 228.0
-			adjustedColor := bridghtnessAdjust - utils.AffineTransform(float64(d), 0, float64(longestPath), 0, bridghtnessAdjust)
+			bridghtnessAdjust := 228
+			adjustedColor := bridghtnessAdjust - utils.AffineTransform(float64(d), 0, float64(longestPath), 0, float64(bridghtnessAdjust))
 			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 		}
 
