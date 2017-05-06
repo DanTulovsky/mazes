@@ -1,4 +1,4 @@
-package randomized_kruskal
+package kruskal
 
 import (
 	"mazes/maze"
@@ -25,8 +25,8 @@ var applytests = []struct {
 	},
 }
 
-func setup() *RandomizedKruskal {
-	return &RandomizedKruskal{}
+func setup() *Kruskal {
+	return &Kruskal{}
 }
 
 func TestApply(t *testing.T) {

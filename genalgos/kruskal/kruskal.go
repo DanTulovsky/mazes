@@ -1,8 +1,7 @@
 // Package kruskal implements kruskal's algorithm for maze generation
-package randomized_kruskal
+package kruskal
 
 import (
-	"log"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
@@ -37,8 +36,11 @@ func newState(m *maze.Maze) *state {
 
 		// This does duplicate work by checking all neighbors of all cells,
 		// but this is required due to how drawing is implemented
+
+		// assign random cost to each pair, they pop out for the algorithm from lowest -> highest
+		randomCost := utils.Random(0, 100)
 		for _, n := range c.Neighbors() {
-			neighbors.Push(&neighborPair{c, n})
+			neighbors.Push(&neighborPair{left: c, right: n, cost: randomCost})
 		}
 
 	}
@@ -97,17 +99,18 @@ func (s *state) addCrossing(c *maze.Cell) bool {
 	return true
 }
 
-type RandomizedKruskal struct {
+type Kruskal struct {
 	genalgos.Common
 }
 
 // Apply applies the algorithm to the grid.
-func (a *RandomizedKruskal) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	s := newState(m)
-	s.neighbors.Shuffle()
+	// s.neighbors.Shuffle()
 
+	// add crossings (under-passages) as required
 	for x := 0; x < m.Size(); x++ {
 		if utils.Random(0, 100) >= int(m.Config().WeavingProbability*100) {
 			continue
@@ -115,7 +118,6 @@ func (a *RandomizedKruskal) Apply(m *maze.Maze, delay time.Duration) error {
 		c := utils.Random(1, m.Config().Columns-1)
 		r := utils.Random(1, m.Config().Rows-1)
 		cell, _ := m.Cell(c, r, 0)
-		log.Print("adding crossing")
 		s.addCrossing(cell)
 	}
 
