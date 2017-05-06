@@ -81,7 +81,7 @@ var (
 	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	showFromToColors   = flag.Bool("show_from_to_colors", true, "show from/to colors")
+	showFromToColors   = flag.Bool("show_from_to_colors", false, "show from/to colors")
 	showDistanceColors = flag.Bool("show_distance_colors", false, "show distance colors")
 	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
 	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
@@ -210,7 +210,7 @@ func showMazeStats(m *maze.Maze) {
 }
 
 // Solve runs the solvers against the grid.
-func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
+func Solve(m *maze.Maze, keyInput chan string) (solvealgos.Algorithmer, error) {
 	var err error
 
 	if !checkSolveAlgo(*solveAlgo) {
@@ -226,7 +226,7 @@ func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
 	if err != nil {
 		return nil, err
 	}
-	m, err = solver.Solve(m, fromCell, toCell, delay)
+	m, err = solver.Solve(m, fromCell, toCell, delay, keyInput)
 	if err != nil {
 		return nil, fmt.Errorf("error running solver: %v", err)
 	}
@@ -508,6 +508,9 @@ func run() {
 	///////////////////////////////////////////////////////////////////////////
 	runSolver := abool.New()
 
+	// channel to pass key presses into solvers
+	keyInput := make(chan string)
+
 	wd.Add(1)
 	go func() {
 		for !runSolver.IsSet() {
@@ -516,7 +519,7 @@ func run() {
 		}
 
 		if *solveAlgo != "" {
-			solver, err = Solve(m)
+			solver, err = Solve(m, keyInput)
 			if err != nil {
 				log.Print(err)
 			}
@@ -582,6 +585,16 @@ func run() {
 					switch event.(type) {
 					case *sdl.QuitEvent:
 						running.UnSet()
+
+					case *sdl.KeyDownEvent:
+						// use event.(*sdl.KeyDownEvent).Keysym.Sym
+						// arrow keys are
+						// sdl.SDLK_DOWN; down
+						// sdl.SDLK_UP; up
+						// sdl.SDLK_RIGHT; right
+						// sdl.SDLK_LEFT; left
+						key := sdl.GetKeyName(event.(*sdl.KeyDownEvent).Keysym.Sym)
+						keyInput <- key
 					}
 				}
 			})
@@ -589,7 +602,7 @@ func run() {
 			// Displays the main maze, no paths or other markers
 			sdl.Do(func() {
 				// reset the clear color back to white
-				// but it doesn't matter, as background texture takes up the enitire view
+				// but it doesn't matter, as background texture takes up the entire view
 				colors.SetDrawColor(colors.GetColor("black"), r)
 
 				r.Clear()

@@ -6,9 +6,12 @@
 package wall_follower
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"mazes/maze"
 	"mazes/solvealgos"
+	"strings"
 	"time"
 )
 
@@ -48,7 +51,7 @@ func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
 	return nil
 }
 
-func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
+func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = m.TravelPath()
@@ -92,6 +95,17 @@ func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay ti
 			// this can never happen unless the maze is broken
 			return nil, fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
 
+		}
+
+		select {
+		case key := <-keyInput:
+			switch strings.ToLower(key) {
+			case "q":
+				log.Print("Exiting...")
+				return m, errors.New("received cancel request, exiting...")
+			}
+		default:
+			// fmt.Println("no message received")
 		}
 	}
 

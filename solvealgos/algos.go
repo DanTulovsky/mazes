@@ -15,8 +15,8 @@ type Algorithmer interface {
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// delay is ms for animation
-	Solve(g *maze.Maze, fromCell *maze.Cell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error)
-	TravelPath() *maze.Path // all the cells travelled
+	Solve(g *maze.Maze, fromCell *maze.Cell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error)
+	TravelPath() *maze.Path // all the cells traveled
 }
 
 type Common struct {

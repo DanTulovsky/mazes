@@ -204,7 +204,7 @@ func RunAll(config *maze.Config) {
 
 			solver := algos.SolveAlgorithms[solverName]
 			log.Printf("  running (solver): %v", solverName)
-			m, err = solver.Solve(m, fromCell, toCell, 0)
+			m, err = solver.Solve(m, fromCell, toCell, 0, nil)
 			if err != nil {
 				log.Fatalf("failed to run solver [%v]: %v", solverName, err)
 			}

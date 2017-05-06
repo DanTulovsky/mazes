@@ -4,8 +4,11 @@
 package random_unvisited
 
 import (
+	"errors"
+	"log"
 	"mazes/maze"
 	"mazes/solvealgos"
+	"strings"
 	"time"
 )
 
@@ -13,11 +16,11 @@ type RandomUnvisited struct {
 	solvealgos.Common
 }
 
-func (a *RandomUnvisited) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
+func (a *RandomUnvisited) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = g.TravelPath()
-	var solvePath = g.SolvePath()
+	var travelPath = m.TravelPath()
+	var solvePath = m.SolvePath()
 	currentCell := fromCell
 	facing := "north"
 
@@ -30,7 +33,7 @@ func (a *RandomUnvisited) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay
 		segment := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
-		g.SetPathFromTo(fromCell, currentCell, travelPath)
+		m.SetPathFromTo(fromCell, currentCell, travelPath)
 
 		// prefer unvisited first
 		nextCell := currentCell.RandomUnvisitedLink()
@@ -42,6 +45,17 @@ func (a *RandomUnvisited) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay
 		facing = currentCell.GetFacingDirection(nextCell)
 		currentCell = nextCell
 
+		select {
+		case key := <-keyInput:
+			switch strings.ToLower(key) {
+			case "q":
+				log.Print("Exiting...")
+				return m, errors.New("received cancel request, exiting...")
+			}
+		default:
+			// fmt.Println("no message received")
+		}
+
 	}
 
 	// last cell
@@ -49,12 +63,12 @@ func (a *RandomUnvisited) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay
 	segment := maze.NewSegment(currentCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
-	g.SetPathFromTo(fromCell, toCell, solvePath)
+	m.SetPathFromTo(fromCell, toCell, solvePath)
 
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
 	a.SetSolveSteps(travelPath.Length())
 
-	return g, nil
+	return m, nil
 }

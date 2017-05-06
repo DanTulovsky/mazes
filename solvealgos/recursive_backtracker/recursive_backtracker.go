@@ -5,8 +5,10 @@ package recursive_backtracker
 
 import (
 	"fmt"
+	"log"
 	"mazes/maze"
 	"mazes/solvealgos"
+	"strings"
 	"time"
 )
 
@@ -19,7 +21,7 @@ type RecursiveBacktracker struct {
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, delay time.Duration) bool {
+func Step(m *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, delay time.Duration, keyInput <-chan string) bool {
 	// animation delay
 	// log.Printf("currentCell: %v", currentCell)
 	time.Sleep(delay)
@@ -30,7 +32,7 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, de
 	segment := maze.NewSegment(currentCell, facing)
 	solvePath.AddSegement(segment)
 	travelPath.AddSegement(segment)
-	g.SetPathFromTo(startCell, currentCell, travelPath)
+	m.SetPathFromTo(startCell, currentCell, travelPath)
 
 	if currentCell == toCell {
 		return true
@@ -40,7 +42,7 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, de
 		if !nextCell.Visited() {
 			facing = currentCell.GetFacingDirection(nextCell)
 			segment.UpdateFacingDirection(facing)
-			if Step(g, nextCell, toCell, solvePath, delay) {
+			if Step(m, nextCell, toCell, solvePath, delay, keyInput) {
 				return true
 			}
 		}
@@ -55,16 +57,27 @@ func Step(g *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, de
 		segmentReturn := maze.NewSegment(currentCell, facing)
 		travelPath.AddSegement(segmentReturn)
 		currentCell.SetVisited()
-		g.SetPathFromTo(startCell, currentCell, travelPath)
+		m.SetPathFromTo(startCell, currentCell, travelPath)
 
 	}
 	solvePath.DelSegement()
 	time.Sleep(delay)
 
+	select {
+	case key := <-keyInput:
+		switch strings.ToLower(key) {
+		case "q":
+			log.Print("Exiting...")
+			return true
+		}
+	default:
+		// fmt.Println("no message received")
+	}
+
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration) (*maze.Maze, error) {
+func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var solvePath = g.SolvePath()
@@ -72,7 +85,7 @@ func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, 
 	startCell = fromCell
 
 	// DFS traversal of the grid
-	if r := Step(g, fromCell, toCell, solvePath, delay); !r {
+	if r := Step(g, fromCell, toCell, solvePath, delay, keyInput); !r {
 		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
