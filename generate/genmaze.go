@@ -62,8 +62,8 @@ var (
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
 	wallColor            = flag.String("wall_color", "black", "wall color")
-	fromCellColor        = flag.String("from_cell_color", "gold", "wall color")
-	toCellColor          = flag.String("to_cell_color", "yellow", "wall color")
+	fromCellColor        = flag.String("from_cell_color", "gold", "from cell color")
+	toCellColor          = flag.String("to_cell_color", "yellow", "to cell color")
 
 	// width
 	cellWidth = flag.Int("w", 20, "cell width (best as multiple of 2)")
@@ -80,6 +80,7 @@ var (
 	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
 	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
+	showFromToColors   = flag.Bool("show_from_to_colors", true, "show from/to colors")
 	showDistanceColors = flag.Bool("show_distance_colors", false, "show distance colors")
 	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
 	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
@@ -490,7 +491,7 @@ func run() {
 	}
 	wd.Wait()
 
-	if *showDistanceColors {
+	if *showFromToColors {
 		// Set the colors for the from and to cells
 		m.SetFromToColors(fromCell, toCell)
 	}

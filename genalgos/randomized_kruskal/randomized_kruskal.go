@@ -4,6 +4,7 @@ package randomized_kruskal
 import (
 	"mazes/genalgos"
 	"mazes/maze"
+	"mazes/utils"
 	"time"
 )
 
@@ -68,6 +69,33 @@ func (s *state) Merge(left, right *maze.Cell) {
 	delete(s.cellsInSet, loser)
 }
 
+// addCrossing adds a crossing at this cell
+func (s *state) addCrossing(c *maze.Cell) bool {
+	if len(c.Links()) != 0 {
+		return false
+	}
+
+	if !s.canMerge(c.East(), c.West()) || !s.canMerge(c.North(), c.South()) {
+		return false
+	}
+
+	// remove this cell as an option
+	s.neighbors.Delete(c)
+
+	// randomly pick the direction of passage
+	if utils.Random(0, 2) == 0 {
+		s.Merge(c, c.East())
+		s.Merge(c.West(), c)
+		s.Merge(c.North(), c.South())
+
+	} else {
+		s.Merge(c.North(), c)
+		s.Merge(c, c.South())
+		s.Merge(c.East(), c.West())
+	}
+	return true
+}
+
 type RandomizedKruskal struct {
 	genalgos.Common
 }
@@ -78,6 +106,13 @@ func (a *RandomizedKruskal) Apply(m *maze.Maze, delay time.Duration) error {
 
 	s := newState(m)
 	s.neighbors.Shuffle()
+
+	for x := 0; x < m.Size(); x++ {
+		c := utils.Random(1, m.Config().Columns-1)
+		r := utils.Random(1, m.Config().Rows-1)
+		cell, _ := m.Cell(c, r, 0)
+		s.addCrossing(cell)
+	}
 
 	for s.neighbors.Size() > 0 {
 		time.Sleep(delay) // animation delay

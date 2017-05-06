@@ -14,7 +14,7 @@ func (np *neighborPair) String() string {
 	return fmt.Sprintf("[%v, %v]", np.left, np.right)
 }
 
-// Stack is a stack of *Cell objects
+// NeighborStack is a stack of *neighborPair objects
 type NeighborStack struct {
 	pairs []*neighborPair
 }
@@ -44,6 +44,21 @@ func (s *NeighborStack) Pop() (cell *neighborPair) {
 	}
 	cell, s.pairs = s.pairs[len(s.pairs)-1], s.pairs[:len(s.pairs)-1]
 	return cell
+}
+
+// Delete removes any pairs that include cell c.
+func (s *NeighborStack) Delete(c *maze.Cell) {
+
+	var newPairs []*neighborPair
+
+	for _, p := range s.pairs {
+		if p.left == c || p.right == c {
+			continue
+		}
+		newPairs = append(newPairs, p)
+	}
+
+	s.pairs = newPairs
 }
 
 func (s *NeighborStack) Size() int {

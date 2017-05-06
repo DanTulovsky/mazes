@@ -613,7 +613,8 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 
 	PixelsPerCell := c.width
 
-	if c.config.MarkVisitedCells && c.Visited() {
+	// don't mark cells under other cell
+	if c.config.MarkVisitedCells && c.Visited() && c.z >= 0 {
 		colors.SetDrawColor(c.config.VisitedCellColor, r)
 
 		times := c.VisitedTimes()
