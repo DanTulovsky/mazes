@@ -40,7 +40,7 @@ func Shuffle(cells []*maze.Cell) []*maze.Cell {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration) error {
 
 	defer genalgos.TimeTrack(m, time.Now())
 
@@ -65,5 +65,5 @@ func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, erro
 	}
 
 	a.Cleanup(m)
-	return m, nil
+	return nil
 }

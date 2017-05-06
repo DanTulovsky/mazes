@@ -73,7 +73,7 @@ type RandomizedKruskal struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *RandomizedKruskal) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+func (a *RandomizedKruskal) Apply(m *maze.Maze, delay time.Duration) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	s := newState(m)
@@ -87,5 +87,5 @@ func (a *RandomizedKruskal) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze
 		}
 	}
 	a.Cleanup(m)
-	return m, nil
+	return nil
 }

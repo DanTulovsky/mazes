@@ -184,8 +184,7 @@ func RunAll(config *maze.Config) {
 			os.Exit(1)
 		}
 
-		m, err = algo.Apply(m, 0)
-		if err != nil {
+		if err := algo.Apply(m, 0); err != nil {
 			log.Fatalf(err.Error())
 		}
 		if err := algo.CheckGrid(m); err != nil {

@@ -47,7 +47,7 @@ func TestSolveAldousBroder(t *testing.T) {
 			}
 		}
 
-		if g, err = gen.Apply(g, 0); err != nil {
+		if err := gen.Apply(g, 0); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 
@@ -88,7 +88,7 @@ func TestSolveRecursiveBacktracker(t *testing.T) {
 			cell.Orphan()
 		}
 
-		if m, err = gen.Apply(m, 0); err != nil {
+		if err := gen.Apply(m, 0); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 

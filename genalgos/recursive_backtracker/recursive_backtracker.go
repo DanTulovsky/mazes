@@ -17,7 +17,7 @@ type RecursiveBacktracker struct {
 }
 
 // Apply applies the recursive backtracker algorithm to generate the maze.
-func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	cells := maze.NewStack()
@@ -46,5 +46,5 @@ func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration) (*maze.M
 	}
 
 	a.Cleanup(m)
-	return m, nil
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"unsafe"
 
 	"mazes/algos"
 	"mazes/colors"
@@ -21,6 +22,7 @@ import (
 	"github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 )
 
@@ -166,59 +168,36 @@ func checkSolveAlgo(a string) bool {
 	return false
 }
 
-// drawShortestPathRandomCells draws the shortest distance between two random cells
-//func drawShortestPathRandomCells(g *grid.Grid) {
-//	fromCell = g.RandomCell()
-//	toCell = g.RandomCell()
-//	log.Printf("Finding shortest path: [%v] -> [%v]", fromCell, toCell)
-//
-//	// For coloring
-//	g.SetDistanceColors(fromCell)
-//
-//	// calculates and sets the path between cells
-//	g.SetPath(fromCell, toCell)
-//}
-
-// drawLongestPath draws one possible longest path through the maze
-//func drawLongestPath(g *grid.Grid) {
-//	var dist int
-//	dist, fromCell, toCell, _ = g.LongestPath()
-//	g.SetDistanceColors(fromCell)
-//	g.SetPath(fromCell, toCell)
-//	log.Printf("Longest path from [%v]->[%v] = %v", fromCell, toCell, dist)
-//
-//}
-
 func SaveImage(r *sdl.Renderer, window *sdl.Window, path string) error {
 	return errors.New("exporting to file doesn't work yet...")
 
-	//log.Printf("exporting maze to: %v", path)
-	//if path == "" {
-	//	return errors.New("path to file is required!")
-	//}
-	//
-	//w, h, err := r.GetRendererOutputSize()
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//pixelFormat, err := window.GetPixelFormat()
-	//if err != nil {
-	//	return err
-	//}
-	//pixels := s.Pixels()
-	//if err := r.ReadPixels(nil, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
-	//	return err
-	//}
-	//
-	//img.SavePNG(s, path)
-	//s.Free()
-	//return nil
+	log.Printf("exporting maze to: %v", path)
+	if path == "" {
+		return errors.New("path to file is required!")
+	}
+
+	w, h, err := r.GetRendererOutputSize()
+	if err != nil {
+		return err
+	}
+
+	s, err := sdl.CreateRGBSurface(0, int32(w), int32(h), 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000)
+	if err != nil {
+		return err
+	}
+
+	pixelFormat, err := window.GetPixelFormat()
+	if err != nil {
+		return err
+	}
+	pixels := s.Pixels()
+	if err := r.ReadPixels(nil, pixelFormat, unsafe.Pointer(&pixels), int(s.Pitch)); err != nil {
+		return err
+	}
+
+	img.SavePNG(s, path)
+	s.Free()
+	return nil
 }
 
 // showMazeStats shows some states about the maze
@@ -227,20 +206,6 @@ func showMazeStats(m *maze.Maze) {
 	log.Printf(">> Dimensions: [%v, %v]", x, y)
 	log.Printf(">> Dead Ends: %v", len(m.DeadEnds()))
 }
-
-//func waitGUI() {
-//L:
-//	for {
-//		event := sdl.WaitEvent()
-//		switch event.(type) {
-//		case *sdl.QuitEvent:
-//			break L
-//		}
-//
-//	}
-//
-//	sdl.Quit()
-//}
 
 // Solve runs the solvers against the grid.
 func Solve(m *maze.Maze) (solvealgos.Algorithmer, error) {
@@ -275,6 +240,7 @@ func main() {
 	//filename, _ := osext.Executable()
 	//fmt.Println(filename)
 
+	// must be run like this to keep drawing functions in main thread
 	sdl.Main(run)
 }
 
@@ -368,8 +334,16 @@ func run() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	setupSDL()
 
-	defer func() { sdl.Do(func() { w.Destroy() }) }()
-	defer func() { sdl.Do(func() { r.Destroy() }) }()
+	defer func() {
+		sdl.Do(func() {
+			w.Destroy()
+		})
+	}()
+	defer func() {
+		sdl.Do(func() {
+			r.Destroy()
+		})
+	}()
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -379,17 +353,8 @@ func run() {
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// {Predefined actions to run}
+	// Background Music
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	//if *actionToRun != "" {
-	//	if action, ok := actions[*actionToRun]; !ok {
-	//		log.Fatalf("no such action [%v]", *actionToRun)
-	//	} else {
-	//		action(g)
-	//	}
-	//
-	//}
-
 	if *bgMusic != "" {
 
 		if err := mix.Init(mix.INIT_MP3); err != nil {
@@ -428,9 +393,7 @@ func run() {
 	go func() {
 		log.Printf("running generator %v", *createAlgo)
 
-		// TODO(dan): Change Apply to not return the maze, causes a race.
-		_, err = algo.Apply(m, delay)
-		if err != nil {
+		if err := algo.Apply(m, delay); err != nil {
 			log.Fatalf(err.Error())
 		}
 		if err := algo.CheckGrid(m); err != nil {
@@ -636,12 +599,12 @@ func run() {
 		runSolver.Set()
 		wd.Wait()
 	}
-}
 
-//// Save to file
-//if *exportFile != "" {
-//	log.Printf("saving image to: %v", *exportFile)
-//	if err := SaveImage(r, w, *exportFile); err != nil {
-//		log.Printf("error saving file: %v", err)
-//	}
-//}
+	//// Save to file
+	if *exportFile != "" {
+		log.Printf("saving image to: %v", *exportFile)
+		if err := SaveImage(r, w, *exportFile); err != nil {
+			log.Printf("error saving file: %v", err)
+		}
+	}
+}

@@ -43,7 +43,7 @@ func TestApply(t *testing.T) {
 			}
 		}
 
-		if g, err = a.Apply(g, 0); err != nil {
+		if err := a.Apply(g, 0); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 

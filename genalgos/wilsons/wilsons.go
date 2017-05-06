@@ -19,7 +19,7 @@ type Wilsons struct {
 }
 
 // Apply applies wilson's algorithm to generate the maze.
-func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
+func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) error {
 
 	defer genalgos.TimeTrack(g, time.Now())
 
@@ -74,5 +74,5 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error) {
 	}
 
 	a.Cleanup(g)
-	return g, nil
+	return nil
 }

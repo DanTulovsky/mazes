@@ -12,7 +12,7 @@ import (
 )
 
 type Algorithmer interface {
-	Apply(g *maze.Maze, delay time.Duration) (*maze.Maze, error)
+	Apply(g *maze.Maze, delay time.Duration) error
 	Cleanup(g *maze.Maze)
 	CheckGrid(g *maze.Maze) error
 }
