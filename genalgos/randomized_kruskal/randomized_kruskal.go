@@ -16,8 +16,8 @@ type state struct {
 
 func newState(m *maze.Maze) *state {
 	neighbors := NewNeighborStack()
-	setForCell := make(map[*maze.Cell]int, 0)
-	cellsInSet := make(map[int][]*maze.Cell, 0)
+	setForCell := make(map[*maze.Cell]int, 5000)
+	cellsInSet := make(map[int][]*maze.Cell, 5000)
 
 	s := &state{
 		maze:       m,

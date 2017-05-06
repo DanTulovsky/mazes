@@ -275,10 +275,10 @@ func main() {
 	//filename, _ := osext.Executable()
 	//fmt.Println(filename)
 
-	os.Exit(run())
+	sdl.Main(run)
 }
 
-func run() int {
+func run() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -609,14 +609,14 @@ func run() int {
 		runSolver.Set()
 
 		for running.IsSet() {
-			//sdl.Do(func() {
-			//	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			//		switch event.(type) {
-			//		case *sdl.QuitEvent:
-			//			running.UnSet()
-			//		}
-			//	}
-			//})
+			sdl.Do(func() {
+				for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+					switch event.(type) {
+					case *sdl.QuitEvent:
+						running.UnSet()
+					}
+				}
+			})
 
 			// Displays the main maze, no paths or other markers
 			sdl.Do(func() {
@@ -636,7 +636,6 @@ func run() int {
 		runSolver.Set()
 		wd.Wait()
 	}
-	return 0
 }
 
 //// Save to file
