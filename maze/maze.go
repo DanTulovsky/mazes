@@ -158,7 +158,7 @@ func (m *Maze) Braid(p float64) {
 	log.Printf("Removing dead ends with probability %v", p)
 
 	for _, c := range m.DeadEnds() {
-		if utils.Random(0, 100) > int(p*100) {
+		if utils.Random(0, 100) >= int(p*100) {
 			continue
 		}
 

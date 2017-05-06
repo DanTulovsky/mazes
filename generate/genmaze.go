@@ -46,10 +46,11 @@ var (
 	solver solvealgos.Algorithmer
 
 	// maze
-	maskImage    = flag.String("mask_image", "", "file name of mask image")
-	allowWeaving = flag.Bool("weaving", false, "allow weaving")
-	braid        = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
-	randomFromTo = flag.Bool("random_path", false, "show a random path through the maze")
+	maskImage          = flag.String("mask_image", "", "file name of mask image")
+	allowWeaving       = flag.Bool("weaving", false, "allow weaving")
+	weavingProbability = flag.Float64("weaving_probability", 1, "controls the amount of weaving that happens, with 1 being the max")
+	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
+	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
 
 	// dimensions
 	rows    = flag.Int("r", 30, "number of rows in the maze")
@@ -263,7 +264,9 @@ func run() {
 
 	if *allowWeaving && *wallSpace == 0 {
 		// weaving requires some wall space to look nice
-		*wallSpace = 2
+		*wallSpace = 4
+		log.Printf("weaving enabled, setting wall_space to non-zero value (%d)", *wallSpace)
+
 	}
 
 	if *showDistanceColors && *bgColor == "white" {
@@ -296,6 +299,7 @@ func run() {
 		PathColor:            colors.GetColor(*pathColor),
 		VisitedCellColor:     colors.GetColor(*visitedCellColor),
 		AllowWeaving:         *allowWeaving,
+		WeavingProbability:   *weavingProbability,
 		MarkVisitedCells:     *markVisitedCells,
 		CurrentLocationColor: colors.GetColor(*currentLocationColor),
 		AvatarImage:          *avatarImage,
@@ -406,8 +410,8 @@ func run() {
 		}
 
 		// braid if requested
-		if *braid > 0 {
-			m.Braid(*braid)
+		if *braidProbability > 0 {
+			m.Braid(*braidProbability)
 		}
 
 		if *showStats {

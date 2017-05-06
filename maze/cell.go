@@ -746,7 +746,7 @@ func (c *Cell) Neighbors() []*Cell {
 	}
 
 	// if weaving is allowed, add additional possibilities for neighbors
-	if c.config.AllowWeaving {
+	if c.config.AllowWeaving && utils.Random(0, 100) <= int(c.config.WeavingProbability*100) {
 		if c.canTunnelNorth() {
 			n = append(n, c.North().North())
 		}
