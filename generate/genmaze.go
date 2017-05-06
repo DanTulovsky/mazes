@@ -495,7 +495,7 @@ func run() {
 	}
 	wd.Wait()
 
-	if *showFromToColors {
+	if *showFromToColors || *solveAlgo != "" {
 		// Set the colors for the from and to cells
 		m.SetFromToColors(fromCell, toCell)
 	}

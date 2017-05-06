@@ -592,12 +592,12 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		// TODO(dan): Change this to draw path between any two cells
 		segment.DrawPath(r, m, solvepathCells, isLast, isSolution) // solution is colored by a different color
 
-		if isLast {
-			segment.DrawCurrentLocation(r, m.getAvatar())
-		}
-
 		if markVisited {
 			cell.DrawVisited(r)
+		}
+
+		if isLast {
+			segment.DrawCurrentLocation(r, m.getAvatar())
 		}
 
 	}

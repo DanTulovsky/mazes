@@ -1,10 +1,12 @@
 package manual
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"mazes/maze"
 	"mazes/solvealgos"
+	"strings"
 	"time"
 )
 
@@ -36,6 +38,7 @@ func getNextCell(currentCell *maze.Cell, key string) (*maze.Cell, error) {
 }
 
 func (a *Manual) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
+	defer solvealgos.TimeTrack(a, time.Now())
 
 	log.Print("Solver is human...")
 	var travelPath = m.TravelPath()
@@ -54,16 +57,25 @@ func (a *Manual) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Dur
 
 		m.SetPathFromTo(fromCell, currentCell, travelPath)
 
-		// get nextCell from user input based on key press
-		key := <-keyInput
-		// log.Printf("got key: %s", key)
-		nextCell, err := getNextCell(currentCell, key)
+		var nextCell *maze.Cell
+		var err error = errors.New("no new cell yet")
 
-		if err != nil {
-			log.Printf("cannot move %s: %v", key, err)
-			continue
+		for err != nil {
+			// get nextCell from user input based on key press
+			key := <-keyInput
+			switch strings.ToLower(key) {
+			case "q":
+				return m, errors.New("received cancel request, exiting...")
+			default:
+				nextCell, err = getNextCell(currentCell, key)
+
+			}
+
+			if err != nil {
+				log.Printf("cannot move %s: %v", key, err)
+				continue
+			}
 		}
-
 		facing = currentCell.GetFacingDirection(nextCell)
 		currentCell = nextCell
 	}
