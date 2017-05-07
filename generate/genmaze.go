@@ -101,7 +101,7 @@ var (
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
-	fromCellStr = flag.String("from_cell", "", "path from cell")
+	fromCellStr = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
 	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 
 	winWidth, winHeight int
@@ -427,23 +427,26 @@ func run() {
 		//}
 
 		if *fromCellStr != "" {
-			from := strings.Split(*fromCellStr, ",")
-			if len(from) != 2 {
-				log.Fatalf("%v is not a valid coordinate", *fromCellStr)
-			}
-			x, _ := strconv.Atoi(from[0])
-			y, _ := strconv.Atoi(from[1])
-			fromCell, err = m.Cell(x, y, 0)
-			if err != nil {
-				log.Fatalf("invalid fromCell: %v", err)
+			if *fromCellStr == "min" {
+				fromCell = m.SmallestCell()
+			} else {
+				from := strings.Split(*fromCellStr, ",")
+				if len(from) != 2 {
+					log.Fatalf("%v is not a valid coordinate", *fromCellStr)
+				}
+				x, _ := strconv.Atoi(from[0])
+				y, _ := strconv.Atoi(from[1])
+				fromCell, err = m.Cell(x, y, 0)
+				if err != nil {
+					log.Fatalf("invalid fromCell: %v", err)
+				}
 			}
 		}
 
 		if *toCellStr != "" {
 			var x, y int
 			if *toCellStr == "max" {
-				x = *columns - 1
-				y = *rows - 1
+				toCell = m.LargestCell()
 			} else {
 				from := strings.Split(*toCellStr, ",")
 				if len(from) != 2 {
@@ -451,10 +454,10 @@ func run() {
 				}
 				x, _ = strconv.Atoi(from[0])
 				y, _ = strconv.Atoi(from[1])
-			}
-			toCell, err = m.Cell(x, y, 0)
-			if err != nil {
-				log.Fatalf("invalid toCell: %v", err)
+				toCell, err = m.Cell(x, y, 0)
+				if err != nil {
+					log.Fatalf("invalid toCell: %v", err)
+				}
 			}
 		}
 

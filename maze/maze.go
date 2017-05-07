@@ -675,15 +675,44 @@ func (m *Maze) OrderedCells() []*Cell {
 	return cells
 }
 
+// LargestCell returns the "largest" cell that is in the grid (not orphaned)
+// Used as "max" value in genmaze.go
+func (m *Maze) LargestCell() *Cell {
+
+	var c *Cell
+
+	for y := m.rows - 1; y >= 0; y-- {
+		for x := m.columns - 1; x >= 0; x-- {
+			cell := m.cells[x][y]
+			if !cell.IsOrphan() {
+				c = cell
+			}
+		}
+	}
+
+	return c
+}
+
+// SmallestCell returns the "smallest" cell that is in the grid (not orphaned)
+// Used as "min" value in genmaze.go
+func (m *Maze) SmallestCell() *Cell {
+
+	var c *Cell
+
+	for y := m.rows - 1; y >= 0; y-- {
+		for x := m.columns - 1; x >= 0; x-- {
+			cell := m.cells[x][y]
+			if !cell.IsOrphan() {
+				return c
+			}
+		}
+	}
+
+	return nil
+}
+
 // Cells returns a list of un-orphanded cells in the grid
 func (m *Maze) Cells() map[*Cell]bool {
-
-	// mazeCells := m.getMazeCells()
-
-	//if len(mazeCells) != 0 {
-	//	return mazeCells
-	//}
-
 	cells := make(map[*Cell]bool)
 	for y := m.rows - 1; y >= 0; y-- {
 		for x := m.columns - 1; x >= 0; x-- {
@@ -904,7 +933,7 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 	for cell := range m.Cells() {
 		d, err := c.distances.Get(cell)
 		if err != nil {
-			log.Printf("failed to get distance from %v to %v", c, cell)
+			log.Printf("failed to get distance from %v to %v: %v", c, cell, err)
 			return
 		}
 		// dColor := d - int(cell.Weight()) // ignore weights when coloring distance

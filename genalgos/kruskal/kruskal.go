@@ -108,17 +108,17 @@ func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	s := newState(m)
-	// s.neighbors.Shuffle()
 
 	// add crossings (under-passages) as required
 	for x := 0; x < m.Size(); x++ {
-		if utils.Random(0, 100) >= int(m.Config().WeavingProbability*100) {
+		if !m.Config().AllowWeaving || utils.Random(0, 100) >= int(m.Config().WeavingProbability*100) {
 			continue
 		}
-		c := utils.Random(1, m.Config().Columns-1)
-		r := utils.Random(1, m.Config().Rows-1)
-		cell, _ := m.Cell(c, r, 0)
-		s.addCrossing(cell)
+
+		cell := m.RandomCell()
+		if cell.East() != nil && cell.West() != nil && cell.North() != nil && cell.South() != nil {
+			s.addCrossing(cell)
+		}
 	}
 
 	for s.neighbors.Size() > 0 {

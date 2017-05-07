@@ -59,7 +59,7 @@ func TestSolveAldousBroder(t *testing.T) {
 		g.Reset()
 		fromCell := g.RandomCell()
 		toCell := g.RandomCell()
-		if g, err = solv.Solve(g, fromCell, toCell, 0); err != nil {
+		if g, err = solv.Solve(g, fromCell, toCell, 0, nil); err != nil {
 			log.Printf("\n%v\n", g)
 			t.Fatalf("failed to solve: %v", err)
 		}
@@ -100,7 +100,7 @@ func TestSolveRecursiveBacktracker(t *testing.T) {
 		m.Reset()
 		fromCell := m.RandomCell()
 		toCell := m.RandomCell()
-		if m, err = solv.Solve(m, fromCell, toCell, 0); err != nil {
+		if m, err = solv.Solve(m, fromCell, toCell, 0, nil); err != nil {
 			log.Printf("\n%v\n", m)
 			t.Fatalf("failed to solve: %v", err)
 		}

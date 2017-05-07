@@ -317,43 +317,6 @@ func (c *Cell) FurthestCell() (*Cell, int) {
 }
 
 // Distances finds the distances of all cells to *this* cell
-// Implements simplified Dijkstra’s algorithm
-// Shades the cells
-//func (c *Cell) Distances() *Distances {
-//	if c.distances.cells.Len() > 1 {
-//		// Already have this info
-//		return c.distances
-//	}
-//
-//	frontier := []*Cell{c}
-//
-//	for len(frontier) > 0 {
-//		newFrontier := []*Cell{}
-//
-//		for _, cell := range frontier {
-//
-//			for _, l := range cell.Links() {
-//				if _, err := c.distances.Get(l); err == nil {
-//					continue // already been
-//				}
-//				d, err := c.distances.Get(cell)
-//				if err != nil {
-//					log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
-//				}
-//
-//				// sets distance to new cell
-//				c.distances.Set(l, d+1)
-//				newFrontier = append(newFrontier, l)
-//
-//			}
-//		}
-//		frontier = newFrontier
-//
-//	}
-//	return c.distances
-//}
-
-// Distances finds the distances of all cells to *this* cell
 // Includes weight information
 // Shades the cells
 func (c *Cell) Distances() *Distances {
@@ -370,9 +333,7 @@ func (c *Cell) Distances() *Distances {
 		cell := heap.Pop(&pending).(*Cell)
 
 		for _, l := range cell.Links() {
-
 			d, err := c.distances.Get(cell)
-			// log.Printf("d: %v", d)
 			if err != nil {
 				log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 			}
