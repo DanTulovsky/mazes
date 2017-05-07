@@ -108,6 +108,7 @@ func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	s := newState(m)
+	cells := maze.CellMapKeys(m.Cells())
 
 	// add crossings (under-passages) as required
 	for x := 0; x < m.Size(); x++ {
@@ -115,8 +116,7 @@ func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 			continue
 		}
 
-		// TODO(dant) I think this is the slow part here, fix.
-		cell := m.RandomCell()
+		cell := cells[utils.Random(0, len(cells))]
 		if cell.East() != nil && cell.West() != nil && cell.North() != nil && cell.South() != nil {
 			s.addCrossing(cell)
 		}

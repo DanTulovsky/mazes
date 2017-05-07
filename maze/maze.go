@@ -613,7 +613,7 @@ func (m *Maze) Cell(x, y, z int) (*Cell, error) {
 	return m.cells[x][y], nil
 }
 
-func cellMapKeys(m map[*Cell]bool) []*Cell {
+func CellMapKeys(m map[*Cell]bool) []*Cell {
 	var keys []*Cell
 	for key := range m {
 		keys = append(keys, key)
@@ -623,7 +623,9 @@ func cellMapKeys(m map[*Cell]bool) []*Cell {
 
 // RandomCell returns a random cell out of all non-orphaned cells
 func (m *Maze) RandomCell() *Cell {
-	cells := cellMapKeys(m.Cells())
+	// cells := cellMapKeys(m.Cells())
+	// cells := m.OrderedCells()
+	cells := CellMapKeys(m.getMazeCells())
 
 	return cells[utils.Random(0, len(cells))]
 }
@@ -696,7 +698,6 @@ func (m *Maze) LargestCell() *Cell {
 // SmallestCell returns the "smallest" cell that is in the grid (not orphaned)
 // Used as "min" value in genmaze.go
 func (m *Maze) SmallestCell() *Cell {
-
 	var c *Cell
 
 	for y := m.rows - 1; y >= 0; y-- {
@@ -711,7 +712,7 @@ func (m *Maze) SmallestCell() *Cell {
 	return nil
 }
 
-// Cells returns a list of un-orphanded cells in the grid
+// Cells returns a list of un-orphaned cells in the grid
 func (m *Maze) Cells() map[*Cell]bool {
 	cells := make(map[*Cell]bool)
 	for y := m.rows - 1; y >= 0; y-- {
