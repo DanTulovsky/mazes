@@ -7,6 +7,7 @@ import (
 	"mazes/genalgos/bintree"
 	"mazes/genalgos/hint_and_kill"
 	"mazes/genalgos/kruskal"
+	"mazes/genalgos/prim"
 	gen_rb "mazes/genalgos/recursive_backtracker"
 	"mazes/genalgos/sidewinder"
 	"mazes/genalgos/wilsons"
@@ -23,6 +24,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"aldous-broder":         &aldous_broder.AldousBroder{},
 	"bintree":               &bintree.Bintree{},
 	"hunt-and-kill":         &hint_and_kill.HuntAndKill{},
+	"prim":                  &prim.Prim{},
 	"randomized-kruskal":    &kruskal.Kruskal{},
 	"recursive-backtracker": &gen_rb.RecursiveBacktracker{},
 	"sidewinder":            &sidewinder.Sidewinder{},

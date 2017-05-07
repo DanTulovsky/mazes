@@ -685,6 +685,19 @@ func (c *Cell) RandomUnLink() *Cell {
 	return keys[utils.Random(0, len(keys))]
 }
 
+// UnLinked returns all cells not linked anywhere, but ones that are neighbors
+func (c *Cell) UnLinked() []*Cell {
+	var keys []*Cell
+	for _, k := range c.Neighbors() {
+		if !c.Linked(k) {
+			if len(k.Links()) == 0 {
+				keys = append(keys, k)
+			}
+		}
+	}
+	return keys
+}
+
 // RandomUnLinkPreferDeadends returns a random cell not linked to this one, but one that is a neighbor
 // It prefers returning a cell that is itself a deadend
 func (c *Cell) RandomUnLinkPreferDeadends() *Cell {
