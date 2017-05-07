@@ -9,6 +9,13 @@ import (
 	"mazes/utils"
 )
 
+const (
+	MIN_ROOM_HEIGHT = 5
+	MIN_ROOM_WIDTH  = 5
+	// 1 / 4 chances a room with above size will be left alone and not subdivided further
+	ROOM_SIZE_CHANCE_RATIO = 4
+)
+
 type RecursiveDivision struct {
 	genalgos.Common
 }
@@ -30,11 +37,18 @@ func initMaze(m *maze.Maze) {
 
 }
 
+func shouldStop(height, width int) bool {
+	if height <= 1 || width <= 1 ||
+		height < MIN_ROOM_HEIGHT && width < MIN_ROOM_WIDTH &&
+			utils.Random(0, ROOM_SIZE_CHANCE_RATIO) == 0 {
+		return true
+	}
+	return false
+}
+
 func divide(m *maze.Maze, row, column, height, width int, delay time.Duration) error {
 
-	if height <= 1 || width <= 1 ||
-		height < 5 && width < 5 &&
-			utils.Random(0, 4) == 0 {
+	if shouldStop(height, width) {
 		return nil
 	}
 
