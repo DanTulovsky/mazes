@@ -270,17 +270,24 @@ func run() {
 	}
 
 	if *showDistanceColors && *bgColor == "white" {
-		log.Print("Setting bgcolor to 'black' and adjusting wall color since distance colors don't work with white right now.")
 		*bgColor = "black"
 		if *wallColor == "black" {
 			*wallColor = "white"
 		}
+		log.Printf("Setting bgcolor to %v and adjusting wall color to %v since distance colors don't work with white right now.", *bgColor, *wallColor)
+
 	}
 
 	if *bgColor == "black" {
 		if *wallColor == "black" {
 			*wallColor = "white"
 		}
+	}
+
+	if *cellWidth == 2 && *wallWidth == 2 {
+
+		*wallWidth = 1
+		log.Printf("cell_width and wall_width both 2, adjusting wall_width to %v", *wallWidth)
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
