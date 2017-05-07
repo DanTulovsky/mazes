@@ -115,6 +115,7 @@ func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 			continue
 		}
 
+		// TODO(dant) I think this is the slow part here, fix.
 		cell := m.RandomCell()
 		if cell.East() != nil && cell.West() != nil && cell.North() != nil && cell.South() != nil {
 			s.addCrossing(cell)
