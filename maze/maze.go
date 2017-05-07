@@ -20,6 +20,8 @@ import (
 
 	"errors"
 
+	"runtime/debug"
+
 	"github.com/veandco/go-sdl2/sdl_image"
 )
 
@@ -174,6 +176,7 @@ func (m *Maze) Braid(p float64) {
 // Link links c1 to c2 to its neighbor (adds passage)
 func (m *Maze) Link(c1, c2 *Cell) {
 	if c1 == nil || c2 == nil {
+		debug.PrintStack()
 		log.Fatalf("failure linking %v to %v!", c1, c2)
 	}
 

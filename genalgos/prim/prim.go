@@ -58,5 +58,6 @@ func (a *Prim) Apply(m *maze.Maze, delay time.Duration) error {
 
 	}
 
+	a.Cleanup(m)
 	return nil
 }
