@@ -606,6 +606,7 @@ func run() {
 						// sdl.SDLK_RIGHT; right
 						// sdl.SDLK_LEFT; left
 						key := sdl.GetKeyName(event.(*sdl.KeyDownEvent).Keysym.Sym)
+						// send pressed key to channel for solve algo to pick up
 						keyInput <- key
 					}
 				}
