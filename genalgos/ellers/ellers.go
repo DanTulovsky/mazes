@@ -1,4 +1,7 @@
+// Package ellers implements eller's algorithm for maze generation
 package ellers
+
+// Weaving does not work for this algorithm because it never references cell.neighbors()
 
 import (
 	"math/rand"
@@ -126,7 +129,6 @@ func (a *Ellers) Apply(m *maze.Maze, delay time.Duration) error {
 					}
 				}
 			}
-
 			// move on to next row
 			s = nextRow
 		}

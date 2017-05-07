@@ -1,3 +1,4 @@
+// Package prim implements prim's algorithm for maze generation
 package prim
 
 import (
