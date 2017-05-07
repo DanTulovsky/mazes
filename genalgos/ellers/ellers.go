@@ -93,6 +93,8 @@ func (a *Ellers) Apply(m *maze.Maze, delay time.Duration) error {
 	for _, row := range m.Rows() {
 		// pick which cells to merge
 		for _, c := range row {
+			time.Sleep(delay) // animation delay
+
 			if c.West() == nil {
 				continue
 			}
@@ -117,6 +119,8 @@ func (a *Ellers) Apply(m *maze.Maze, delay time.Duration) error {
 			nextRow := s.Next()
 
 			for _, cells := range s.CellsInSet() {
+				time.Sleep(delay) // animation delay
+
 				// shuffle list of cells
 				shuffleCells(cells)
 				for i, c := range cells {

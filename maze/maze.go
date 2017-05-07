@@ -609,11 +609,11 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 }
 
 // Cell returns the cell at r,c
-func (m *Maze) Cell(x, y, z int) (*Cell, error) {
-	if x < 0 || x >= m.columns || y < 0 || y >= m.rows {
-		return nil, fmt.Errorf("(%v, %v) is outside the grid", x, y)
+func (m *Maze) Cell(column, row, z int) (*Cell, error) {
+	if column < 0 || column >= m.columns || row < 0 || row >= m.rows {
+		return nil, fmt.Errorf("(%v, %v) is outside the grid", column, row)
 	}
-	return m.cells[x][y], nil
+	return m.cells[column][row], nil
 }
 
 func CellMapKeys(m map[*Cell]bool) []*Cell {

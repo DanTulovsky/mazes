@@ -10,6 +10,7 @@ import (
 	"mazes/genalgos/kruskal"
 	"mazes/genalgos/prim"
 	gen_rb "mazes/genalgos/recursive_backtracker"
+	"mazes/genalgos/recursive_division"
 	"mazes/genalgos/sidewinder"
 	"mazes/genalgos/wilsons"
 	"mazes/solvealgos"
@@ -29,6 +30,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"kruskal":               &kruskal.Kruskal{},
 	"prim":                  &prim.Prim{},
 	"recursive-backtracker": &gen_rb.RecursiveBacktracker{},
+	"recursive-division":    &recursive_division.RecursiveDivision{},
 	"sidewinder":            &sidewinder.Sidewinder{},
 	"wilsons":               &wilsons.Wilsons{},
 }
