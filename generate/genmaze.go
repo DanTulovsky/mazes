@@ -476,6 +476,8 @@ func run() {
 			_, fromCell, toCell, _ = m.LongestPath()
 		}
 
+		log.Printf("Path: %v -> %v", fromCell, toCell)
+
 		m.SetDistanceInfo(fromCell)
 
 		generating.UnSet()

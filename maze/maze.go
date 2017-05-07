@@ -680,19 +680,16 @@ func (m *Maze) OrderedCells() []*Cell {
 // LargestCell returns the "largest" cell that is in the grid (not orphaned)
 // Used as "max" value in genmaze.go
 func (m *Maze) LargestCell() *Cell {
-
-	var c *Cell
-
 	for y := m.rows - 1; y >= 0; y-- {
 		for x := m.columns - 1; x >= 0; x-- {
 			cell := m.cells[x][y]
 			if !cell.IsOrphan() {
-				c = cell
+				return cell
 			}
 		}
 	}
 
-	return c
+	return nil
 }
 
 // SmallestCell returns the "smallest" cell that is in the grid (not orphaned)
@@ -704,12 +701,13 @@ func (m *Maze) SmallestCell() *Cell {
 		for x := m.columns - 1; x >= 0; x-- {
 			cell := m.cells[x][y]
 			if !cell.IsOrphan() {
-				return c
+				c = cell
+
 			}
 		}
 	}
 
-	return nil
+	return c
 }
 
 // Cells returns a list of un-orphaned cells in the grid
