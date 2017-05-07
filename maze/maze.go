@@ -1,28 +1,22 @@
 package maze
 
 import (
+	"errors"
 	"fmt"
 	"image"
+	_ "image/png"
 	"log"
-	"math/rand"
-	"mazes/utils"
-	"os"
-	"time"
-
-	"mazes/colors"
-
 	"math"
+	"math/rand"
+	"os"
+	"runtime/debug"
+	"time"
 
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
-
-	_ "image/png"
-
-	"errors"
-
-	"runtime/debug"
-
 	"github.com/veandco/go-sdl2/sdl_image"
+	"mazes/colors"
+	"mazes/utils"
 )
 
 func init() {
@@ -626,9 +620,9 @@ func CellMapKeys(m map[*Cell]bool) []*Cell {
 
 // RandomCell returns a random cell out of all non-orphaned cells
 func (m *Maze) RandomCell() *Cell {
-	// cells := cellMapKeys(m.Cells())
+	cells := CellMapKeys(m.Cells())
 	// cells := m.OrderedCells()
-	cells := CellMapKeys(m.getMazeCells())
+	// cells := CellMapKeys(m.getMazeCells())
 
 	return cells[utils.Random(0, len(cells))]
 }

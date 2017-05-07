@@ -2,10 +2,11 @@ package recursive_division
 
 import (
 	"log"
+	"time"
+
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type RecursiveDivision struct {
@@ -31,7 +32,9 @@ func initMaze(m *maze.Maze) {
 
 func divide(m *maze.Maze, row, column, height, width int, delay time.Duration) error {
 
-	if height <= 1 || width <= 1 {
+	if height <= 1 || width <= 1 ||
+		height < 5 && width < 5 &&
+			utils.Random(0, 4) == 0 {
 		return nil
 	}
 
@@ -106,5 +109,12 @@ func (a *RecursiveDivision) Apply(m *maze.Maze, delay time.Duration) error {
 	divide(m, 0, 0, height, width, delay)
 
 	a.Cleanup(m)
+	return nil
+}
+
+func (a *RecursiveDivision) CheckGrid(m *maze.Maze) error {
+	if !m.Config().SkipGridCheck {
+		return a.Common.CheckGrid(m)
+	}
 	return nil
 }

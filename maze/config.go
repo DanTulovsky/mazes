@@ -18,6 +18,7 @@ type Config struct {
 	MarkVisitedCells     bool
 	ShowDistanceValues   bool
 	ShowDistanceColors   bool
+	SkipGridCheck        bool
 	OrphanMask           []Location // these cells are turned off and are not part of the grid
 	AvatarImage          string
 	VisitedCellColor     colors.Color

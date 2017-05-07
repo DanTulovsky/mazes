@@ -7,16 +7,10 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
-
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	"mazes/solvealgos"
-
-	"strings"
 
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
@@ -24,6 +18,10 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	"mazes/solvealgos"
 )
 
 // For gui support
@@ -87,8 +85,9 @@ var (
 	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 
 	// algo
-	createAlgo = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo  = flag.String("solve_algo", "", "algorithm to solve the maze")
+	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
+	solveAlgo     = flag.String("solve_algo", "", "algorithm to solve the maze")
+	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
 
 	// misc
 	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
@@ -300,6 +299,7 @@ func run() {
 		WallWidth:            *wallWidth,
 		WallSpace:            *wallSpace,
 		PathWidth:            *pathWidth,
+		SkipGridCheck:        *skipGridCheck,
 		BgColor:              colors.GetColor(*bgColor),
 		BorderColor:          colors.GetColor(*borderColor),
 		WallColor:            colors.GetColor(*wallColor),

@@ -2,9 +2,10 @@ package aldous_broder
 
 import (
 	"fmt"
+	"testing"
+
 	"mazes/maze"
 	"mazes/utils"
-	"testing"
 )
 
 var applytests = []struct {
@@ -33,7 +34,7 @@ func setup() *AldousBroder {
 func TestApply(t *testing.T) {
 
 	for _, tt := range applytests {
-		g, err := maze.NewMaze(tt.config)
+		m, err := maze.NewMaze(tt.config)
 		a := setup()
 
 		if err != nil {
@@ -44,12 +45,12 @@ func TestApply(t *testing.T) {
 			}
 		}
 
-		if err := a.Apply(g, 0); err != nil {
+		if err := a.Apply(m, 0); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 
-		if err := a.CheckGrid(g); err != nil {
-			fmt.Printf("%v\n", g)
+		if err := a.CheckGrid(m); err != nil {
+			fmt.Printf("%v\n", m)
 			t.Fatalf("grid is not valid: %v", err)
 		}
 	}
