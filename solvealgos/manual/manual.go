@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mazes/maze"
-	"mazes/solvealgos"
 	"strings"
 	"time"
+
+	"mazes/maze"
+	"mazes/solvealgos"
 )
 
 type Manual struct {
@@ -72,7 +73,7 @@ func (a *Manual) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Dur
 			}
 
 			if err != nil {
-				log.Printf("cannot move %s: %v", key, err)
+				log.Print(err)
 				continue
 			}
 		}

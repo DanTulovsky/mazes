@@ -106,6 +106,15 @@ var (
 	winWidth, winHeight int
 )
 
+// Send returns true if it was able to send t on channel c.
+// It returns false if c is closed.
+// This isn't great, but for simplicity here.
+func Send(c chan string, t string) (ok bool) {
+	defer func() { recover() }()
+	c <- t
+	return true
+}
+
 func setupSDL() {
 	if !*showGUI {
 		return
@@ -536,6 +545,7 @@ func run() {
 				log.Print(err)
 			}
 		}
+		close(keyInput)
 
 		// Save picture of solved maze
 		if *exportFile != "" {
@@ -596,6 +606,7 @@ func run() {
 				for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 					switch event.(type) {
 					case *sdl.QuitEvent:
+						log.Print("received quit request, exiting...")
 						running.UnSet()
 
 					case *sdl.KeyDownEvent:
@@ -607,7 +618,7 @@ func run() {
 						// sdl.SDLK_LEFT; left
 						key := sdl.GetKeyName(event.(*sdl.KeyDownEvent).Keysym.Sym)
 						// send pressed key to channel for solve algo to pick up
-						keyInput <- key
+						Send(keyInput, key)
 					}
 				}
 			})
@@ -631,11 +642,4 @@ func run() {
 		wd.Wait()
 	}
 
-	//// Save to file
-	if *exportFile != "" {
-		log.Printf("saving image to: %v", *exportFile)
-		if err := SaveImage(r, w, *exportFile); err != nil {
-			log.Printf("error saving file: %v", err)
-		}
-	}
 }

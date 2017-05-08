@@ -1,10 +1,9 @@
 package maze
 
 import (
-	"mazes/colors"
-
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
+	"mazes/colors"
 )
 
 // PathSegment is one segement of a path. A cell, and metadata.
@@ -108,8 +107,8 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 		colors.SetDrawColor(c.config.CurrentLocationColor, r)
 		// draw a standard box
 		sq := &sdl.Rect{
-			int32(c.x*PixelsPerCell + PixelsPerCell/2),
-			int32(c.y*PixelsPerCell + PixelsPerCell/2),
+			int32(c.x*PixelsPerCell + PixelsPerCell/4),
+			int32(c.y*PixelsPerCell + PixelsPerCell/4),
 			int32(PixelsPerCell/2 - c.wallWidth/2),
 			int32(PixelsPerCell/2 - c.wallWidth/2)}
 		r.FillRect(sq)
