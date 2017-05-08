@@ -1,9 +1,10 @@
 package recursive_division
 
 import (
+	"testing"
+
 	"mazes/maze"
 	"mazes/utils"
-	"testing"
 )
 
 var applytests = []struct {
@@ -12,14 +13,16 @@ var applytests = []struct {
 }{
 	{
 		config: &maze.Config{
-			Rows:    utils.Random(5, 40),
-			Columns: utils.Random(5, 40),
+			Rows:          utils.Random(5, 40),
+			Columns:       utils.Random(5, 40),
+			SkipGridCheck: true, // here because rooms are enabled
 		},
 		wantErr: false,
 	}, {
 		config: &maze.Config{
-			Rows:    10,
-			Columns: 15,
+			Rows:          10,
+			Columns:       15,
+			SkipGridCheck: true,
 		},
 		wantErr: false,
 	},
