@@ -419,7 +419,6 @@ func run() {
 		}
 
 		// Special handling for some algos for now
-		log.Printf("%v", *createAlgo)
 		if *createAlgo == "recursive-division" {
 			log.Printf("disabling grid check for %s since rooms are defined", *createAlgo)
 			m.Config().SkipGridCheck = true // rooms are defined, so it's not a perfect maze.
