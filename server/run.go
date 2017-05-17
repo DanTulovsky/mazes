@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -16,10 +17,26 @@ import (
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_mixer"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"mazes/algos"
 	"mazes/colors"
 	"mazes/maze"
+	pb "mazes/proto"
 )
+
+const (
+	port = ":50051"
+)
+
+// server is used to implement helloworld.GreeterServer.
+type server struct{}
+
+// SayHello implements helloworld.GreeterServer
+func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+}
 
 // For gui support
 // brew install sdl2{_image,_ttf,_gfx}
@@ -28,6 +45,8 @@ import (
 // if slow compile, run: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
+
+// for proto: protoc -I ./mazes/proto/ ./mazes/proto/mazes.proto --go_out=plugins=grpc:mazes/proto/
 
 var (
 	winTitle         string = "Maze"
@@ -448,7 +467,7 @@ func run() {
 	///////////////////////////////////////////////////////////////////////////
 	// gui maze
 	if *showGUI {
-		wd.Add(1)
+		// wd.Add(1)
 		go func() {
 			running := abool.New()
 			running.Set()
@@ -501,7 +520,20 @@ func run() {
 
 		showMazeStats(m)
 		log.Print("server ready...")
-		wd.Wait()
+
+		lis, err := net.Listen("tcp", port)
+		if err != nil {
+			log.Fatalf("failed to listen: %v", err)
+		}
+		s := grpc.NewServer()
+		pb.RegisterGreeterServer(s, &server{})
+		// Register reflection service on gRPC server.
+		reflection.Register(s)
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+
+		// wd.Wait()
 	}
 
 }
