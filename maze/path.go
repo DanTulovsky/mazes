@@ -104,7 +104,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 	}
 
 	if avatar == nil {
-		colors.SetDrawColor(c.config.CurrentLocationColor, r)
+		colors.SetDrawColor(colors.GetColor(c.config.CurrentLocationColor), r)
 		// draw a standard box
 		sq := &sdl.Rect{
 			int32(c.x*PixelsPerCell + PixelsPerCell/4),

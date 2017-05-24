@@ -38,6 +38,10 @@ type Color struct {
 	Name    string // english name
 }
 
+func (c Color) String() string {
+	return c.Name
+}
+
 // OpacityAdjust returns a Color object with its opacity adjust by "i". i can be negative.
 func OpacityAdjust(c Color, i int) Color {
 	a := int(c.A) - i

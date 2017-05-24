@@ -5,24 +5,25 @@ package ellers
 
 import (
 	"math/rand"
+	"time"
+
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type state struct {
 	maze       *maze.Maze
-	setForCell map[int]int
-	cellsInSet map[int][]*maze.Cell
-	nextSet    int
+	setForCell map[int64]int64
+	cellsInSet map[int64][]*maze.Cell
+	nextSet    int64
 }
 
-func newState(m *maze.Maze, nextSet int) *state {
+func newState(m *maze.Maze, nextSet int64) *state {
 
 	// column of cell -> set; algorithm works at row level
-	setForCell := make(map[int]int, 5000)
-	cellsInSet := make(map[int][]*maze.Cell, 5000)
+	setForCell := make(map[int64]int64, 5000)
+	cellsInSet := make(map[int64][]*maze.Cell, 5000)
 
 	s := &state{
 		maze:       m,
@@ -34,7 +35,7 @@ func newState(m *maze.Maze, nextSet int) *state {
 	return s
 }
 
-func (s *state) record(set int, c *maze.Cell) {
+func (s *state) record(set int64, c *maze.Cell) {
 	s.setForCell[c.Location().X] = set
 
 	if _, ok := s.cellsInSet[set]; !ok {
@@ -44,7 +45,7 @@ func (s *state) record(set int, c *maze.Cell) {
 }
 
 // setFor returns the set for a cell. If the cell is not in a set, it assigns it the next one.
-func (s *state) setFor(c *maze.Cell) int {
+func (s *state) setFor(c *maze.Cell) int64 {
 	if _, ok := s.setForCell[c.Location().X]; !ok {
 		// assign to next set
 		s.record(s.nextSet, c)
@@ -54,7 +55,7 @@ func (s *state) setFor(c *maze.Cell) int {
 }
 
 // Merge moves all cells in loser set into the winner set
-func (s *state) Merge(winner, loser int) {
+func (s *state) Merge(winner, loser int64) {
 	for _, c := range s.cellsInSet[loser] {
 		s.setForCell[c.Location().X] = winner
 		s.cellsInSet[winner] = append(s.cellsInSet[winner], c)
@@ -67,7 +68,7 @@ func (s *state) Next() *state {
 	return newState(s.maze, s.nextSet)
 }
 
-func (s *state) CellsInSet() map[int][]*maze.Cell {
+func (s *state) CellsInSet() map[int64][]*maze.Cell {
 	return s.cellsInSet
 }
 

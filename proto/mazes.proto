@@ -3,9 +3,53 @@ syntax = "proto3";
 package proto;
 
 // The greeting service definition.
-service Greeter {
+service Mazer {
     // Sends a greeting
     rpc SayHello (HelloRequest) returns (HelloReply) {}
+
+    // Display maze
+    rpc showMaze(ShowMazeRequest) returns (ShowMazeReply) {}
+}
+
+message ShowMazeRequest {
+  MazeConfig config = 1;
+}
+
+message ShowMazeReply {
+
+}
+
+// MazeConfig is the full config for a maze
+message MazeConfig {
+    int64 Rows = 1;
+    int64 Columns = 2;
+    bool AllowWeaving = 3;
+    double WeavingProbability = 4;
+    int64 CellWidth = 5;
+    int64 WallWidth = 6;
+    int64 WallSpace = 7;
+    int64 PathWidth = 8;
+    bool MarkVisitedCells = 9;
+    bool ShowDistanceValues = 10;
+    bool ShowDistanceColors = 11;
+    bool SkipGridCheck = 12;
+    repeated MazeLocation OrphanMask = 13;
+    string AvatarImage = 14;
+    string VisitedCellColor = 15;
+    string BgColor = 16;
+    string BorderColor = 17;
+    string WallColor = 18;
+    string PathColor = 19;
+    string CurrentLocationColor = 20;
+    string FromCellColor = 21;
+    string ToCellColor = 22;
+}
+
+// MazeLocation is a location in the maze
+message MazeLocation {
+    int64 X = 1;
+    int64 Y = 2;
+    int64 Z = 3;
 }
 
 // The request message containing the user's name.

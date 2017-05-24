@@ -16,6 +16,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 	"mazes/colors"
+	pb "mazes/proto"
 	"mazes/utils"
 )
 
@@ -30,15 +31,15 @@ type Location struct {
 
 // Grid defines the maze grid
 type Maze struct {
-	config           *Config
-	rows             int
-	columns          int
+	config           *pb.MazeConfig
+	rows             int64
+	columns          int64
 	cells            [][]*Cell
 	mazeCells        map[*Cell]bool // cells that are in the maze, not orphaned (for caching)
 	orphanCells      map[*Cell]bool // cells that are orphaned (for caching)
-	cellWidth        int            // cell width
-	wallWidth        int
-	pathWidth        int
+	cellWidth        int64
+	wallWidth        int64
+	pathWidth        int64
 	bgColor          colors.Color
 	borderColor      colors.Color
 	wallColor        colors.Color
@@ -56,17 +57,17 @@ type Maze struct {
 	deadlock.RWMutex
 }
 
-func (m *Maze) Config() *Config {
+func (m *Maze) Config() *pb.MazeConfig {
 	return m.config
 }
 
 // setupMazeMask reads in the mask image and creates the maze based on it.
 // The size of the maze is the size of the image, in pixels.
 // Any *black* pixel in the mask image becomes an orphan square.
-func setupMazeMask(f string, c *Config, mask []Location) ([]Location, error) {
+func setupMazeMask(f string, c *pb.MazeConfig, mask []*pb.MazeLocation) ([]*pb.MazeLocation, error) {
 
-	addToMask := func(mask []Location, x, y int) ([]Location, error) {
-		l := Location{x, y, 0}
+	addToMask := func(mask []*pb.MazeLocation, x, y int64) ([]*pb.MazeLocation, error) {
+		l := &pb.MazeLocation{x, y, 0}
 
 		if x >= c.Columns || y >= c.Rows || x < 0 || y < 0 {
 			return nil, fmt.Errorf("invalid cell passed to mask: %v (grid size: %v %v)", l, c.Columns, c.Rows)
@@ -88,15 +89,15 @@ func setupMazeMask(f string, c *Config, mask []Location) ([]Location, error) {
 	}
 
 	bounds := m.Bounds()
-	c.Rows = bounds.Max.Y
-	c.Columns = bounds.Max.X
+	c.Rows = int64(bounds.Max.Y)
+	c.Columns = int64(bounds.Max.X)
 
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, a := m.At(x, y).RGBA()
 			// this only works for black, fix my colors to use the go image package colors
 			if colors.Same(colors.GetColor("black"), colors.Color{uint8(r), uint8(g), uint8(b), uint8(a), ""}) {
-				if mask, err = addToMask(mask, x, y); err != nil {
+				if mask, err = addToMask(mask, int64(x), int64(y)); err != nil {
 					return nil, err
 				}
 			}
@@ -107,8 +108,8 @@ func setupMazeMask(f string, c *Config, mask []Location) ([]Location, error) {
 }
 
 // NewMazeFromImage creates a new maze from the image at file f
-func NewMazeFromImage(c *Config, f string) (*Maze, error) {
-	mask := make([]Location, 0)
+func NewMazeFromImage(c *pb.MazeConfig, f string) (*Maze, error) {
+	mask := make([]*pb.MazeLocation, 0)
 	mask, err := setupMazeMask(f, c, mask)
 	if err != nil {
 		return nil, err
@@ -119,10 +120,10 @@ func NewMazeFromImage(c *Config, f string) (*Maze, error) {
 }
 
 // NewGrid returns a new grid.
-func NewMaze(c *Config) (*Maze, error) {
-	if err := c.CheckConfig(); err != nil {
-		return nil, err
-	}
+func NewMaze(c *pb.MazeConfig) (*Maze, error) {
+	//if err := c.CheckConfig(); err != nil {
+	//	return nil, err
+	//}
 	m := &Maze{
 		rows:        c.Rows,
 		columns:     c.Columns,
@@ -130,10 +131,10 @@ func NewMaze(c *Config) (*Maze, error) {
 		cellWidth:   c.CellWidth,
 		wallWidth:   c.WallWidth,
 		pathWidth:   c.PathWidth,
-		bgColor:     c.BgColor,
-		borderColor: c.BorderColor,
-		wallColor:   c.WallColor,
-		pathColor:   c.PathColor,
+		bgColor:     colors.GetColor(c.BgColor),
+		borderColor: colors.GetColor(c.BorderColor),
+		wallColor:   colors.GetColor(c.WallColor),
+		pathColor:   colors.GetColor(c.PathColor),
 		config:      c,
 
 		solvePath:  NewPath(),
@@ -256,13 +257,13 @@ func (m *Maze) prepareGrid() {
 	m.Lock()
 	defer m.Unlock()
 
-	z := 0
+	z := int64(0)
 	m.cells = make([][]*Cell, m.columns)
 
-	for x := 0; x < m.columns; x++ {
+	for x := int64(0); x < m.columns; x++ {
 		m.cells[x] = make([]*Cell, m.rows)
 
-		for y := 0; y < m.rows; y++ {
+		for y := int64(0); y < m.rows; y++ {
 			m.cells[x][y] = NewCell(x, y, z, m.config)
 		}
 	}
@@ -273,10 +274,10 @@ func (m *Maze) configureCells() {
 	m.Lock()
 	defer m.Unlock()
 
-	z := 0
+	z := int64(0)
 
-	for x := 0; x < m.columns; x++ {
-		for y := 0; y < m.rows; y++ {
+	for x := int64(0); x < m.columns; x++ {
+		for y := int64(0); y < m.rows; y++ {
 			cell, err := m.Cell(x, y, z)
 			if err != nil {
 				log.Fatalf("failed to initialize grid: %v", err)
@@ -338,7 +339,7 @@ func (m *Maze) CreateTime() time.Duration {
 }
 
 // Dimensions returns the dimensions of the grid.
-func (m *Maze) Dimensions() (int, int) {
+func (m *Maze) Dimensions() (int64, int64) {
 	// No lock, does not change
 	return m.columns, m.rows
 }
@@ -348,21 +349,21 @@ func (m *Maze) String() string {
 	defer m.RUnlock()
 
 	output := "  "
-	for x := 0; x < m.columns; x++ {
+	for x := int64(0); x < m.columns; x++ {
 		output = fmt.Sprintf("%v%4v", output, x)
 	}
 
 	output = fmt.Sprintf("\n%v\n   ┌", output)
-	for x := 0; x < m.columns-1; x++ {
+	for x := int64(0); x < m.columns-1; x++ {
 		output = fmt.Sprintf("%v───┬", output)
 	}
 	output = output + "───┐" + "\n"
 
-	for y := 0; y < m.rows; y++ {
+	for y := int64(0); y < m.rows; y++ {
 		top := fmt.Sprintf("%-3v│", y)
 		bottom := "   ├"
 
-		for x := 0; x < m.columns; x++ {
+		for x := int64(0); x < m.columns; x++ {
 			cell, err := m.Cell(x, y, 0)
 			if err != nil {
 				continue
@@ -444,8 +445,8 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Each cell draws its background, half the wall as well as anything inside it
-	for x := 0; x < m.columns; x++ {
-		for y := 0; y < m.rows; y++ {
+	for x := int64(0); x < m.columns; x++ {
+		for y := int64(0); y < m.rows; y++ {
 			cell, err := m.Cell(x, y, 0)
 			if err != nil {
 				Fail(fmt.Errorf("Error drawing cell (%v, %v): %v", x, y, err))
@@ -603,7 +604,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 }
 
 // Cell returns the cell at r,c
-func (m *Maze) Cell(column, row, z int) (*Cell, error) {
+func (m *Maze) Cell(column, row, z int64) (*Cell, error) {
 	if column < 0 || column >= m.columns || row < 0 || row >= m.rows {
 		return nil, fmt.Errorf("(%v, %v) is outside the grid", column, row)
 	}
@@ -633,7 +634,7 @@ func (g *Maze) RandomCellFromList(cells []*Cell) *Cell {
 }
 
 // Size returns the number of cells in the grid
-func (m *Maze) Size() int {
+func (m *Maze) Size() int64 {
 	// No lock, does not change
 	return m.columns * m.rows
 }
@@ -754,8 +755,8 @@ func (m *Maze) OrphanCells() map[*Cell]bool {
 	}
 
 	cells := make(map[*Cell]bool)
-	for y := 0; y < m.rows; y++ {
-		for x := 0; x < m.columns; x++ {
+	for y := int64(0); y < m.rows; y++ {
+		for x := int64(0); x < m.columns; x++ {
 			cell := m.cells[x][y]
 			if cell.IsOrphan() {
 				cells[cell] = true
@@ -842,8 +843,8 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 		return
 	}
 	// Set path start and end colors
-	fromCell.SetBGColor(m.config.FromCellColor)
-	toCell.SetBGColor(m.config.ToCellColor)
+	fromCell.SetBGColor(colors.GetColor(m.config.FromCellColor))
+	toCell.SetBGColor(colors.GetColor(m.config.ToCellColor))
 
 	// save these for color refresh.
 	m.setFromCell(fromCell)

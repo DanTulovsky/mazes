@@ -2,10 +2,11 @@
 package kruskal
 
 import (
+	"time"
+
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type state struct {
@@ -111,7 +112,7 @@ func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 	cells := maze.CellMapKeys(m.Cells())
 
 	// add crossings (under-passages) as required
-	for x := 0; x < m.Size(); x++ {
+	for x := int64(0); x < m.Size(); x++ {
 		if !m.Config().AllowWeaving || utils.Random(0, 100) >= int(m.Config().WeavingProbability*100) {
 			continue
 		}

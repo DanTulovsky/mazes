@@ -11,7 +11,7 @@ type Config struct {
 	Columns              int
 	AllowWeaving         bool
 	WeavingProbability   float64
-	CellWidth            int // cell width
+	CellWidth            int
 	WallWidth            int
 	WallSpace            int
 	PathWidth            int

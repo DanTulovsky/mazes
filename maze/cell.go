@@ -1,21 +1,21 @@
 package maze
 
 import (
+	"container/heap"
 	"fmt"
 	"log"
-	"mazes/colors"
-	"mazes/utils"
-
-	"container/heap"
 
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_gfx"
+	"mazes/colors"
+	pb "mazes/proto"
+	"mazes/utils"
 )
 
 // Cell defines a single cell in the grid
 type Cell struct {
-	x, y, z int
+	x, y, z int64
 	// keep track of neighborgs
 	north, south, east, west, below *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
@@ -23,7 +23,7 @@ type Cell struct {
 	// distances to other cells
 	distances *Distances
 	// How many times has this cell been visited?
-	visited int
+	visited int64
 	// Background color of the cell
 	bgColor colors.Color
 	// Wall color of the cell
@@ -31,12 +31,12 @@ type Cell struct {
 	// path color
 	pathColor colors.Color
 	// size of the cell
-	width     int
-	wallWidth int
-	pathWidth int
+	width     int64
+	wallWidth int64
+	pathWidth int64
 
 	// config
-	config *Config
+	config *pb.MazeConfig
 
 	// keep track of what cells we have a path to
 	pathNorth, pathSouth, pathEast, pathWest bool
@@ -78,15 +78,15 @@ func CellInCellList(cell *Cell, cellList []*Cell) bool {
 }
 
 // NewCell initializes a new cell
-func NewCell(x, y, z int, c *Config) *Cell {
+func NewCell(x, y, z int64, c *pb.MazeConfig) *Cell {
 	cell := &Cell{
 		y:         y,
 		x:         x,
 		z:         z,
 		links:     NewSafeMap2(),
-		bgColor:   c.BgColor,   // default
-		wallColor: c.WallColor, // default
-		pathColor: c.PathColor, //default
+		bgColor:   colors.GetColor(c.BgColor),   // default
+		wallColor: colors.GetColor(c.WallColor), // default
+		pathColor: colors.GetColor(c.PathColor), //default
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
@@ -248,11 +248,11 @@ func (c *Cell) RemovePathTo(toCell *Cell, path *Path) {
 }
 
 // Location returns the x,y location of the cell
-func (c *Cell) Location() Location {
+func (c *Cell) Location() *pb.MazeLocation {
 	c.RLock()
 	defer c.RUnlock()
 
-	return Location{c.x, c.y, c.z}
+	return &pb.MazeLocation{c.x, c.y, c.z}
 }
 
 // Visited returns true if the cell has been visited
@@ -264,7 +264,7 @@ func (c *Cell) Visited() bool {
 }
 
 // VisitedTimes returns how many times a cell has been visited
-func (c *Cell) VisitedTimes() int {
+func (c *Cell) VisitedTimes() int64 {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -377,7 +377,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	// Fill in background color
 	colors.SetDrawColor(c.BGColor(), r)
 
-	var x, y, w, h int
+	var x, y, w, h int64
 
 	if c.z >= 0 { // don't color below cells
 		x = c.x*c.width + c.wallWidth + wallSpace + c.wallWidth/2
@@ -561,7 +561,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	if c.config.ShowDistanceValues {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
-		gfx.StringRGBA(r, x, y, fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
+		gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
 	}
 
 	return r
@@ -576,7 +576,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
 
 	// don't mark cells under other cell
 	if c.config.MarkVisitedCells && c.Visited() && c.z >= 0 {
-		colors.SetDrawColor(c.config.VisitedCellColor, r)
+		colors.SetDrawColor(colors.GetColor(c.config.VisitedCellColor), r)
 
 		times := c.VisitedTimes()
 		factor := times * 3

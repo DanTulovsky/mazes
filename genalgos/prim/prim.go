@@ -4,10 +4,11 @@ package prim
 import (
 	"container/heap"
 	"log"
+	"time"
+
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type Prim struct {
@@ -19,7 +20,7 @@ func (a *Prim) Apply(m *maze.Maze, delay time.Duration) error {
 
 	// Setup costs for all cells
 	for c := range m.Cells() {
-		w := utils.Random(0, m.Size()*100)
+		w := utils.Random(0, int(m.Size())*100)
 		c.SetWeight(w)
 	}
 

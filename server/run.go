@@ -30,14 +30,6 @@ const (
 	port = ":50051"
 )
 
-// server is used to implement helloworld.GreeterServer.
-type server struct{}
-
-// SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
-}
-
 // For gui support
 // brew install sdl2{_image,_ttf,_gfx}
 // brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
@@ -47,6 +39,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
 // for proto: protoc -I ./mazes/proto/ ./mazes/proto/mazes.proto --go_out=plugins=grpc:mazes/proto/
+// protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
 
 var (
 	winTitle         string = "Maze"
@@ -65,8 +58,8 @@ var (
 	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
 
 	// dimensions
-	rows    = flag.Int("r", 30, "number of rows in the maze")
-	columns = flag.Int("c", 60, "number of rows in the maze")
+	rows    = flag.Int64("r", 30, "number of rows in the maze")
+	columns = flag.Int64("c", 60, "number of rows in the maze")
 
 	// colors
 	bgColor              = flag.String("bgcolor", "white", "background color")
@@ -79,10 +72,10 @@ var (
 	toCellColor          = flag.String("to_cell_color", "yellow", "to cell color")
 
 	// width
-	cellWidth = flag.Int("w", 20, "cell width (best as multiple of 2)")
-	pathWidth = flag.Int("path_width", 2, "path width")
-	wallWidth = flag.Int("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	wallSpace = flag.Int("wall_space", 0, "how much space between two side by side walls (min of 2)")
+	cellWidth = flag.Int64("w", 20, "cell width (best as multiple of 2)")
+	pathWidth = flag.Int64("path_width", 2, "path width")
+	wallWidth = flag.Int64("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
+	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")
 
 	// maze draw
 	showGUI = flag.Bool("gui", true, "show gui maze")
@@ -126,8 +119,8 @@ func setupSDL() {
 	})
 
 	// window
-	winWidth = (*columns)**cellWidth + *wallWidth*2
-	winHeight = (*rows)**cellWidth + *wallWidth*2
+	winWidth = int((*columns)**cellWidth + *wallWidth*2)
+	winHeight = int((*rows)**cellWidth + *wallWidth*2)
 
 	sdl.Do(func() {
 		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
@@ -236,7 +229,7 @@ func run() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	config := &maze.Config{
+	config := &pb.MazeConfig{
 		Rows:                 *rows,
 		Columns:              *columns,
 		CellWidth:            *cellWidth,
@@ -244,21 +237,45 @@ func run() {
 		WallSpace:            *wallSpace,
 		PathWidth:            *pathWidth,
 		SkipGridCheck:        *skipGridCheck,
-		BgColor:              colors.GetColor(*bgColor),
-		BorderColor:          colors.GetColor(*borderColor),
-		WallColor:            colors.GetColor(*wallColor),
-		PathColor:            colors.GetColor(*pathColor),
-		VisitedCellColor:     colors.GetColor(*visitedCellColor),
+		BgColor:              *bgColor,
+		BorderColor:          *borderColor,
+		WallColor:            *wallColor,
+		PathColor:            *pathColor,
+		VisitedCellColor:     *visitedCellColor,
 		AllowWeaving:         *allowWeaving,
 		WeavingProbability:   *weavingProbability,
 		MarkVisitedCells:     *markVisitedCells,
-		CurrentLocationColor: colors.GetColor(*currentLocationColor),
+		CurrentLocationColor: *currentLocationColor,
 		AvatarImage:          *avatarImage,
 		ShowDistanceValues:   *showDistanceValues,
 		ShowDistanceColors:   *showDistanceColors,
-		FromCellColor:        colors.GetColor(*fromCellColor),
-		ToCellColor:          colors.GetColor(*toCellColor),
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
 	}
+
+	//config := &maze.Config{
+	//	Rows:                 *rows,
+	//	Columns:              *columns,
+	//	CellWidth:            *cellWidth,
+	//	WallWidth:            *wallWidth,
+	//	WallSpace:            *wallSpace,
+	//	PathWidth:            *pathWidth,
+	//	SkipGridCheck:        *skipGridCheck,
+	//	BgColor:              colors.GetColor(*bgColor),
+	//	BorderColor:          colors.GetColor(*borderColor),
+	//	WallColor:            colors.GetColor(*wallColor),
+	//	PathColor:            colors.GetColor(*pathColor),
+	//	VisitedCellColor:     colors.GetColor(*visitedCellColor),
+	//	AllowWeaving:         *allowWeaving,
+	//	WeavingProbability:   *weavingProbability,
+	//	MarkVisitedCells:     *markVisitedCells,
+	//	CurrentLocationColor: colors.GetColor(*currentLocationColor),
+	//	AvatarImage:          *avatarImage,
+	//	ShowDistanceValues:   *showDistanceValues,
+	//	ShowDistanceColors:   *showDistanceColors,
+	//	FromCellColor:        colors.GetColor(*fromCellColor),
+	//	ToCellColor:          colors.GetColor(*toCellColor),
+	//}
 
 	var m *maze.Maze
 	var err error
@@ -385,8 +402,8 @@ func run() {
 				if len(from) != 2 {
 					log.Fatalf("%v is not a valid coordinate", *fromCellStr)
 				}
-				x, _ := strconv.Atoi(from[0])
-				y, _ := strconv.Atoi(from[1])
+				x, _ := strconv.ParseInt(from[0], 10, 64)
+				y, _ := strconv.ParseInt(from[1], 10, 64)
 				fromCell, err = m.Cell(x, y, 0)
 				if err != nil {
 					log.Fatalf("invalid fromCell: %v", err)
@@ -395,7 +412,7 @@ func run() {
 		}
 
 		if *toCellStr != "" {
-			var x, y int
+			var x, y int64
 			if *toCellStr == "max" {
 				toCell = m.LargestCell()
 			} else {
@@ -403,8 +420,8 @@ func run() {
 				if len(from) != 2 {
 					log.Fatalf("%v is not a valid coordinate", *toCellStr)
 				}
-				x, _ = strconv.Atoi(from[0])
-				y, _ = strconv.Atoi(from[1])
+				x, _ = strconv.ParseInt(from[0], 10, 64)
+				y, _ = strconv.ParseInt(from[1], 10, 64)
 				toCell, err = m.Cell(x, y, 0)
 				if err != nil {
 					log.Fatalf("invalid toCell: %v", err)
@@ -526,7 +543,7 @@ func run() {
 			log.Fatalf("failed to listen: %v", err)
 		}
 		s := grpc.NewServer()
-		pb.RegisterGreeterServer(s, &server{})
+		pb.RegisterMazerServer(s, &server{})
 		// Register reflection service on gRPC server.
 		reflection.Register(s)
 		if err := s.Serve(lis); err != nil {
@@ -541,4 +558,16 @@ func run() {
 func main() {
 	// must be run like this to keep drawing functions in main thread
 	sdl.Main(run)
+}
+
+// server is used to implement MazerServer.
+type server struct{}
+
+func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+}
+
+// ShowMaze displays the maze specified by the config
+func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
+	return &pb.ShowMazeReply{}, nil
 }

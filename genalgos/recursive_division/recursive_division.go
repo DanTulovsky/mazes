@@ -37,7 +37,7 @@ func initMaze(m *maze.Maze) {
 
 }
 
-func shouldStop(height, width int) bool {
+func shouldStop(height, width int64) bool {
 	if height <= 1 || width <= 1 ||
 		height < MIN_ROOM_HEIGHT && width < MIN_ROOM_WIDTH &&
 			utils.Random(0, ROOM_SIZE_CHANCE_RATIO) == 0 {
@@ -46,7 +46,7 @@ func shouldStop(height, width int) bool {
 	return false
 }
 
-func divide(m *maze.Maze, row, column, height, width int, delay time.Duration) error {
+func divide(m *maze.Maze, row, column, height, width int64, delay time.Duration) error {
 
 	if shouldStop(height, width) {
 		return nil
@@ -61,15 +61,15 @@ func divide(m *maze.Maze, row, column, height, width int, delay time.Duration) e
 	return nil
 }
 
-func divideHorizontally(m *maze.Maze, row, column, height, width int, delay time.Duration) {
+func divideHorizontally(m *maze.Maze, row, column, height, width int64, delay time.Duration) {
 
-	divideSouthOf := utils.Random(0, height-1)
-	passageAt := utils.Random(0, width)
+	divideSouthOf := int64(utils.Random(0, int(height)-1))
+	passageAt := int64(utils.Random(0, int(width)))
 
-	for x := 0; x < width; x++ {
+	for x := int64(0); x < width; x++ {
 		time.Sleep(delay) // animation delay
 
-		if x == passageAt {
+		if x == int64(passageAt) {
 			continue // keep this passage open
 		}
 
@@ -86,12 +86,12 @@ func divideHorizontally(m *maze.Maze, row, column, height, width int, delay time
 	divide(m, row+divideSouthOf+1, column, height-divideSouthOf-1, width, delay)
 }
 
-func divideVertically(m *maze.Maze, row, column, height, width int, delay time.Duration) {
+func divideVertically(m *maze.Maze, row, column, height, width int64, delay time.Duration) {
 
-	divideEastOf := utils.Random(0, width-1)
-	passageAt := utils.Random(0, height)
+	divideEastOf := int64(utils.Random(0, int(width)-1))
+	passageAt := int64(utils.Random(0, int(height)))
 
-	for y := 0; y < height; y++ {
+	for y := int64(0); y < height; y++ {
 		time.Sleep(delay) // animation delay
 
 		if y == passageAt {
