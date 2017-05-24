@@ -125,16 +125,16 @@ func NewMaze(c *pb.MazeConfig) (*Maze, error) {
 	//	return nil, err
 	//}
 	m := &Maze{
-		rows:        c.Rows,
-		columns:     c.Columns,
+		rows:        c.GetRows(),
+		columns:     c.GetColumns(),
 		cells:       [][]*Cell{},
-		cellWidth:   c.CellWidth,
-		wallWidth:   c.WallWidth,
-		pathWidth:   c.PathWidth,
-		bgColor:     colors.GetColor(c.BgColor),
-		borderColor: colors.GetColor(c.BorderColor),
-		wallColor:   colors.GetColor(c.WallColor),
-		pathColor:   colors.GetColor(c.PathColor),
+		cellWidth:   c.GetCellWidth(),
+		wallWidth:   c.GetWallWidth(),
+		pathWidth:   c.GetPathWidth(),
+		bgColor:     colors.GetColor(c.GetBgColor()),
+		borderColor: colors.GetColor(c.GetBorderColor()),
+		wallColor:   colors.GetColor(c.GetWallColor()),
+		pathColor:   colors.GetColor(c.GetPathColor()),
 		config:      c,
 
 		solvePath:  NewPath(),
@@ -299,7 +299,7 @@ func (m *Maze) configureCells() {
 		}
 	}
 
-	for _, o := range m.config.OrphanMask {
+	for _, o := range m.config.GetOrphanMask() {
 		cell, err := m.Cell(o.X, o.Y, 0)
 		if err != nil {
 			Fail(err)

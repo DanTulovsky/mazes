@@ -21,6 +21,7 @@ import (
 	"mazes/algos"
 	"mazes/colors"
 	"mazes/maze"
+	pb "mazes/proto"
 	"mazes/solvealgos"
 )
 
@@ -337,7 +338,7 @@ func run() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	config := &maze.Config{
+	config := &pb.MazeConfig{
 		Rows:                 *rows,
 		Columns:              *columns,
 		CellWidth:            *cellWidth,
@@ -345,20 +346,20 @@ func run() {
 		WallSpace:            *wallSpace,
 		PathWidth:            *pathWidth,
 		SkipGridCheck:        *skipGridCheck,
-		BgColor:              colors.GetColor(*bgColor),
-		BorderColor:          colors.GetColor(*borderColor),
-		WallColor:            colors.GetColor(*wallColor),
-		PathColor:            colors.GetColor(*pathColor),
-		VisitedCellColor:     colors.GetColor(*visitedCellColor),
+		BgColor:              *bgColor,
+		BorderColor:          *borderColor,
+		WallColor:            *wallColor,
+		PathColor:            *pathColor,
+		VisitedCellColor:     *visitedCellColor,
 		AllowWeaving:         *allowWeaving,
 		WeavingProbability:   *weavingProbability,
 		MarkVisitedCells:     *markVisitedCells,
-		CurrentLocationColor: colors.GetColor(*currentLocationColor),
+		CurrentLocationColor: *currentLocationColor,
 		AvatarImage:          *avatarImage,
 		ShowDistanceValues:   *showDistanceValues,
 		ShowDistanceColors:   *showDistanceColors,
-		FromCellColor:        colors.GetColor(*fromCellColor),
-		ToCellColor:          colors.GetColor(*toCellColor),
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
 	}
 
 	var m *maze.Maze
@@ -459,7 +460,6 @@ func run() {
 			log.Printf("disabling grid check for %s since rooms are defined", *createAlgo)
 			m.Config().SkipGridCheck = true // rooms are defined, so it's not a perfect maze.
 		}
-
 
 		if err := algo.CheckGrid(m); err != nil {
 			log.Fatalf("maze is not valid: %v", err)

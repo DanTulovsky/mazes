@@ -34,7 +34,7 @@ const (
 // brew install sdl2{_image,_ttf,_gfx}
 // brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
-// if slow compile, run: go install -a mazes/generate
+// if slow compile, showMaze: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
@@ -42,56 +42,29 @@ const (
 // protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
 
 var (
-	winTitle         string = "Maze"
-	fromCell, toCell *maze.Cell
+	winTitle         string     = "Maze"
+	fromCell, toCell *maze.Cell // move these to config, otherwise second run of maze is broken
 
-	w      *sdl.Window
-	r      *sdl.Renderer
+	// w      *sdl.Window
+	// r      *sdl.Renderer
 	sdlErr error
 	// runningMutex sync.Mutex
 
 	// maze
-	maskImage          = flag.String("mask_image", "", "file name of mask image")
-	allowWeaving       = flag.Bool("weaving", false, "allow weaving")
-	weavingProbability = flag.Float64("weaving_probability", 1, "controls the amount of weaving that happens, with 1 being the max")
-	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
-	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
-
-	// dimensions
-	rows    = flag.Int64("r", 30, "number of rows in the maze")
-	columns = flag.Int64("c", 60, "number of rows in the maze")
-
-	// colors
-	bgColor              = flag.String("bgcolor", "white", "background color")
-	borderColor          = flag.String("border_color", "black", "border color")
-	currentLocationColor = flag.String("location_color", "lime", "border color")
-	pathColor            = flag.String("path_color", "red", "border color")
-	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
-	wallColor            = flag.String("wall_color", "black", "wall color")
-	fromCellColor        = flag.String("from_cell_color", "gold", "from cell color")
-	toCellColor          = flag.String("to_cell_color", "yellow", "to cell color")
-
-	// width
-	cellWidth = flag.Int64("w", 20, "cell width (best as multiple of 2)")
-	pathWidth = flag.Int64("path_width", 2, "path width")
-	wallWidth = flag.Int64("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
-	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")
+	maskImage        = flag.String("mask_image", "", "file name of mask image")
+	braidProbability = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
+	randomFromTo     = flag.Bool("random_path", false, "show a random path through the maze")
 
 	// maze draw
 	showGUI = flag.Bool("gui", true, "show gui maze")
 
 	// display
-	avatarImage        = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
-	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
-	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
-	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	showFromToColors   = flag.Bool("show_from_to_colors", false, "show from/to colors")
-	showDistanceColors = flag.Bool("show_distance_colors", false, "show distance colors")
-	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
+	frameRate        = flag.Uint("frame_rate", 120, "frame rate for animation")
+	genDrawDelay     = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
+	showFromToColors = flag.Bool("show_from_to_colors", false, "show from/to colors")
 
 	// algo
-	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
+	createAlgo = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 
 	// misc
 	bgMusic = flag.String("bg_music", "", "file name of background music to play")
@@ -107,11 +80,13 @@ var (
 	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 
 	winWidth, winHeight int
+
+	config *pb.MazeConfig
 )
 
-func setupSDL() {
+func setupSDL(w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
 	if !*showGUI {
-		return
+		return nil, nil
 	}
 	sdl.Do(func() {
 		sdl.Init(sdl.INIT_EVERYTHING)
@@ -119,8 +94,8 @@ func setupSDL() {
 	})
 
 	// window
-	winWidth = int((*columns)**cellWidth + *wallWidth*2)
-	winHeight = int((*rows)**cellWidth + *wallWidth*2)
+	winWidth = int((config.Columns)*config.CellWidth + config.WallWidth*2)
+	winHeight = int((config.Rows)*config.CellWidth + config.WallWidth*2)
 
 	sdl.Do(func() {
 		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
@@ -150,6 +125,8 @@ func setupSDL() {
 	sdl.Do(func() {
 		r.Clear()
 	})
+
+	return w, r
 }
 
 // checkCreateAlgo makes sure the passed in algorithm is valid
@@ -176,106 +153,44 @@ func checkQuit(running *abool.AtomicBool) {
 			case *sdl.QuitEvent:
 				log.Print("received quit request, exiting...")
 				running.UnSet()
-				os.Exit(0)
 			}
 		}
 
 	})
 }
-func run() {
-	flag.Parse()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+func showMaze() {
+	var (
+		w *sdl.Window
+		r *sdl.Renderer
+	)
 
-	if *enableDeadlockDetection {
-		log.Println("enabling deadlock detection, this slows things down considerably!")
-		deadlock.Opts.Disable = false
-	} else {
-		deadlock.Opts.Disable = true
-	}
-
-	if *enableProfile {
-		log.Println("enabling profiling...")
-		defer profile.Start().Stop()
-	}
-
-	if *allowWeaving && *wallSpace == 0 {
+	if config.AllowWeaving && config.WallSpace == 0 {
 		// weaving requires some wall space to look nice
-		*wallSpace = 4
-		log.Printf("weaving enabled, setting wall_space to non-zero value (%d)", *wallSpace)
+		config.WallSpace = 4
+		log.Printf("weaving enabled, setting wall_space to non-zero value (%d)", config.WallSpace)
 
 	}
 
-	if *showDistanceColors && *bgColor == "white" {
-		*bgColor = "black"
-		if *wallColor == "black" {
-			*wallColor = "white"
+	if config.ShowDistanceColors && config.BgColor == "white" {
+		config.BgColor = "black"
+		if config.WallColor == "black" {
+			config.WallColor = "white"
 		}
-		log.Printf("Setting bgcolor to %v and adjusting wall color to %v since distance colors don't work with white right now.", *bgColor, *wallColor)
+		log.Printf("Setting bgcolor to %v and adjusting wall color to %v since distance colors don't work with white right now.", config.BgColor, config.WallColor)
 
 	}
 
-	if *bgColor == "black" {
-		if *wallColor == "black" {
-			*wallColor = "white"
+	if config.BgColor == "black" {
+		if config.WallColor == "black" {
+			config.WallColor = "white"
 		}
 	}
 
-	if *cellWidth == 2 && *wallWidth == 2 {
+	if config.CellWidth == 2 && config.WallWidth == 2 {
 
-		*wallWidth = 1
-		log.Printf("cell_width and wall_width both 2, adjusting wall_width to %v", *wallWidth)
+		config.WallWidth = 1
+		log.Printf("cell_width and wall_width both 2, adjusting wall_width to %v", config.WallWidth)
 	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Configure new grid
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	config := &pb.MazeConfig{
-		Rows:                 *rows,
-		Columns:              *columns,
-		CellWidth:            *cellWidth,
-		WallWidth:            *wallWidth,
-		WallSpace:            *wallSpace,
-		PathWidth:            *pathWidth,
-		SkipGridCheck:        *skipGridCheck,
-		BgColor:              *bgColor,
-		BorderColor:          *borderColor,
-		WallColor:            *wallColor,
-		PathColor:            *pathColor,
-		VisitedCellColor:     *visitedCellColor,
-		AllowWeaving:         *allowWeaving,
-		WeavingProbability:   *weavingProbability,
-		MarkVisitedCells:     *markVisitedCells,
-		CurrentLocationColor: *currentLocationColor,
-		AvatarImage:          *avatarImage,
-		ShowDistanceValues:   *showDistanceValues,
-		ShowDistanceColors:   *showDistanceColors,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-	}
-
-	//config := &maze.Config{
-	//	Rows:                 *rows,
-	//	Columns:              *columns,
-	//	CellWidth:            *cellWidth,
-	//	WallWidth:            *wallWidth,
-	//	WallSpace:            *wallSpace,
-	//	PathWidth:            *pathWidth,
-	//	SkipGridCheck:        *skipGridCheck,
-	//	BgColor:              colors.GetColor(*bgColor),
-	//	BorderColor:          colors.GetColor(*borderColor),
-	//	WallColor:            colors.GetColor(*wallColor),
-	//	PathColor:            colors.GetColor(*pathColor),
-	//	VisitedCellColor:     colors.GetColor(*visitedCellColor),
-	//	AllowWeaving:         *allowWeaving,
-	//	WeavingProbability:   *weavingProbability,
-	//	MarkVisitedCells:     *markVisitedCells,
-	//	CurrentLocationColor: colors.GetColor(*currentLocationColor),
-	//	AvatarImage:          *avatarImage,
-	//	ShowDistanceValues:   *showDistanceValues,
-	//	ShowDistanceColors:   *showDistanceColors,
-	//	FromCellColor:        colors.GetColor(*fromCellColor),
-	//	ToCellColor:          colors.GetColor(*toCellColor),
-	//}
 
 	var m *maze.Maze
 	var err error
@@ -290,7 +205,7 @@ func run() {
 			os.Exit(1)
 		}
 		// Set these for correct window size
-		*columns, *rows = m.Dimensions()
+		config.Columns, config.Rows = m.Dimensions()
 	} else {
 		m, err = maze.NewMaze(config)
 		if err != nil {
@@ -305,18 +220,18 @@ func run() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	setupSDL()
+	w, r = setupSDL(w, r)
 
 	defer func() {
 		sdl.Do(func() {
 			w.Destroy()
 		})
 	}()
-	//defer func() {
-	//	sdl.Do(func() {
-	//		r.Destroy()
-	//	})
-	//}()
+	defer func() {
+		sdl.Do(func() {
+			r.Destroy()
+		})
+	}()
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -484,8 +399,8 @@ func run() {
 	///////////////////////////////////////////////////////////////////////////
 	// gui maze
 	if *showGUI {
-		// wd.Add(1)
-		go func() {
+		wd.Add(1)
+		go func(r *sdl.Renderer) {
 			running := abool.New()
 			running.Set()
 
@@ -520,6 +435,10 @@ func run() {
 			for running.IsSet() {
 				checkQuit(running)
 
+				if !running.IsSet() {
+					wd.Done()
+				}
+
 				// Displays the main maze, no paths or other markers
 				sdl.Do(func() {
 					// reset the clear color back to white
@@ -533,31 +452,52 @@ func run() {
 					sdl.Delay(uint32(1000 / *frameRate))
 				})
 			}
-		}()
+
+			log.Printf("maze is done...")
+		}(r)
 
 		showMazeStats(m)
-		log.Print("server ready...")
-
-		lis, err := net.Listen("tcp", port)
-		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
-		}
-		s := grpc.NewServer()
-		pb.RegisterMazerServer(s, &server{})
-		// Register reflection service on gRPC server.
-		reflection.Register(s)
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-
-		// wd.Wait()
+		wd.Wait()
 	}
 
 }
 
+func runServer() {
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	s := grpc.NewServer()
+	pb.RegisterMazerServer(s, &server{})
+	// Register reflection service on gRPC server.
+	reflection.Register(s)
+
+	log.Printf("server ready on port %v", port)
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
+}
+
 func main() {
-	// must be run like this to keep drawing functions in main thread
-	sdl.Main(run)
+	flag.Parse()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	if *enableDeadlockDetection {
+		log.Println("enabling deadlock detection, this slows things down considerably!")
+		deadlock.Opts.Disable = false
+	} else {
+		deadlock.Opts.Disable = true
+	}
+
+	if *enableProfile {
+		log.Println("enabling profiling...")
+		defer profile.Start().Stop()
+	}
+
+	// must be showMaze like this to keep drawing functions in main thread
+	sdl.Main(runServer)
+
 }
 
 // server is used to implement MazerServer.
@@ -569,5 +509,13 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 
 // ShowMaze displays the maze specified by the config
 func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
+	config = in.GetConfig()
+
+	log.Printf("running maze with config: %#v", config)
+	showMaze()
+
+	fromCell = nil
+	toCell = nil
+
 	return &pb.ShowMazeReply{}, nil
 }
