@@ -8,7 +8,7 @@ service Mazer {
     rpc SayHello (HelloRequest) returns (HelloReply) {}
 
     // Display maze
-    rpc showMaze(ShowMazeRequest) returns (ShowMazeReply) {}
+    rpc ShowMaze(ShowMazeRequest) returns (ShowMazeReply) {}
 }
 
 message ShowMazeRequest {
