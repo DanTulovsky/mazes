@@ -12,11 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
@@ -25,6 +20,10 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
 )
 
 const (
@@ -45,15 +44,11 @@ const (
 var (
 	winTitle string = "Maze"
 
-	// w      *sdl.Window
-	// r      *sdl.Renderer
 	sdlErr error
-	// runningMutex sync.Mutex
 
 	// maze
 	maskImage        = flag.String("mask_image", "", "file name of mask image")
 	braidProbability = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
-	randomFromTo     = flag.Bool("random_path", false, "show a random path through the maze")
 
 	// maze draw
 	showGUI = flag.Bool("gui", true, "show gui maze")
@@ -77,11 +72,9 @@ var (
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
 	winWidth, winHeight int
-
-	config *pb.MazeConfig
 )
 
-func setupSDL(w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
+func setupSDL(config *pb.MazeConfig, w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
 	if !*showGUI {
 		return nil, nil
 	}
@@ -156,7 +149,7 @@ func checkQuit(running *abool.AtomicBool) {
 	})
 }
 
-func configToCell(m *maze.Maze, c string) (*maze.Cell, error) {
+func configToCell(m *maze.Maze, config *pb.MazeConfig, c string) (*maze.Cell, error) {
 
 	switch c {
 	case "min":
@@ -181,7 +174,7 @@ func configToCell(m *maze.Maze, c string) (*maze.Cell, error) {
 
 }
 
-func showMaze() {
+func showMaze(config *pb.MazeConfig) {
 	var (
 		w *sdl.Window
 		r *sdl.Renderer
@@ -244,7 +237,7 @@ func showMaze() {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	w, r = setupSDL(w, r)
+	w, r = setupSDL(config, w, r)
 
 	defer func() {
 		sdl.Do(func() {
@@ -334,11 +327,11 @@ func showMaze() {
 		//}
 
 		if config.FromCell != "" {
-			fromCell, err = configToCell(m, config.ToCell)
+			fromCell, err = configToCell(m, config, config.FromCell)
 		}
 
 		if config.ToCell != "" {
-			toCell, err = configToCell(m, config.ToCell)
+			toCell, err = configToCell(m, config, config.ToCell)
 		}
 
 		// solve the longest path
@@ -497,10 +490,9 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 
 // ShowMaze displays the maze specified by the config
 func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
-	config = in.GetConfig()
 
-	log.Printf("running maze with config: %#v", config)
-	showMaze()
+	log.Printf("running maze with config: %#v", in.Config)
+	showMaze(in.Config)
 
 	return &pb.ShowMazeReply{}, nil
 }

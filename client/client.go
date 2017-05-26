@@ -4,11 +4,10 @@ import (
 	"context"
 	"flag"
 	"log"
-	"mazes/solvealgos"
 
 	"google.golang.org/grpc"
-
 	pb "mazes/proto"
+	"mazes/solvealgos"
 )
 
 const (
@@ -124,7 +123,7 @@ func main() {
 	// Contact the server and print out its response.
 	r, err := c.ShowMaze(ctx, &pb.ShowMazeRequest{Config: config})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("could not show maze: %v", err)
 	}
 	log.Printf("> %v", r)
 }
