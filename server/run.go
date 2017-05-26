@@ -12,6 +12,11 @@ import (
 	"sync"
 	"time"
 
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
@@ -20,10 +25,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
 )
 
 const (
@@ -42,8 +43,7 @@ const (
 // protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
 
 var (
-	winTitle         string     = "Maze"
-	fromCell, toCell *maze.Cell // move these to config, otherwise second run of maze is broken
+	winTitle string = "Maze"
 
 	// w      *sdl.Window
 	// r      *sdl.Renderer
@@ -75,9 +75,6 @@ var (
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
-
-	fromCellStr = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
-	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 
 	winWidth, winHeight int
 
@@ -158,6 +155,32 @@ func checkQuit(running *abool.AtomicBool) {
 
 	})
 }
+
+func configToCell(m *maze.Maze, c string) (*maze.Cell, error) {
+
+	switch c {
+	case "min":
+		return m.SmallestCell(), nil
+	case "max":
+		return m.LargestCell(), nil
+	case "random":
+		return m.RandomCell(), nil
+	default:
+		from := strings.Split(c, ",")
+		if len(from) != 2 {
+			log.Fatalf("%v is not a valid coordinate", config.FromCell)
+		}
+		x, _ := strconv.ParseInt(from[0], 10, 64)
+		y, _ := strconv.ParseInt(from[1], 10, 64)
+		cell, err := m.Cell(x, y, 0)
+		if err != nil {
+			return nil, fmt.Errorf("invalid fromCell: %v", err)
+		}
+		return cell, nil
+	}
+
+}
+
 func showMaze() {
 	var (
 		w *sdl.Window
@@ -193,6 +216,7 @@ func showMaze() {
 	}
 
 	var m *maze.Maze
+	var fromCell, toCell *maze.Cell
 	var err error
 
 	// Mask image if provided.
@@ -309,48 +333,12 @@ func showMaze() {
 		//	c.SetWeight(1000)
 		//}
 
-		if *fromCellStr != "" {
-			if *fromCellStr == "min" {
-				fromCell = m.SmallestCell()
-			} else {
-				from := strings.Split(*fromCellStr, ",")
-				if len(from) != 2 {
-					log.Fatalf("%v is not a valid coordinate", *fromCellStr)
-				}
-				x, _ := strconv.ParseInt(from[0], 10, 64)
-				y, _ := strconv.ParseInt(from[1], 10, 64)
-				fromCell, err = m.Cell(x, y, 0)
-				if err != nil {
-					log.Fatalf("invalid fromCell: %v", err)
-				}
-			}
+		if config.FromCell != "" {
+			fromCell, err = configToCell(m, config.ToCell)
 		}
 
-		if *toCellStr != "" {
-			var x, y int64
-			if *toCellStr == "max" {
-				toCell = m.LargestCell()
-			} else {
-				from := strings.Split(*toCellStr, ",")
-				if len(from) != 2 {
-					log.Fatalf("%v is not a valid coordinate", *toCellStr)
-				}
-				x, _ = strconv.ParseInt(from[0], 10, 64)
-				y, _ = strconv.ParseInt(from[1], 10, 64)
-				toCell, err = m.Cell(x, y, 0)
-				if err != nil {
-					log.Fatalf("invalid toCell: %v", err)
-				}
-			}
-		}
-
-		if *randomFromTo {
-			if fromCell == nil {
-				fromCell = m.RandomCell()
-			}
-			if toCell == nil {
-				toCell = m.RandomCell()
-			}
+		if config.ToCell != "" {
+			toCell, err = configToCell(m, config.ToCell)
 		}
 
 		// solve the longest path
@@ -513,9 +501,6 @@ func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.Show
 
 	log.Printf("running maze with config: %#v", config)
 	showMaze()
-
-	fromCell = nil
-	toCell = nil
 
 	return &pb.ShowMazeReply{}, nil
 }

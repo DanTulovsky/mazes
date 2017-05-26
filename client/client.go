@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"mazes/maze"
 	"mazes/solvealgos"
 
 	"google.golang.org/grpc"
@@ -17,8 +16,7 @@ const (
 )
 
 var (
-	winTitle         string = "Maze"
-	fromCell, toCell *maze.Cell
+	winTitle string = "Maze"
 
 	solver solvealgos.Algorithmer
 
@@ -118,6 +116,8 @@ func main() {
 		CurrentLocationColor: *currentLocationColor,
 		FromCellColor:        *fromCellColor,
 		ToCellColor:          *toCellColor,
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
 	}
 
 	log.Printf("%#v", config)

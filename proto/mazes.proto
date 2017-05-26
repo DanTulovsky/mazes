@@ -43,6 +43,12 @@ message MazeConfig {
     string CurrentLocationColor = 20;
     string FromCellColor = 21;
     string ToCellColor = 22;
+    string FromCell = 23; // "min", "max", "random" or "x,y"
+    string ToCell = 24;  // "min", "max", "random" or "x,y"
+}
+
+message Cell {
+    // Oneof?
 }
 
 // MazeLocation is a location in the maze
