@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
+	"github.com/satori/go.uuid"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_mixer"
@@ -71,7 +72,84 @@ var (
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
 	winWidth, winHeight int
+
+	// keep track of mazes
+	mazeMap *safeMap
 )
+
+type safeMap struct {
+	deadlock.RWMutex
+	data map[uuid.UUID]interface{}
+}
+
+type safeMapItem struct {
+	Key   uuid.UUID
+	Value interface{}
+}
+
+func NewSafeMap() *safeMap {
+	return &safeMap{
+		data: make(map[uuid.UUID]interface{}),
+	}
+}
+
+func (sm *safeMap) Keys() []uuid.UUID {
+	sm.RLock()
+	defer sm.RUnlock()
+
+	var keys []uuid.UUID
+	for k := range sm.data {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func (sm *safeMap) Iter() <-chan safeMapItem {
+	c := make(chan safeMapItem, 10)
+
+	f := func() {
+		sm.RLock()
+		defer sm.RUnlock()
+		for k, v := range sm.data {
+			c <- safeMapItem{k, v}
+		}
+		close(c)
+	}
+	go f()
+
+	return c
+}
+
+func (sm *safeMap) Insert(key uuid.UUID, value interface{}) {
+	sm.Lock()
+	defer sm.Unlock()
+	sm.data[key] = value
+}
+
+func (sm *safeMap) Delete(key uuid.UUID) {
+	sm.Lock()
+	defer sm.Unlock()
+	delete(sm.data, key)
+}
+
+func (sm *safeMap) Find(key uuid.UUID) (interface{}, bool) {
+	sm.RLock()
+	defer sm.RUnlock()
+	v, ok := sm.data[key]
+	return v, ok
+}
+
+func (sm *safeMap) Len() int {
+	sm.RLock()
+	defer sm.RUnlock()
+	return len(sm.data)
+}
+
+func (sm *safeMap) Update(key uuid.UUID, value interface{}) {
+	sm.Lock()
+	defer sm.Unlock()
+	sm.data[key] = value
+}
 
 func setupSDL(config *pb.MazeConfig, w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
 	if !*showGUI {
@@ -173,7 +251,7 @@ func configToCell(m *maze.Maze, config *pb.MazeConfig, c string) (*maze.Cell, er
 
 }
 
-func showMaze(config *pb.MazeConfig) {
+func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	var (
 		w *sdl.Window
 		r *sdl.Renderer
@@ -456,6 +534,9 @@ func runServer() {
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 
+	// map of maze uuid -> maze channel
+	mazeMap = NewSafeMap()
+
 	log.Printf("server ready on port %v", port)
 
 	if err := s.Serve(lis); err != nil {
@@ -484,6 +565,15 @@ func main() {
 
 }
 
+type commChannel chan commandData
+
+type commandAction int
+
+type commandData struct {
+	action commandAction
+	key    uuid.UUID
+}
+
 // server is used to implement MazerServer.
 type server struct{}
 
@@ -491,7 +581,16 @@ type server struct{}
 func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
 
 	log.Printf("running maze with config: %#v", in.Config)
-	go showMaze(in.Config)
 
-	return &pb.ShowMazeReply{}, nil
+	uuid := uuid.NewV4()
+	comm := make(chan commChannel)
+	mazeMap.Insert(uuid, comm)
+
+	go showMaze(in.Config, comm)
+
+	return &pb.ShowMazeReply{MazeId: uuid.String()}, nil
+}
+
+// ListMazes lists all the mazes
+func (s *server) ListMazes(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
 }

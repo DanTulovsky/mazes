@@ -6,6 +6,15 @@ package proto;
 service Mazer {
     // Display maze
     rpc ShowMaze(ShowMazeRequest) returns (ShowMazeReply) {}
+
+    // List available mazes
+    rpc ListMazes(ListMazeRequest) returns (ListMazeReply) {}
+}
+
+message ListMazeRequest {}
+
+message ListMazeReply {
+    repeated string uuid = 1;
 }
 
 message ShowMazeRequest {
@@ -13,7 +22,7 @@ message ShowMazeRequest {
 }
 
 message ShowMazeReply {
-
+  string MazeId = 1;
 }
 
 // MazeConfig is the full config for a maze
