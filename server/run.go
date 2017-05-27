@@ -349,7 +349,6 @@ func showMaze(config *pb.MazeConfig) {
 		m.SetDistanceInfo(fromCell)
 
 		generating.UnSet()
-		wd.Done()
 	}()
 
 	if *showGUI {
