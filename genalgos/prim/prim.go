@@ -3,9 +3,11 @@ package prim
 
 import (
 	"container/heap"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
@@ -15,7 +17,7 @@ type Prim struct {
 	genalgos.Common
 }
 
-func (a *Prim) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *Prim) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	// Setup costs for all cells
@@ -33,6 +35,10 @@ func (a *Prim) Apply(m *maze.Maze, delay time.Duration) error {
 
 	// while we have unprocessed cells
 	for active.Len() > 0 {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		time.Sleep(delay) // animation delay
 
 		// grab a cell with the lowest weight

@@ -8,10 +8,13 @@
 package wilsons
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type Wilsons struct {
@@ -19,7 +22,7 @@ type Wilsons struct {
 }
 
 // Apply applies wilson's algorithm to generate the maze.
-func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) error {
+func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 
 	defer genalgos.TimeTrack(g, time.Now())
 
@@ -33,6 +36,10 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration) error {
 	visitedCells[start] = true
 
 	for len(g.UnvisitedCells()) > 0 {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		time.Sleep(delay) // animation delay
 
 		// pick random, unvisited cell

@@ -7,9 +7,12 @@
 package recursive_backtracker
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
-	"time"
 )
 
 type RecursiveBacktracker struct {
@@ -17,7 +20,7 @@ type RecursiveBacktracker struct {
 }
 
 // Apply applies the recursive backtracker algorithm to generate the maze.
-func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	cells := maze.NewStack()
@@ -25,7 +28,12 @@ func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration) error {
 	cells.Push(currentCell)
 
 	for currentCell != nil {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		time.Sleep(delay) // animation delay
+
 		currentCell = cells.Top()
 		currentCell.SetVisited()
 		m.SetGenCurrentLocation(currentCell)

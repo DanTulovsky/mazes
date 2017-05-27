@@ -5,11 +5,14 @@
 package sidewinder
 
 import (
+	"fmt"
 	"log"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type Sidewinder struct {
@@ -17,7 +20,7 @@ type Sidewinder struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *Sidewinder) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *Sidewinder) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	gridWidth, _ := m.Dimensions()
@@ -26,6 +29,10 @@ func (a *Sidewinder) Apply(m *maze.Maze, delay time.Duration) error {
 		var run []*maze.Cell
 
 		for x := len(row) - 1; x >= 0; x-- {
+			if !generating.IsSet() {
+				return fmt.Errorf("stop requested")
+			}
+
 			time.Sleep(delay) // animation delay
 
 			cell := row[x]

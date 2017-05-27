@@ -5,22 +5,24 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/maze"
 	"mazes/tree"
 	"mazes/utils"
-	"time"
 )
 
 type Algorithmer interface {
-	Apply(g *maze.Maze, delay time.Duration) error
-	Cleanup(g *maze.Maze)
-	CheckGrid(g *maze.Maze) error
+	Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error
+	Cleanup(m *maze.Maze)
+	CheckGrid(m *maze.Maze) error
 }
 
 type Common struct {
 }
 
-func (a *Common) Apply(*maze.Maze) (*maze.Maze, error) {
+func (a *Common) Apply(m *maze.Maze, duration time.Duration, bool *abool.AtomicBool) (*maze.Maze, error) {
 	return nil, errors.New("Apply() not implemented")
 }
 

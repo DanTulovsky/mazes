@@ -117,6 +117,7 @@ func main() {
 		ToCellColor:          *toCellColor,
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
+		GenDrawDelay:         *genDrawDelay,
 	}
 
 	log.Printf("%#v", config)

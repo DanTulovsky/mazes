@@ -5,9 +5,12 @@
 package aldous_broder
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
-	"time"
 )
 
 type AldousBroder struct {
@@ -15,7 +18,7 @@ type AldousBroder struct {
 }
 
 // Apply applies the adlous-broder algorithm to generate the maze.
-func (a *AldousBroder) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *AldousBroder) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	var visitedCells int
@@ -24,6 +27,10 @@ func (a *AldousBroder) Apply(m *maze.Maze, delay time.Duration) error {
 	visitedCells++
 
 	for visitedCells < len(m.Cells()) {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		time.Sleep(delay) // animation delay
 		m.SetGenCurrentLocation(currentCell)
 

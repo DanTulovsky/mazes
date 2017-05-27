@@ -1,9 +1,11 @@
 package recursive_division
 
 import (
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
@@ -46,22 +48,26 @@ func shouldStop(height, width int64) bool {
 	return false
 }
 
-func divide(m *maze.Maze, row, column, height, width int64, delay time.Duration) error {
+func divide(m *maze.Maze, row, column, height, width int64, delay time.Duration, generating *abool.AtomicBool) error {
+
+	if !generating.IsSet() {
+		return fmt.Errorf("stop requested")
+	}
 
 	if shouldStop(height, width) {
 		return nil
 	}
 
 	if height > width {
-		divideHorizontally(m, row, column, height, width, delay)
+		divideHorizontally(m, row, column, height, width, delay, generating)
 	} else {
-		divideVertically(m, row, column, height, width, delay)
+		divideVertically(m, row, column, height, width, delay, generating)
 	}
 
 	return nil
 }
 
-func divideHorizontally(m *maze.Maze, row, column, height, width int64, delay time.Duration) {
+func divideHorizontally(m *maze.Maze, row, column, height, width int64, delay time.Duration, generating *abool.AtomicBool) {
 
 	divideSouthOf := int64(utils.Random(0, int(height)-1))
 	passageAt := int64(utils.Random(0, int(width)))
@@ -82,11 +88,11 @@ func divideHorizontally(m *maze.Maze, row, column, height, width int64, delay ti
 		}
 	}
 
-	divide(m, row, column, divideSouthOf+1, width, delay)
-	divide(m, row+divideSouthOf+1, column, height-divideSouthOf-1, width, delay)
+	divide(m, row, column, divideSouthOf+1, width, delay, generating)
+	divide(m, row+divideSouthOf+1, column, height-divideSouthOf-1, width, delay, generating)
 }
 
-func divideVertically(m *maze.Maze, row, column, height, width int64, delay time.Duration) {
+func divideVertically(m *maze.Maze, row, column, height, width int64, delay time.Duration, generating *abool.AtomicBool) {
 
 	divideEastOf := int64(utils.Random(0, int(width)-1))
 	passageAt := int64(utils.Random(0, int(height)))
@@ -107,12 +113,12 @@ func divideVertically(m *maze.Maze, row, column, height, width int64, delay time
 		}
 	}
 
-	divide(m, row, column, height, divideEastOf+1, delay)
-	divide(m, row, column+divideEastOf+1, height, width-divideEastOf-1, delay)
+	divide(m, row, column, height, divideEastOf+1, delay, generating)
+	divide(m, row, column+divideEastOf+1, height, width-divideEastOf-1, delay, generating)
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *RecursiveDivision) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *RecursiveDivision) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 
 	defer genalgos.TimeTrack(m, time.Now())
 
@@ -120,7 +126,7 @@ func (a *RecursiveDivision) Apply(m *maze.Maze, delay time.Duration) error {
 	initMaze(m)
 
 	width, height := m.Dimensions()
-	divide(m, 0, 0, height, width, delay)
+	divide(m, 0, 0, height, width, delay, generating)
 
 	a.Cleanup(m)
 	return nil

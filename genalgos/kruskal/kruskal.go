@@ -2,8 +2,10 @@
 package kruskal
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
@@ -105,7 +107,7 @@ type Kruskal struct {
 }
 
 // Apply applies the algorithm to the grid.
-func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	s := newState(m)
@@ -124,6 +126,9 @@ func (a *Kruskal) Apply(m *maze.Maze, delay time.Duration) error {
 	}
 
 	for s.neighbors.Size() > 0 {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
 		time.Sleep(delay) // animation delay
 		n := s.neighbors.Pop()
 		if s.canMerge(n.left, n.right) {

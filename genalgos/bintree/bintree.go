@@ -4,10 +4,13 @@
 package bintree
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
-	"time"
 )
 
 type Bintree struct {
@@ -15,10 +18,14 @@ type Bintree struct {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *Bintree) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *Bintree) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 	defer genalgos.TimeTrack(m, time.Now())
 
 	for _, currentCell := range m.OrderedCells() {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		time.Sleep(delay) // animation delay
 		m.SetGenCurrentLocation(currentCell)
 

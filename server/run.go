@@ -55,7 +55,6 @@ var (
 
 	// display
 	frameRate        = flag.Uint("frame_rate", 120, "frame rate for animation")
-	genDrawDelay     = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
 	showFromToColors = flag.Bool("show_from_to_colors", false, "show from/to colors")
 
 	// algo
@@ -284,9 +283,9 @@ func showMaze(config *pb.MazeConfig) {
 	// apply algorithm
 	algo := algos.Algorithms[*createAlgo]
 
-	delay, err := time.ParseDuration(*genDrawDelay)
+	delay, err := time.ParseDuration(config.GenDrawDelay)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Printf(err.Error())
 	}
 
 	// Display generator while building
@@ -296,13 +295,18 @@ func showMaze(config *pb.MazeConfig) {
 
 	wd.Add(1)
 	go func() {
+		defer wd.Done()
 		log.Printf("running generator %v", *createAlgo)
 
-		if err := algo.Apply(m, delay); err != nil {
-			log.Fatalf(err.Error())
+		if err := algo.Apply(m, delay, generating); err != nil {
+			log.Printf(err.Error())
+			generating.UnSet()
+			return
 		}
 		if err := algo.CheckGrid(m); err != nil {
-			log.Fatalf("maze is not valid: %v", err)
+			log.Printf("maze is not valid: %v", err)
+			generating.UnSet()
+			return
 		}
 
 		if *showStats {
@@ -476,7 +480,7 @@ func main() {
 		defer profile.Start().Stop()
 	}
 
-	// must be showMaze like this to keep drawing functions in main thread
+	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
 
 }
@@ -484,15 +488,11 @@ func main() {
 // server is used to implement MazerServer.
 type server struct{}
 
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
-}
-
 // ShowMaze displays the maze specified by the config
 func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
 
 	log.Printf("running maze with config: %#v", in.Config)
-	showMaze(in.Config)
+	go showMaze(in.Config)
 
 	return &pb.ShowMazeReply{}, nil
 }

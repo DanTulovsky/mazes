@@ -4,9 +4,11 @@ package ellers
 // Weaving does not work for this algorithm because it never references cell.neighbors()
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
@@ -84,7 +86,7 @@ func shuffleCells(cells []*maze.Cell) {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *Ellers) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *Ellers) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 
 	defer genalgos.TimeTrack(m, time.Now())
 
@@ -92,6 +94,10 @@ func (a *Ellers) Apply(m *maze.Maze, delay time.Duration) error {
 	s := newState(m, 0)
 
 	for _, row := range m.Rows() {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		// pick which cells to merge
 		for _, c := range row {
 			time.Sleep(delay) // animation delay

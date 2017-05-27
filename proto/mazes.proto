@@ -4,9 +4,6 @@ package proto;
 
 // The greeting service definition.
 service Mazer {
-    // Sends a greeting
-    rpc SayHello (HelloRequest) returns (HelloReply) {}
-
     // Display maze
     rpc ShowMaze(ShowMazeRequest) returns (ShowMazeReply) {}
 }
@@ -45,6 +42,7 @@ message MazeConfig {
     string ToCellColor = 22;
     string FromCell = 23; // "min", "max", "random" or "x,y"
     string ToCell = 24;  // "min", "max", "random" or "x,y"
+    string GenDrawDelay = 25;  // time string, e.g. 500ms
 }
 
 message Cell {
@@ -56,14 +54,4 @@ message MazeLocation {
     int64 X = 1;
     int64 Y = 2;
     int64 Z = 3;
-}
-
-// The request message containing the user's name.
-message HelloRequest {
-    string name = 1;
-}
-
-// The response message containing the greetings
-message HelloReply {
-    string message = 1;
 }

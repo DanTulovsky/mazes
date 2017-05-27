@@ -3,10 +3,13 @@
 package hint_and_kill
 
 import (
+	"fmt"
 	"math/rand"
+	"time"
+
+	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
-	"time"
 )
 
 type HuntAndKill struct {
@@ -40,13 +43,17 @@ func Shuffle(cells []*maze.Cell) []*maze.Cell {
 }
 
 // Apply applies the binary tree algorithm to generate the maze.
-func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration) error {
+func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 
 	defer genalgos.TimeTrack(m, time.Now())
 
 	currentCell := m.RandomCell()
 
 	for currentCell != nil {
+		if !generating.IsSet() {
+			return fmt.Errorf("stop requested")
+		}
+
 		time.Sleep(delay) // animation delay
 		m.SetGenCurrentLocation(currentCell)
 
