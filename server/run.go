@@ -12,6 +12,11 @@ import (
 	"sync"
 	"time"
 
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/satori/go.uuid"
@@ -21,10 +26,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
 )
 
 const (
@@ -588,5 +589,9 @@ func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.Show
 
 // ListMazes lists all the mazes
 func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
-	return &pb.ListMazeReply{}, nil
+	keys := []string{}
+	for _, k := range mazeMap.Keys() {
+		keys = append(keys, k.String())
+	}
+	return &pb.ListMazeReply{keys}, nil
 }

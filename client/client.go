@@ -5,9 +5,10 @@ import (
 	"flag"
 	"log"
 
-	"google.golang.org/grpc"
 	pb "mazes/proto"
 	"mazes/solvealgos"
+
+	"google.golang.org/grpc"
 )
 
 const (
@@ -18,6 +19,9 @@ var (
 	winTitle string = "Maze"
 
 	solver solvealgos.Algorithmer
+
+	// operation
+	op = flag.String("op", "list", "operation to run")
 
 	// maze
 	maskImage          = flag.String("mask_image", "", "file name of mask image")
@@ -79,6 +83,26 @@ var (
 	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 )
 
+// opCreate creates a new maze
+func opCreate(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
+	r, err := c.ShowMaze(ctx, &pb.ShowMazeRequest{Config: config})
+	if err != nil {
+		log.Fatalf("could not show maze: %v", err)
+	}
+	log.Printf("> %v", r)
+	return nil
+}
+
+// opList lists available mazes by their uuid
+func opList(ctx context.Context, c pb.MazerClient) ([]string, error) {
+	r, err := c.ListMazes(ctx, &pb.ListMazeRequest{})
+	if err != nil {
+		log.Fatalf("could not list mazes: %v", err)
+	}
+	log.Printf("> %v", r)
+	return r.GetUuids(), nil
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -122,11 +146,13 @@ func main() {
 		ShowFromToColors:     *showFromToColors,
 	}
 
-	log.Printf("%#v", config)
-	// Contact the server and print out its response.
-	r, err := c.ShowMaze(ctx, &pb.ShowMazeRequest{Config: config})
-	if err != nil {
-		log.Fatalf("could not show maze: %v", err)
+	log.Printf("running: %v", *op)
+
+	switch *op {
+	case "create":
+		opCreate(ctx, c, config)
+	case "list":
+		opList(ctx, c)
 	}
-	log.Printf("> %v", r)
+
 }
