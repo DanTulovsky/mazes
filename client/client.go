@@ -110,14 +110,16 @@ func main() {
 		SkipGridCheck:        *skipGridCheck,
 		AvatarImage:          *avatarImage,
 		VisitedCellColor:     *visitedCellColor,
-		BgColor:              *bgColor,
-		BorderColor:          *borderColor,
 		CurrentLocationColor: *currentLocationColor,
 		FromCellColor:        *fromCellColor,
 		ToCellColor:          *toCellColor,
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
 		GenDrawDelay:         *genDrawDelay,
+		BgColor:              *bgColor,
+		BorderColor:          *borderColor,
+		CreateAlgo:           *createAlgo,
+		ShowFromToColors:     *showFromToColors,
 	}
 
 	log.Printf("%#v", config)

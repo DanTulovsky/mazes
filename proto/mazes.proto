@@ -52,6 +52,8 @@ message MazeConfig {
     string FromCell = 23; // "min", "max", "random" or "x,y"
     string ToCell = 24;  // "min", "max", "random" or "x,y"
     string GenDrawDelay = 25;  // time string, e.g. 500ms
+    string CreateAlgo = 26;
+    bool ShowFromToColors = 27;
 }
 
 message Cell {

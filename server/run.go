@@ -58,9 +58,6 @@ var (
 	frameRate        = flag.Uint("frame_rate", 120, "frame rate for animation")
 	showFromToColors = flag.Bool("show_from_to_colors", false, "show from/to colors")
 
-	// algo
-	createAlgo = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-
 	// misc
 	bgMusic = flag.String("bg_music", "", "file name of background music to play")
 
@@ -330,8 +327,8 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
-	if !checkCreateAlgo(*createAlgo) {
-		log.Fatalf("invalid create algorithm: %v", *createAlgo)
+	if !checkCreateAlgo(config.CreateAlgo) {
+		log.Fatalf("invalid create algorithm: %v", config.CreateAlgo)
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -359,7 +356,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	// Generator
 	///////////////////////////////////////////////////////////////////////////
 	// apply algorithm
-	algo := algos.Algorithms[*createAlgo]
+	algo := algos.Algorithms[config.CreateAlgo]
 
 	delay, err := time.ParseDuration(config.GenDrawDelay)
 	if err != nil {
@@ -374,7 +371,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	wd.Add(1)
 	go func() {
 		defer wd.Done()
-		log.Printf("running generator %v", *createAlgo)
+		log.Printf("running generator %v", config.CreateAlgo)
 
 		if err := algo.Apply(m, delay, generating); err != nil {
 			log.Printf(err.Error())
@@ -446,7 +443,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	}
 	wd.Wait()
 
-	if *showFromToColors {
+	if config.ShowFromToColors {
 		// Set the colors for the from and to cells
 		m.SetFromToColors(fromCell, toCell)
 	}
@@ -592,5 +589,6 @@ func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.Show
 }
 
 // ListMazes lists all the mazes
-func (s *server) ListMazes(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
+func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
+	return &pb.ListMazeReply{}, nil
 }
