@@ -457,68 +457,66 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
 	// gui maze
-	if *showGUI {
-		wd.Add(1)
-		go func(r *sdl.Renderer) {
-			running := abool.New()
-			running.Set()
-
-			// create background texture, it is saved and re-rendered as a picture
-			mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
-			if err != nil {
-				log.Fatalf("failed to create background: %v", err)
-			}
-
-			// draw on the texture
-			sdl.Do(func() {
-				r.SetRenderTarget(mTexture)
-				// background is black so that transparency works
-				colors.SetDrawColor(colors.GetColor("white"), r)
-				r.Clear()
-			})
-			m.DrawMazeBackground(r)
-			sdl.Do(func() {
-				r.Present()
-			})
-
-			// Reset to drawing on the screen
-			sdl.Do(func() {
-				r.SetRenderTarget(nil)
-				r.Copy(mTexture, nil, nil)
-				r.Present()
-			})
-
-			// Allow clients to connect
-			mazeReady.Set()
-
-			for running.IsSet() {
-				checkQuit(running)
-
-				if !running.IsSet() {
-					wd.Done()
-				}
-
-				// Displays the main maze, no paths or other markers
-				sdl.Do(func() {
-					// reset the clear color back to white
-					// but it doesn't matter, as background texture takes up the entire view
-					colors.SetDrawColor(colors.GetColor("black"), r)
-
-					r.Clear()
-					m.DrawMaze(r, mTexture)
-
-					r.Present()
-					sdl.Delay(uint32(1000 / *frameRate))
-				})
-			}
-
-			log.Printf("maze is done...")
-		}(r)
-
-		showMazeStats(m)
-		wd.Wait()
+	if !*showGUI {
+		return
 	}
 
+	wd.Add(1)
+	go func(r *sdl.Renderer) {
+		defer wd.Done()
+		running := abool.New()
+		running.Set()
+
+		// create background texture, it is saved and re-rendered as a picture
+		mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
+		if err != nil {
+			log.Fatalf("failed to create background: %v", err)
+		}
+
+		// draw on the texture
+		sdl.Do(func() {
+			r.SetRenderTarget(mTexture)
+			// background is black so that transparency works
+			colors.SetDrawColor(colors.GetColor("white"), r)
+			r.Clear()
+		})
+		m.DrawMazeBackground(r)
+		sdl.Do(func() {
+			r.Present()
+		})
+
+		// Reset to drawing on the screen
+		sdl.Do(func() {
+			r.SetRenderTarget(nil)
+			r.Copy(mTexture, nil, nil)
+			r.Present()
+		})
+
+		// Allow clients to connect
+		mazeReady.Set()
+
+		for running.IsSet() {
+			checkQuit(running)
+
+			// Displays the main maze, no paths or other markers
+			sdl.Do(func() {
+				// reset the clear color back to white
+				// but it doesn't matter, as background texture takes up the entire view
+				colors.SetDrawColor(colors.GetColor("black"), r)
+
+				r.Clear()
+				m.DrawMaze(r, mTexture)
+
+				r.Present()
+				sdl.Delay(uint32(1000 / *frameRate))
+			})
+		}
+
+		log.Printf("maze is done...")
+	}(r)
+
+	showMazeStats(m)
+	wd.Wait()
 }
 
 func runServer() {
