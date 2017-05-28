@@ -5,10 +5,9 @@ import (
 	"flag"
 	"log"
 
+	"google.golang.org/grpc"
 	pb "mazes/proto"
 	"mazes/solvealgos"
-
-	"google.golang.org/grpc"
 )
 
 const (
@@ -85,7 +84,7 @@ var (
 
 // opCreate creates a new maze
 func opCreate(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
-	r, err := c.ShowMaze(ctx, &pb.ShowMazeRequest{Config: config})
+	r, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
 	if err != nil {
 		log.Fatalf("could not show maze: %v", err)
 	}

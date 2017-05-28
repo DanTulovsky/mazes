@@ -5,7 +5,7 @@ package proto;
 // The greeting service definition.
 service Mazer {
     // Display maze
-    rpc ShowMaze(ShowMazeRequest) returns (ShowMazeReply) {}
+    rpc CreateMaze(CreateMazeRequest) returns (CreateMazeReply) {}
 
     // List available mazes
     rpc ListMazes(ListMazeRequest) returns (ListMazeReply) {}
@@ -17,11 +17,11 @@ message ListMazeReply {
     repeated string uuids = 1;
 }
 
-message ShowMazeRequest {
+message CreateMazeRequest {
   MazeConfig config = 1;
 }
 
-message ShowMazeReply {
+message CreateMazeReply {
   string MazeId = 1;
 }
 
@@ -54,6 +54,7 @@ message MazeConfig {
     string GenDrawDelay = 25;  // time string, e.g. 500ms
     string CreateAlgo = 26;
     bool ShowFromToColors = 27;
+    string Id = 28;
 }
 
 message Cell {

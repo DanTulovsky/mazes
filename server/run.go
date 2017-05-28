@@ -12,11 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/satori/go.uuid"
@@ -26,6 +21,11 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+	"safemap"
 )
 
 const (
@@ -72,82 +72,8 @@ var (
 	winWidth, winHeight int
 
 	// keep track of mazes
-	mazeMap *safeMap
+	mazeMap = *safemap.NewSafeMap()
 )
-
-type safeMap struct {
-	deadlock.RWMutex
-	data map[uuid.UUID]interface{}
-}
-
-type safeMapItem struct {
-	Key   uuid.UUID
-	Value interface{}
-}
-
-func NewSafeMap() *safeMap {
-	return &safeMap{
-		data: make(map[uuid.UUID]interface{}),
-	}
-}
-
-func (sm *safeMap) Keys() []uuid.UUID {
-	sm.RLock()
-	defer sm.RUnlock()
-
-	var keys []uuid.UUID
-	for k := range sm.data {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (sm *safeMap) Iter() <-chan safeMapItem {
-	c := make(chan safeMapItem, 10)
-
-	f := func() {
-		sm.RLock()
-		defer sm.RUnlock()
-		for k, v := range sm.data {
-			c <- safeMapItem{k, v}
-		}
-		close(c)
-	}
-	go f()
-
-	return c
-}
-
-func (sm *safeMap) Insert(key uuid.UUID, value interface{}) {
-	sm.Lock()
-	defer sm.Unlock()
-	sm.data[key] = value
-}
-
-func (sm *safeMap) Delete(key uuid.UUID) {
-	sm.Lock()
-	defer sm.Unlock()
-	delete(sm.data, key)
-}
-
-func (sm *safeMap) Find(key uuid.UUID) (interface{}, bool) {
-	sm.RLock()
-	defer sm.RUnlock()
-	v, ok := sm.data[key]
-	return v, ok
-}
-
-func (sm *safeMap) Len() int {
-	sm.RLock()
-	defer sm.RUnlock()
-	return len(sm.data)
-}
-
-func (sm *safeMap) Update(key uuid.UUID, value interface{}) {
-	sm.Lock()
-	defer sm.Unlock()
-	sm.data[key] = value
-}
 
 func setupSDL(config *pb.MazeConfig, w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
 	if !*showGUI {
@@ -512,6 +438,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 				sdl.Delay(uint32(1000 / *frameRate))
 			})
 		}
+		mazeMap.Delete(m.Config().GetId())
 
 		log.Printf("maze is done...")
 	}(r)
@@ -529,9 +456,6 @@ func runServer() {
 	pb.RegisterMazerServer(s, &server{})
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
-
-	// map of maze uuid -> maze channel
-	mazeMap = NewSafeMap()
 
 	log.Printf("server ready on port %v", port)
 
@@ -567,31 +491,33 @@ type commandAction int
 
 type commandData struct {
 	action commandAction
-	key    uuid.UUID
+	key    string
 }
 
 // server is used to implement MazerServer.
 type server struct{}
 
-// ShowMaze displays the maze specified by the config
-func (s *server) ShowMaze(ctx context.Context, in *pb.ShowMazeRequest) (*pb.ShowMazeReply, error) {
+// CreateMaze creates and displays the maze specified by the config
+func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {
 
 	log.Printf("running maze with config: %#v", in.Config)
 
-	uuid := uuid.NewV4()
+	id := uuid.NewV4().String()
+	in.Config.Id = id
+
 	comm := make(chan commChannel)
-	mazeMap.Insert(uuid, comm)
+	mazeMap.Insert(id, comm)
 
 	go showMaze(in.Config, comm)
 
-	return &pb.ShowMazeReply{MazeId: uuid.String()}, nil
+	return &pb.CreateMazeReply{MazeId: id}, nil
 }
 
 // ListMazes lists all the mazes
 func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
 	keys := []string{}
 	for _, k := range mazeMap.Keys() {
-		keys = append(keys, k.String())
+		keys = append(keys, k)
 	}
 	return &pb.ListMazeReply{keys}, nil
 }

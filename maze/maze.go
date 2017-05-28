@@ -31,6 +31,7 @@ type Location struct {
 
 // Grid defines the maze grid
 type Maze struct {
+	id               string
 	config           *pb.MazeConfig
 	rows             int64
 	columns          int64
@@ -124,7 +125,9 @@ func NewMaze(c *pb.MazeConfig) (*Maze, error) {
 	//if err := c.CheckConfig(); err != nil {
 	//	return nil, err
 	//}
+
 	m := &Maze{
+		id:          c.GetId(),
 		rows:        c.GetRows(),
 		columns:     c.GetColumns(),
 		cells:       [][]*Cell{},
