@@ -9,10 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"mazes/maze"
-	"mazes/solvealgos"
 	"strings"
 	"time"
+
+	"mazes/maze"
+	pb "mazes/proto"
+	"mazes/solvealgos"
 )
 
 type WallFollower struct {
@@ -51,7 +53,7 @@ func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
 	return nil
 }
 
-func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
+func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, fromCell, toCell string, delay time.Duration) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	var travelPath = m.TravelPath()
@@ -63,7 +65,7 @@ func (a *WallFollower) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay ti
 	for currentCell != toCell {
 		// animation delay
 		time.Sleep(delay)
-
+		// this stuff happens on the server now
 		currentCell.SetVisited()
 
 		segment := maze.NewSegment(currentCell, facing)

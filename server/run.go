@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -36,7 +37,7 @@ const (
 // brew install sdl2{_image,_ttf,_gfx}
 // brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
-// if slow compile, showMaze: go install -a mazes/generate
+// if slow compile, createMaze: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
@@ -74,6 +75,15 @@ var (
 	// keep track of mazes
 	mazeMap = *safemap.NewSafeMap()
 )
+
+// Send returns true if it was able to send t on channel c.
+// It returns false if c is closed.
+// This isn't great, but for simplicity here.
+//func Send(c chan commChannel, t string) (ok bool) {
+//	defer func() { recover() }()
+//	c <- t
+//	return true
+//}
 
 func setupSDL(config *pb.MazeConfig, w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
 	if !*showGUI {
@@ -175,7 +185,7 @@ func configToCell(m *maze.Maze, config *pb.MazeConfig, c string) (*maze.Cell, er
 
 }
 
-func showMaze(config *pb.MazeConfig, comm chan commChannel) {
+func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string) {
 	var (
 		w *sdl.Window
 		r *sdl.Renderer
@@ -217,7 +227,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 	// If the mask image is provided, use that as the dimensions of the grid
 	if *maskImage != "" {
 		log.Printf("Using %v as grid mask", *maskImage)
-		m, err = maze.NewMazeFromImage(config, *maskImage)
+		m, err = maze.NewMazeFromImage(config, *maskImage, clientID)
 		if err != nil {
 			log.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -225,7 +235,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 		// Set these for correct window size
 		config.Columns, config.Rows = m.Dimensions()
 	} else {
-		m, err = maze.NewMaze(config)
+		m, err = maze.NewMaze(config, clientID)
 		if err != nil {
 			log.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -388,6 +398,7 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 		return
 	}
 
+	// this is the main maze thread that draws the maze and interacts with it via comm
 	wd.Add(1)
 	go func(r *sdl.Renderer) {
 		defer wd.Done()
@@ -419,13 +430,16 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 			r.Present()
 		})
 
-		// Allow clients to connect
+		// Allow clients to connect, solvers can start here
 		mazeReady.Set()
 
 		for running.IsSet() {
 			checkQuit(running)
 
-			// Displays the main maze, no paths or other markers
+			// check for client communications, they are serialized for one maze
+			checkComm(m, comm)
+
+			// Displays the maze
 			sdl.Do(func() {
 				// reset the clear color back to white
 				// but it doesn't matter, as background texture takes up the entire view
@@ -445,6 +459,30 @@ func showMaze(config *pb.MazeConfig, comm chan commChannel) {
 
 	showMazeStats(m)
 	wd.Wait()
+}
+
+func checkComm(m *maze.Maze, comm commChannel) {
+	select {
+	case in := <-comm: // type == commandData
+		log.Printf("received command: %#v", in)
+		switch in.Action {
+		case maze.CommandListClients:
+			log.Print("listing clients...")
+			answer := m.Clients()
+			var clients []string
+			for c := range answer {
+				clients = append(clients, c)
+			}
+			// send reply via the reply channel
+			in.Reply <- commandReply{answer: clients}
+		case maze.CommandGetDirections:
+			log.Print("listing directions...")
+		default:
+			log.Print("unknown command: %#v", in)
+		}
+	default:
+
+	}
 }
 
 func runServer() {
@@ -489,9 +527,14 @@ type commChannel chan commandData
 
 type commandAction int
 
+type commandReply struct {
+	answer interface{}
+}
+
 type commandData struct {
-	action commandAction
-	key    string
+	Action   commandAction
+	ClientID string
+	Reply    chan commandReply // reply from the maze is sent over this channel
 }
 
 // server is used to implement MazerServer.
@@ -502,22 +545,106 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 
 	log.Printf("running maze with config: %#v", in.Config)
 
-	id := uuid.NewV4().String()
-	in.Config.Id = id
+	mazeID := uuid.NewV4().String()
+	clientID := uuid.NewV4().String()
+	in.Config.Id = mazeID
 
-	comm := make(chan commChannel)
-	mazeMap.Insert(id, comm)
+	comm := make(chan commandData)
+	mazeMap.Insert(mazeID, comm)
 
-	go showMaze(in.Config, comm)
+	go createMaze(in.Config, comm, clientID)
 
-	return &pb.CreateMazeReply{MazeId: id}, nil
+	return &pb.CreateMazeReply{MazeId: mazeID, ClientId: clientID}, nil
 }
 
 // ListMazes lists all the mazes
 func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
-	keys := []string{}
+	response := &pb.ListMazeReply{}
 	for _, k := range mazeMap.Keys() {
-		keys = append(keys, k)
+		m := &pb.Maze{MazeId: k}
+
+		r, found := mazeMap.Find(k)
+		if !found {
+			// should never happen
+			return nil, fmt.Errorf("failed to find maze with id %v", k)
+		}
+
+		// comm is the channel to talk to the maze
+		comm := r.(chan commandData)
+		replyChannel := make(chan commandReply)
+		data := commandData{
+			Action: maze.CommandListClients,
+			Reply:  replyChannel,
+		}
+		// send request to maze
+		comm <- data
+
+		// receive reply from maze, blocking
+		mazeReply := <-replyChannel
+		// maze reply, in this case a []string, client IDs
+		m.ClientIds = mazeReply.answer.([]string)
+
+		response.Mazes = append(response.Mazes, m)
 	}
-	return &pb.ListMazeReply{keys}, nil
+	return response, nil
+}
+
+// SolveMaze is a streaming RPC to solve a maze
+func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
+	log.Printf("received client connect...")
+	// initial connect
+	in, err := stream.Recv()
+	if err == io.EOF {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	m, found := mazeMap.Find(in.GetMazeId()) // m is the communication channel with this maze
+	if !found {
+		return fmt.Errorf("unable to lookup maze [%v]: %v", in.GetMazeId(), err)
+	}
+	comm := m.(chan commandData)
+
+	log.Printf("maze channel: %v", m)
+
+	// check that client is valid
+
+	// send request into m for available directions, include client id
+	data := commandData{
+		Action:   maze.CommandGetDirections,
+		ClientID: in.GetClientId(),
+	}
+	comm <- data
+
+	// return available directions
+	reply := &pb.SolveMazeResponse{
+		Initial:  true,
+		MazeId:   in.GetMazeId(),
+		ClientId: in.ClientId,
+	}
+
+	if err := stream.Send(reply); err != nil {
+		return err
+	}
+
+	for {
+		in, err := stream.Recv()
+		log.Printf("received: %#v", in)
+
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		r := &pb.SolveMazeResponse{}
+		if err := stream.Send(r); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

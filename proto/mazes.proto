@@ -9,12 +9,47 @@ service Mazer {
 
     // List available mazes
     rpc ListMazes(ListMazeRequest) returns (ListMazeReply) {}
+
+    // Solve a maze, streaming, bidi
+    rpc SolveMaze(stream SolveMazeRequest) returns (stream SolveMazeResponse) {
+    }
+}
+
+enum Direction {
+    NORTH = 0;
+    SOUTH = 1;
+    WEST = 2;
+    EAST = 3;
+}
+
+// SolveMazeRequest is a message sent from the client trying to solve a maze
+message SolveMazeRequest{
+    string mazeId = 1;  // the id of the maze we are solving
+    string clientId = 2;  // the client id
+    Direction direction = 3;  // where the client wants to move next
+
+    // on first connect, this must be set true, the direction field is ignored, the client does not move
+    bool initial = 4;
+}
+
+// SolveMazeResponse is a response sent from the server as the client tries to solve a maze
+message SolveMazeResponse {
+    string mazeId = 1;  // the id of the maze we are solving
+    string clientId = 2;  // the client id
+    repeated Direction available_directions = 3;  // available directions the client can move from here
+    bool initial = 4;  // set true on initial response
+}
+
+// Maze defines a maze and its clients
+message Maze {
+    string mazeId = 1;
+    repeated string clientIds = 2;
 }
 
 message ListMazeRequest {}
 
 message ListMazeReply {
-    repeated string uuids = 1;
+     repeated Maze mazes = 1;
 }
 
 message CreateMazeRequest {
@@ -23,6 +58,7 @@ message CreateMazeRequest {
 
 message CreateMazeReply {
   string MazeId = 1;
+  string ClientId = 2;  // the client id for this client
 }
 
 // MazeConfig is the full config for a maze

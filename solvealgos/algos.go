@@ -3,8 +3,10 @@ package solvealgos
 
 import (
 	"errors"
-	"mazes/maze"
 	"time"
+
+	"mazes/maze"
+	pb "mazes/proto"
 )
 
 type Algorithmer interface {
@@ -15,7 +17,7 @@ type Algorithmer interface {
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// delay is ms for animation
-	Solve(g *maze.Maze, fromCell *maze.Cell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error)
+	Solve(stream pb.Mazer_SolveMazeClient, fromCell, toCell string, delay time.Duration) error
 	TravelPath() *maze.Path // all the cells traveled
 }
 

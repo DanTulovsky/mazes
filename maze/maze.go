@@ -53,6 +53,9 @@ type Maze struct {
 
 	genCurrentLocation *Cell // the current location of generator
 
+	// map of client IDs to client structures
+	clients map[string]*client
+
 	avatar *sdl.Texture
 
 	deadlock.RWMutex
@@ -109,7 +112,7 @@ func setupMazeMask(f string, c *pb.MazeConfig, mask []*pb.MazeLocation) ([]*pb.M
 }
 
 // NewMazeFromImage creates a new maze from the image at file f
-func NewMazeFromImage(c *pb.MazeConfig, f string) (*Maze, error) {
+func NewMazeFromImage(c *pb.MazeConfig, f string, clientID string) (*Maze, error) {
 	mask := make([]*pb.MazeLocation, 0)
 	mask, err := setupMazeMask(f, c, mask)
 	if err != nil {
@@ -117,14 +120,22 @@ func NewMazeFromImage(c *pb.MazeConfig, f string) (*Maze, error) {
 	}
 	c.OrphanMask = mask
 
-	return NewMaze(c)
+	return NewMaze(c, clientID)
 }
 
 // NewGrid returns a new grid.
-func NewMaze(c *pb.MazeConfig) (*Maze, error) {
+func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
 	//if err := c.CheckConfig(); err != nil {
 	//	return nil, err
 	//}
+
+	// new client
+	clients := make(map[string]*client)
+	clients[clientID] = &client{
+		id:         clientID,
+		solvePath:  NewPath(),
+		travelPath: NewPath(),
+	}
 
 	m := &Maze{
 		id:          c.GetId(),
@@ -145,6 +156,8 @@ func NewMaze(c *pb.MazeConfig) (*Maze, error) {
 
 		mazeCells:   make(map[*Cell]bool),
 		orphanCells: make(map[*Cell]bool),
+
+		clients: clients,
 	}
 
 	m.prepareGrid()
@@ -169,6 +182,11 @@ func (m *Maze) Braid(p float64) {
 		}
 
 	}
+}
+
+// Clients returns the clients connected to this maze
+func (m *Maze) Clients() map[string]*client {
+	return m.clients
 }
 
 // Link links c1 to c2 to its neighbor (adds passage)

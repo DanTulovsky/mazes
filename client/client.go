@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 
 	"google.golang.org/grpc"
+	"mazes/algos"
 	pb "mazes/proto"
 	"mazes/solvealgos"
 )
@@ -17,7 +19,7 @@ const (
 var (
 	winTitle string = "Maze"
 
-	solver solvealgos.Algorithmer
+	solver solvealgos.Algorithmer = algos.SolveAlgorithms[*solveAlgo]
 
 	// operation
 	op = flag.String("op", "list", "operation to run")
@@ -64,8 +66,12 @@ var (
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo     = flag.String("solve_algo", "", "algorithm to solve the maze")
+	solveAlgo     = flag.String("solve_algo", "empty", "algorithm to solve the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
+
+	// solver
+	mazeID   = flag.String("maze_id", "", "maze id")
+	clientID = flag.String("client_id", "", "client id")
 
 	// misc
 	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
@@ -82,24 +88,118 @@ var (
 	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 )
 
+// opCreateSolve creates and solves the maze
+func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
+	log.Print("creating maze...")
+	r, err := opCreate(ctx, c, config)
+	if err != nil {
+		return err
+	}
+
+	log.Print("solving maze...")
+	if err := opSolve(ctx, c, r.GetMazeId(), r.GetClientId()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // opCreate creates a new maze
-func opCreate(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
+func opCreate(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) (*pb.CreateMazeReply, error) {
 	r, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
 	if err != nil {
 		log.Fatalf("could not show maze: %v", err)
 	}
-	log.Printf("> %v", r)
-	return nil
+	return r, nil
 }
 
-// opList lists available mazes by their uuid
-func opList(ctx context.Context, c pb.MazerClient) ([]string, error) {
+// opList lists available mazes by their id
+func opList(ctx context.Context, c pb.MazerClient) (*pb.ListMazeReply, error) {
 	r, err := c.ListMazes(ctx, &pb.ListMazeRequest{})
 	if err != nil {
 		log.Fatalf("could not list mazes: %v", err)
 	}
 	log.Printf("> %v", r)
-	return r.GetUuids(), nil
+	return r, nil
+}
+
+func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID string) error {
+	log.Printf("in opSolve")
+	stream, err := c.SolveMaze(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !checkSolveAlgo(*solveAlgo) {
+		return fmt.Errorf("invalid solve algorithm: %v", *solveAlgo)
+	}
+
+	// initial connect to server to get the maze and client id
+	r := &pb.SolveMazeRequest{
+		Initial:  true,
+		MazeId:   mazeID,
+		ClientId: clientID,
+	}
+	log.Print("initial send to server")
+	if err := stream.Send(r); err != nil {
+		log.Fatalf("talking to server: %v", err)
+	}
+	log.Print("sent...")
+
+	log.Print("waiting for reply")
+	in, err := stream.Recv()
+	if err != nil {
+		log.Fatalf("error talking to server: %v", err)
+	}
+	log.Print("have reply: %v", in)
+
+	log.Printf("maze id: %v; client id: %v", mazeID, clientID)
+
+	// r := &pb.SolveMazeRequest{}
+	solver = algos.SolveAlgorithms[*solveAlgo]
+	//delay, err := time.ParseDuration(*solveDrawDelay)
+	//if err != nil {
+	//	return err
+	//}
+
+	//log.Printf("running solver %v", *solveAlgo)
+	//
+	//if err := solver.Solve(stream, *fromCellStr, *toCellStr, delay); err != nil {
+	//	return fmt.Errorf("error running solver: %v", err)
+	//}
+	//log.Printf("time to solve: %v", solver.SolveTime())
+	//log.Printf("steps taken to solve:   %v", solver.SolveSteps())
+	//log.Printf("steps in shortest path: %v", solver.SolvePath().Length())
+
+	// Solve here
+	//for {
+	//
+	//	if err := stream.Send(r); err != nil {
+	//		return err
+	//	}
+	//
+	//	in, err := stream.Recv()
+	//	log.Printf("received: %#v", in)
+	//
+	//	if err == io.EOF {
+	//		return nil
+	//	}
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//}
+	return nil
+}
+
+// checkSolveAlgo makes sure the passed in algorithm is valid
+func checkSolveAlgo(a string) bool {
+	for k := range algos.SolveAlgorithms {
+		if k == a {
+			return true
+		}
+	}
+	return false
 }
 
 func main() {
@@ -149,9 +249,31 @@ func main() {
 
 	switch *op {
 	case "create":
-		opCreate(ctx, c, config)
+		if r, err := opCreate(ctx, c, config); err != nil {
+			log.Printf(err.Error())
+		} else {
+			log.Printf("%#v", r)
+		}
 	case "list":
-		opList(ctx, c)
+		if r, err := opList(ctx, c); err != nil {
+			log.Fatalf(err.Error())
+		} else {
+			for _, m := range r.GetMazes() {
+				log.Printf("maze: %v", m.GetMazeId())
+				for _, c := range m.GetClientIds() {
+					log.Printf("  client: %v", c)
+				}
+			}
+		}
+	case "solve":
+		if err := opSolve(ctx, c, *mazeID, *clientID); err != nil {
+			log.Fatalf(err.Error())
+		}
+
+	case "create_solve":
+		if err := opCreateSolve(ctx, c, config); err != nil {
+			log.Print(err.Error())
+		}
 	}
 
 }
