@@ -48,6 +48,7 @@ type Maze struct {
 	createTime       time.Duration // how long it took to apply the algorithm to create the grid
 	fromCell, toCell *Cell         // save these for proper coloring
 
+	// these need to go into the client
 	solvePath  *Path // the final solve path of the solver
 	travelPath *Path // the travel path of the solver, update in real time
 
@@ -129,14 +130,6 @@ func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
 	//	return nil, err
 	//}
 
-	// new client
-	clients := make(map[string]*client)
-	clients[clientID] = &client{
-		id:         clientID,
-		solvePath:  NewPath(),
-		travelPath: NewPath(),
-	}
-
 	m := &Maze{
 		id:          c.GetId(),
 		rows:        c.GetRows(),
@@ -156,9 +149,18 @@ func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
 
 		mazeCells:   make(map[*Cell]bool),
 		orphanCells: make(map[*Cell]bool),
-
-		clients: clients,
 	}
+
+	// new client
+	clients := make(map[string]*client)
+	clients[clientID] = &client{
+		id: clientID,
+		// currentLocation: m.fromCell,
+		SolvePath:  NewPath(),
+		TravelPath: NewPath(),
+	}
+
+	m.clients = clients
 
 	m.prepareGrid()
 	m.configureCells()
@@ -182,6 +184,14 @@ func (m *Maze) Braid(p float64) {
 		}
 
 	}
+}
+
+// Client returns a single client
+func (m *Maze) Client(id string) (*client, error) {
+	if c, found := m.clients[id]; found {
+		return c, nil
+	}
+	return nil, fmt.Errorf("client [%v] not found", id)
 }
 
 // Clients returns the clients connected to this maze

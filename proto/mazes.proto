@@ -26,7 +26,7 @@ enum Direction {
 message SolveMazeRequest{
     string mazeId = 1;  // the id of the maze we are solving
     string clientId = 2;  // the client id
-    Direction direction = 3;  // where the client wants to move next
+    string direction = 3;  // where the client wants to move next
 
     // on first connect, this must be set true, the direction field is ignored, the client does not move
     bool initial = 4;
@@ -36,8 +36,13 @@ message SolveMazeRequest{
 message SolveMazeResponse {
     string mazeId = 1;  // the id of the maze we are solving
     string clientId = 2;  // the client id
-    repeated Direction available_directions = 3;  // available directions the client can move from here
+    repeated string available_directions = 3;  // available directions the client can move from here
     bool initial = 4;  // set true on initial response
+    bool error = 5; // set if error occured
+    string error_message = 6;
+    MazeLocation current_location = 7;
+    MazeLocation from_cell = 8;
+    MazeLocation to_cell = 9;
 }
 
 // Maze defines a maze and its clients

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"time"
 
 	"google.golang.org/grpc"
 	"mazes/algos"
@@ -151,22 +152,22 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID string) err
 	if err != nil {
 		log.Fatalf("error talking to server: %v", err)
 	}
-	log.Print("have reply: %v", in)
+	log.Printf("have reply: %#v", in)
+	log.Printf("current_location: %#v", in.GetCurrentLocation())
 
 	log.Printf("maze id: %v; client id: %v", mazeID, clientID)
 
 	// r := &pb.SolveMazeRequest{}
 	solver = algos.SolveAlgorithms[*solveAlgo]
-	//delay, err := time.ParseDuration(*solveDrawDelay)
-	//if err != nil {
-	//	return err
-	//}
+	delay, err := time.ParseDuration(*solveDrawDelay)
+	if err != nil {
+		return err
+	}
 
-	//log.Printf("running solver %v", *solveAlgo)
-	//
-	//if err := solver.Solve(stream, *fromCellStr, *toCellStr, delay); err != nil {
-	//	return fmt.Errorf("error running solver: %v", err)
-	//}
+	log.Printf("running solver %v", *solveAlgo)
+	if err := solver.Solve(stream, mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
+		return fmt.Errorf("error running solver: %v", err)
+	}
 	//log.Printf("time to solve: %v", solver.SolveTime())
 	//log.Printf("steps taken to solve:   %v", solver.SolveSteps())
 	//log.Printf("steps in shortest path: %v", solver.SolvePath().Length())

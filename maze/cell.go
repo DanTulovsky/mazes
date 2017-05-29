@@ -624,6 +624,36 @@ func (c *Cell) Links() []*Cell {
 	return keys
 }
 
+// directionTo returns the direction (north, south, east, west) of cell from c
+// c and cell must be linked
+// TODO(dan): raise appropriate error if cells are not linked
+func (c *Cell) directionTo(cell *Cell) string {
+
+	switch {
+	case c.North() == cell:
+		return "north"
+	case c.South() == cell:
+		return "south"
+	case c.East() == cell:
+		return "east"
+	case c.West() == cell:
+		return "west"
+	}
+
+	return ""
+}
+
+// DirectionLinks returns a list of directions that have linked (passage to) cells
+func (c *Cell) DirectionLinks() []string {
+	var directions []string
+	for item := range c.links.Iter() {
+		if c.Linked(item.Key) {
+			directions = append(directions, c.directionTo(item.Key))
+		}
+	}
+	return directions
+}
+
 // RandomLink returns a random cell linked to this one
 func (c *Cell) RandomLink() *Cell {
 	var keys []*Cell

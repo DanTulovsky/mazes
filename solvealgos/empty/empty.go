@@ -2,6 +2,8 @@
 package empty
 
 import (
+	"fmt"
+	"log"
 	"time"
 
 	pb "mazes/proto"
@@ -12,7 +14,40 @@ type Empty struct {
 	solvealgos.Common
 }
 
-func (a *Empty) Solve(stream pb.Mazer_SolveMazeClient, fromCell, toCell string, delay time.Duration) error {
+// directions is the initial available directions to travel
+func (a *Empty) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error {
 
+	log.Printf("fromCell: %v; toCell: %v; directions: %v", fromCell, toCell, directions)
+	if len(directions) < 1 {
+		return fmt.Errorf("no available directions to move: %v", directions)
+	}
+
+	currentCell := fromCell
+
+	for currentCell != toCell {
+
+		r := &pb.SolveMazeRequest{
+			MazeId:    mazeID,
+			ClientId:  clientID,
+			Direction: directions[0],
+		}
+
+		// send move request to server
+		if err := stream.Send(r); err != nil {
+			return err
+		}
+
+		// get response
+		reply, err := stream.Recv()
+		if err != nil {
+			return err
+		}
+
+		directions = reply.GetAvailableDirections()
+		log.Printf("i am at: %v and can go: %v", reply.GetCurrentLocation(), reply.GetAvailableDirections())
+		if len(directions) < 1 {
+			return fmt.Errorf("no available directions to move now: %v", directions)
+		}
+	}
 	return nil
 }

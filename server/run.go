@@ -477,6 +477,69 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			in.Reply <- commandReply{answer: clients}
 		case maze.CommandGetDirections:
 			log.Print("listing directions...")
+			if client, err := m.Client(in.ClientID); err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to get client links: %v", err)}
+
+			} else {
+				cell := client.CurrentLocation()
+				directions := cell.DirectionLinks()
+
+				in.Reply <- commandReply{answer: directions}
+			}
+		case maze.CommandSetInitialClientLocation:
+			log.Printf("setting initial client location to: %v", m.FromCell())
+			if client, err := m.Client(in.ClientID); err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
+			} else {
+				client.SetCurrentLocation(m.FromCell())
+			}
+		case maze.CommandCurrentLocation:
+			log.Print("returning client current location")
+			if client, err := m.Client(in.ClientID); err != nil {
+				log.Printf("failed to get client location: %v", err)
+			} else {
+				cell := client.CurrentLocation()
+				in.Reply <- commandReply{answer: cell.Location()}
+			}
+		case maze.CommandLocationInfo:
+			log.Print("returning locationd data")
+			if client, err := m.Client(in.ClientID); err != nil {
+				log.Printf("failed to get client location: %v", err)
+			} else {
+				info := &locationInfo{
+					current: client.CurrentLocation().Location(),
+					from:    m.FromCell().Location(),
+					to:      m.ToCell().Location(),
+				}
+				in.Reply <- commandReply{answer: info}
+			}
+		case maze.CommandMove:
+			r := in.Request
+			direction := r.request.(string)
+			log.Printf("received client move request: %v", direction)
+
+			client, err := m.Client(in.ClientID)
+			if err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
+			}
+
+			switch direction {
+			case "north":
+				if client.CurrentLocation().Linked(client.CurrentLocation().North()) {
+					client.SetCurrentLocation(client.CurrentLocation().North())
+					s := maze.NewSegment(client.CurrentLocation(), "north")
+					client.TravelPath.AddSegement(s)
+					client.SolvePath.AddSegement(s)
+					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+				}
+			case "south":
+			case "west":
+			case "east":
+			default:
+				log.Printf("invalid direction: %v", direction)
+				in.Reply <- commandReply{error: fmt.Errorf("invalid direction: %v", direction)}
+			}
+
 		default:
 			log.Print("unknown command: %#v", in)
 		}
@@ -527,14 +590,27 @@ type commChannel chan commandData
 
 type commandAction int
 
+// request parameters sent in
+type commandRequest struct {
+	request interface{}
+}
+
 type commandReply struct {
 	answer interface{}
+	error  error
 }
 
 type commandData struct {
 	Action   commandAction
 	ClientID string
+	Request  commandRequest
 	Reply    chan commandReply // reply from the maze is sent over this channel
+}
+
+type locationInfo struct {
+	current *pb.MazeLocation
+	from    *pb.MazeLocation
+	to      *pb.MazeLocation
 }
 
 // server is used to implement MazerServer.
@@ -591,7 +667,7 @@ func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.Lis
 
 // SolveMaze is a streaming RPC to solve a maze
 func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
-	log.Printf("received client connect...")
+	log.Printf("received initial client connect...")
 	// initial connect
 	in, err := stream.Recv()
 	if err == io.EOF {
@@ -601,43 +677,86 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		return err
 	}
 
-	m, found := mazeMap.Find(in.GetMazeId()) // m is the communication channel with this maze
+	m, found := mazeMap.Find(in.GetMazeId())
 	if !found {
 		return fmt.Errorf("unable to lookup maze [%v]: %v", in.GetMazeId(), err)
 	}
+	// comm is the communication channel with this maze
 	comm := m.(chan commandData)
-
-	log.Printf("maze channel: %v", m)
 
 	// check that client is valid
 
-	// send request into m for available directions, include client id
+	// set client initial location
 	data := commandData{
-		Action:   maze.CommandGetDirections,
-		ClientID: in.GetClientId(),
+		Action:   maze.CommandSetInitialClientLocation,
+		ClientID: in.ClientId,
+		Request:  commandRequest{},
 	}
 	comm <- data
-
-	// return available directions
-	reply := &pb.SolveMazeResponse{
-		Initial:  true,
-		MazeId:   in.GetMazeId(),
-		ClientId: in.ClientId,
+	// send request into m for available directions, include client id
+	data = commandData{
+		Action:   maze.CommandGetDirections,
+		ClientID: in.GetClientId(),
+		Reply:    make(chan commandReply),
 	}
+	comm <- data
+	// get response from maze
+	dirReply := <-data.Reply
 
+	// send request into m for current location
+	data = commandData{
+		Action:   maze.CommandLocationInfo,
+		ClientID: in.GetClientId(),
+		Reply:    make(chan commandReply),
+	}
+	comm <- data
+	// get currentlocation from maze
+	locationInfoReply := <-data.Reply
+	locationInfo := locationInfoReply.answer.(*locationInfo)
+
+	// return available directions and current location
+	reply := &pb.SolveMazeResponse{
+		Initial:             true,
+		MazeId:              in.GetMazeId(),
+		ClientId:            in.ClientId,
+		AvailableDirections: dirReply.answer.([]string),
+		CurrentLocation:     locationInfo.current,
+		FromCell:            locationInfo.from,
+		ToCell:              locationInfo.to,
+	}
 	if err := stream.Send(reply); err != nil {
 		return err
 	}
 
+	// this is the main loop as the client tries to solve the maze
 	for {
 		in, err := stream.Recv()
-		log.Printf("received: %#v", in)
-
 		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
+		}
+		log.Printf("received: %#v", in)
+
+		if in.Initial {
+			// client is mis-behaving!
+			r := &pb.SolveMazeResponse{
+				Error:        true,
+				ErrorMessage: fmt.Sprintf("received initial on subsequent request"),
+			}
+			if err := stream.Send(r); err != nil {
+				return err
+			}
+			continue
+		}
+
+		data = commandData{
+			Action:   maze.CommandMove,
+			ClientID: in.ClientId,
+			Request: commandRequest{
+				request: in.GetDirection(), // which way to move
+			},
 		}
 
 		r := &pb.SolveMazeResponse{}

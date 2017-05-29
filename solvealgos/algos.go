@@ -17,7 +17,7 @@ type Algorithmer interface {
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// delay is ms for animation
-	Solve(stream pb.Mazer_SolveMazeClient, fromCell, toCell string, delay time.Duration) error
+	Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error
 	TravelPath() *maze.Path // all the cells traveled
 }
 
