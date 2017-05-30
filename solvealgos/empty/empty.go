@@ -33,15 +33,19 @@ func (a *Empty) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID string, 
 		}
 
 		// send move request to server
+		log.Printf("sending move request to server: %v", r)
 		if err := stream.Send(r); err != nil {
 			return err
 		}
+		log.Printf("sent")
 
 		// get response
+		log.Printf("waiting for move reply from server")
 		reply, err := stream.Recv()
 		if err != nil {
 			return err
 		}
+		log.Printf("received: %v", r)
 
 		directions = reply.GetAvailableDirections()
 		log.Printf("i am at: %v and can go: %v", reply.GetCurrentLocation(), reply.GetAvailableDirections())

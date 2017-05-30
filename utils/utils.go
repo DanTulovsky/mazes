@@ -40,3 +40,12 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 	}
 	return -1
 }
+
+func StrInList(l []string, s string) bool {
+	for _, str := range l {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}

@@ -530,11 +530,64 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					s := maze.NewSegment(client.CurrentLocation(), "north")
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
+					client.CurrentLocation().SetVisited()
 					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+
+					in.Reply <- commandReply{
+						answer: &moveReply{
+							current:             client.CurrentLocation().Location(),
+							availableDirections: client.CurrentLocation().DirectionLinks(),
+						},
+					}
 				}
 			case "south":
+				if client.CurrentLocation().Linked(client.CurrentLocation().South()) {
+					client.SetCurrentLocation(client.CurrentLocation().South())
+					s := maze.NewSegment(client.CurrentLocation(), "south")
+					client.TravelPath.AddSegement(s)
+					client.SolvePath.AddSegement(s)
+					client.CurrentLocation().SetVisited()
+					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+
+					in.Reply <- commandReply{
+						answer: &moveReply{
+							current:             client.CurrentLocation().Location(),
+							availableDirections: client.CurrentLocation().DirectionLinks(),
+						},
+					}
+				}
 			case "west":
+				if client.CurrentLocation().Linked(client.CurrentLocation().West()) {
+					client.SetCurrentLocation(client.CurrentLocation().West())
+					s := maze.NewSegment(client.CurrentLocation(), "west")
+					client.TravelPath.AddSegement(s)
+					client.SolvePath.AddSegement(s)
+					client.CurrentLocation().SetVisited()
+					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+
+					in.Reply <- commandReply{
+						answer: &moveReply{
+							current:             client.CurrentLocation().Location(),
+							availableDirections: client.CurrentLocation().DirectionLinks(),
+						},
+					}
+				}
 			case "east":
+				if client.CurrentLocation().Linked(client.CurrentLocation().East()) {
+					client.SetCurrentLocation(client.CurrentLocation().East())
+					s := maze.NewSegment(client.CurrentLocation(), "east")
+					client.TravelPath.AddSegement(s)
+					client.SolvePath.AddSegement(s)
+					client.CurrentLocation().SetVisited()
+					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+
+					in.Reply <- commandReply{
+						answer: &moveReply{
+							current:             client.CurrentLocation().Location(),
+							availableDirections: client.CurrentLocation().DirectionLinks(),
+						},
+					}
+				}
 			default:
 				log.Printf("invalid direction: %v", direction)
 				in.Reply <- commandReply{error: fmt.Errorf("invalid direction: %v", direction)}
@@ -611,6 +664,11 @@ type locationInfo struct {
 	current *pb.MazeLocation
 	from    *pb.MazeLocation
 	to      *pb.MazeLocation
+}
+
+type moveReply struct {
+	current             *pb.MazeLocation
+	availableDirections []string
 }
 
 // server is used to implement MazerServer.
@@ -757,9 +815,22 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			Request: commandRequest{
 				request: in.GetDirection(), // which way to move
 			},
+			Reply: make(chan commandReply),
 		}
 
-		r := &pb.SolveMazeResponse{}
+		comm <- data
+		// get response from maze
+		log.Printf("waiting for move reply from maze")
+		moveReply := (<-data.Reply).answer.(*moveReply)
+		log.Printf("received: %v", moveReply)
+
+		r := &pb.SolveMazeResponse{
+			MazeId:              in.GetMazeId(),
+			ClientId:            in.ClientId,
+			CurrentLocation:     moveReply.current,
+			AvailableDirections: moveReply.availableDirections,
+		}
+		log.Printf("sending response to client: %v", r)
 		if err := stream.Send(r); err != nil {
 			return err
 		}

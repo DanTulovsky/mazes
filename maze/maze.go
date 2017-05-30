@@ -522,7 +522,10 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	m.drawGenCurrentLocation(r)
 
 	// Draw the path and location of solver
-	m.drawPath(r, m.TravelPath(), m.config.MarkVisitedCells)
+	clients := m.Clients()
+	for _, client := range clients {
+		m.drawPath(r, client.TravelPath, client.SolvePath, m.config.MarkVisitedCells)
+	}
 
 	return r
 }
@@ -579,23 +582,24 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-// This is drawing g.TravelPath if path == nil
-func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Renderer {
+// This is drawing client.TravelPath if path == nil
+func (m *Maze) drawPath(r *sdl.Renderer, travelPath, solvePath *Path, markVisited bool) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "drawPath")
-	if path == nil {
-		path = m.TravelPath()
+	if travelPath == nil {
+		log.Print("travelPath is nil, not drawing...")
+		return r
 	}
 
 	alreadyDone := make(map[*PathSegment]bool)
 
 	var isSolution bool
 	var isLast bool
-	pathLength := path.Length()
+	pathLength := travelPath.Length()
 	solvepathCells := m.SolvePath().ListCells()
 
-	path.RLock()
-	defer path.RUnlock()
-	for x, segment := range path.segments {
+	travelPath.RLock()
+	defer travelPath.RUnlock()
+	for x, segment := range travelPath.segments {
 		cell := segment.Cell()
 
 		if x == pathLength-1 {
@@ -612,7 +616,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, path *Path, markVisited bool) *sdl.Rend
 		// cache state of this cell
 		alreadyDone[segment] = true
 
-		if m.SolvePath().SegmentInPath(segment) {
+		if solvePath.SegmentInPath(segment) {
 			isSolution = true
 		} else {
 			isSolution = false
@@ -994,24 +998,10 @@ func (m *Maze) DeadEnds() []*Cell {
 
 // Reset resets vital maze stats for a new solver run
 func (m *Maze) Reset() {
-	m.SetTravelPath(NewPath())
-	m.SetSolvePath(NewPath())
+	// m.SetTravelPath(NewPath())
+	// m.SetSolvePath(NewPath())
 	m.resetVisited()
 	m.resetDistances()
-}
-
-func (m *Maze) TravelPath() *Path {
-	m.RLock()
-	defer m.RUnlock()
-
-	return m.travelPath
-}
-
-func (m *Maze) SetTravelPath(p *Path) {
-	m.Lock()
-	defer m.Unlock()
-
-	m.travelPath = p
 }
 
 func (m *Maze) SolvePath() *Path {

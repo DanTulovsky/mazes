@@ -6,15 +6,13 @@
 package wall_follower
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
-	"mazes/maze"
 	pb "mazes/proto"
 	"mazes/solvealgos"
+	"mazes/utils"
 )
 
 type WallFollower struct {
@@ -22,63 +20,66 @@ type WallFollower struct {
 }
 
 // getDirections returns the possible directions to move in the proper order based on which way you are "facing"
-func getDirections(c *maze.Cell, facing string) []*maze.Cell {
+func getDirections(facing string) []string {
 
 	switch facing {
 	case "north":
-		return []*maze.Cell{c.East(), c.North(), c.West(), c.South()}
+		return []string{"east", "north", "west", "south"}
 	case "east":
-		return []*maze.Cell{c.South(), c.East(), c.North(), c.West()}
+		return []string{"south", "east", "north", "west"}
 	case "south":
-		return []*maze.Cell{c.West(), c.South(), c.East(), c.North()}
+		return []string{"west", "south", "east", "north"}
 	case "west":
-		return []*maze.Cell{c.North(), c.West(), c.South(), c.East()}
+		return []string{"north", "west", "south", "east"}
 	}
 	return nil
 }
 
-func pickNextCell(currentCell *maze.Cell, facing string) *maze.Cell {
+func pickNextCell(directions []string, facing string) string {
 	// always go in this order: "right", "forward", "left", "back"
 
-	dirs := getDirections(currentCell, facing)
+	dirs := getDirections(facing)
 	if dirs == nil {
 		return nil
 	}
 
 	for _, l := range dirs {
-		if currentCell.Linked(l) {
+		if utils.StrInList(directions, l) {
 			return l
 		}
 	}
-	return nil
+	return ""
 }
 
-func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, fromCell, toCell string, delay time.Duration) error {
+func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = m.TravelPath()
-	var solvePath = m.SolvePath()
+	log.Printf("fromCell: %v; toCell: %v; directions: %v", fromCell, toCell, directions)
+	if len(directions) < 1 {
+		return fmt.Errorf("no available directions to move: %v", directions)
+	}
 
 	currentCell := fromCell
-	facing := "north"
+	facing := directions[0]
+
+	// keep track of how many times each cell has been visited
+	visited := make(map[string]int)
 
 	for currentCell != toCell {
 		// animation delay
 		time.Sleep(delay)
-		// this stuff happens on the server now
-		currentCell.SetVisited()
 
-		segment := maze.NewSegment(currentCell, facing)
-		travelPath.AddSegement(segment)
-		solvePath.AddSegement(segment)
-		m.SetPathFromTo(fromCell, currentCell, travelPath)
+		if _, ok := visited[currentCell.String()]; !ok {
+			visited[currentCell.String()] = 0
+		}
+		visited[currentCell.String()]++
 
-		if currentCell.VisitedTimes() > 4 {
+		if visited[currentCell.String()] > 4 {
 			// we are stuck in a loop, fail
-			return nil, fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell, currentCell.VisitedTimes())
+			return fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell, visited[currentCell.String()])
 		}
 
-		if nextCell := pickNextCell(currentCell, facing); nextCell != nil {
+		if nextCell := pickNextCell(currentCell, facing); nextCell != "" {
 			if currentCell.North() == nextCell {
 				facing = "north"
 			}
@@ -95,32 +96,26 @@ func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, fromCell, toCell s
 			currentCell = nextCell
 		} else {
 			// this can never happen unless the maze is broken
-			return nil, fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
+			return fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
 
 		}
 
-		select {
-		case key := <-keyInput:
-			switch strings.ToLower(key) {
-			case "q":
-				log.Print("Exiting...")
-				return m, errors.New("received cancel request, exiting...")
-			}
-		default:
-			// fmt.Println("no message received")
-		}
+		//select {
+		//case key := <-keyInput:
+		//	switch strings.ToLower(key) {
+		//	case "q":
+		//		log.Print("Exiting...")
+		//		return errors.New("received cancel request, exiting...")
+		//	}
+		//default:
+		//	// fmt.Println("no message received")
+		//}
 	}
 
-	// last cell
-	segment := maze.NewSegment(toCell, facing)
-	travelPath.AddSegement(segment)
-	solvePath.AddSegement(segment)
-	m.SetPathFromTo(fromCell, toCell, solvePath)
-
 	// stats
-	a.SetSolvePath(solvePath)
-	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(travelPath.Length()) // always the same as the actual path
+	//a.SetSolvePath(solvePath)
+	//a.SetTravelPath(travelPath)
+	//a.SetSolveSteps(travelPath.Length()) // always the same as the actual path
 
-	return m, nil
+	return nil
 }
