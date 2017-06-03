@@ -3,6 +3,7 @@ package solvealgos
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"mazes/maze"
@@ -10,14 +11,17 @@ import (
 )
 
 type Algorithmer interface {
-	SolvePath() *maze.Path // final path
+	Move(d string, mazeID string, clientID string) (*pb.SolveMazeResponse, error) // move a direction
+	SolvePath() *maze.Path                                                        // final path
 	SolveSteps() int
 	SolveTime() time.Duration
 	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// delay is ms for animation
-	Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error
+	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error
+	Stream() pb.Mazer_SolveMazeClient
+	SetStream(pb.Mazer_SolveMazeClient)
 	TravelPath() *maze.Path // all the cells traveled
 }
 
@@ -25,7 +29,8 @@ type Common struct {
 	solvePath  *maze.Path    // path of the final solution
 	solveSteps int           // how many cell visits it tooks (including duplicates)
 	solveTime  time.Duration // how long the last solve time took
-	travelPath *maze.Path    // all the cells visited in order
+	stream     pb.Mazer_SolveMazeClient
+	travelPath *maze.Path // all the cells visited in order
 }
 
 // Solve should write the path of the solution to the grid
@@ -76,4 +81,39 @@ func (a *Common) TravelPath() *maze.Path {
 // SetTravelPath sets the solvePath
 func (a *Common) SetTravelPath(p *maze.Path) {
 	a.travelPath = p
+}
+
+func (a *Common) Stream() pb.Mazer_SolveMazeClient {
+	return a.stream
+}
+
+func (a *Common) SetStream(s pb.Mazer_SolveMazeClient) {
+	a.stream = s
+}
+
+// Move sends a move request to the server and returns the reply
+func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error) {
+	log.Printf("moving: %s", d)
+	stream := a.Stream()
+
+	r := &pb.SolveMazeRequest{
+		MazeId:    mazeID,
+		ClientId:  clientID,
+		Direction: d,
+	}
+	log.Printf("sending move request to server: %v", r)
+	if err := stream.Send(r); err != nil {
+		return nil, err
+	}
+	log.Printf("sent")
+
+	log.Printf("waiting for move reply from server")
+	reply, err := stream.Recv()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("received: %v", r)
+
+	return reply, nil
+
 }

@@ -157,15 +157,14 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID string) err
 
 	log.Printf("maze id: %v; client id: %v", mazeID, clientID)
 
-	// r := &pb.SolveMazeRequest{}
-	solver = algos.SolveAlgorithms[*solveAlgo]
+	solver = algos.NewSolver(*solveAlgo, stream)
 	delay, err := time.ParseDuration(*solveDrawDelay)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("running solver %v", *solveAlgo)
-	if err := solver.Solve(stream, mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
+	if err := solver.Solve(mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
 		return fmt.Errorf("error running solver: %v", err)
 	}
 	//log.Printf("time to solve: %v", solver.SolveTime())

@@ -537,6 +537,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
 				}
@@ -553,6 +554,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
 				}
@@ -569,6 +571,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
 				}
@@ -585,6 +588,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
 				}
@@ -669,6 +673,7 @@ type locationInfo struct {
 type moveReply struct {
 	current             *pb.MazeLocation
 	availableDirections []string
+	solved              bool
 }
 
 // server is used to implement MazerServer.
@@ -829,6 +834,7 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			ClientId:            in.ClientId,
 			CurrentLocation:     moveReply.current,
 			AvailableDirections: moveReply.availableDirections,
+			Solved:              moveReply.solved,
 		}
 		log.Printf("sending response to client: %v", r)
 		if err := stream.Send(r); err != nil {

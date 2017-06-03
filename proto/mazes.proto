@@ -43,6 +43,7 @@ message SolveMazeResponse {
     MazeLocation current_location = 7;
     MazeLocation from_cell = 8;
     MazeLocation to_cell = 9;
+    bool solved = 10; // set to true when client reaches the target cell
 }
 
 // Maze defines a maze and its clients

@@ -2,6 +2,8 @@
 package algos
 
 import (
+	"log"
+
 	"mazes/genalgos"
 	"mazes/genalgos/aldous_broder"
 	"mazes/genalgos/bintree"
@@ -13,8 +15,10 @@ import (
 	"mazes/genalgos/recursive_division"
 	"mazes/genalgos/sidewinder"
 	"mazes/genalgos/wilsons"
+	pb "mazes/proto"
 	"mazes/solvealgos"
 	"mazes/solvealgos/empty"
+	"mazes/solvealgos/wall_follower"
 )
 
 var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
@@ -36,6 +40,24 @@ var SolveAlgorithms map[string]solvealgos.Algorithmer = map[string]solvealgos.Al
 	//"random":                &random.Random{},
 	//"random-unvisited":      &random_unvisited.RandomUnvisited{},
 	//"recursive-backtracker": &solve_rb.RecursiveBacktracker{},
-	//"wall-follower":         &wall_follower.WallFollower{},
-	"empty": &empty.Empty{},
+	"wall-follower": &wall_follower.WallFollower{},
+	"empty":         &empty.Empty{},
+}
+
+// NewSolver returns a new solver
+func NewSolver(n string, stream pb.Mazer_SolveMazeClient) solvealgos.Algorithmer {
+	a, ok := SolveAlgorithms[n]
+	if !ok {
+		log.Fatalf("invalid solve algorithm: %s", n)
+	}
+
+	a.SetStream(stream)
+
+	return a
+}
+
+// NewGenerator returns a new generator
+func NewGenerator(n string) genalgos.Algorithmer {
+	a := Algorithms[n]
+	return a
 }

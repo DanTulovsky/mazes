@@ -582,7 +582,6 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-// This is drawing client.TravelPath if path == nil
 func (m *Maze) drawPath(r *sdl.Renderer, travelPath, solvePath *Path, markVisited bool) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "drawPath")
 	if travelPath == nil {
@@ -594,11 +593,12 @@ func (m *Maze) drawPath(r *sdl.Renderer, travelPath, solvePath *Path, markVisite
 
 	var isSolution bool
 	var isLast bool
+
 	pathLength := travelPath.Length()
-	solvepathCells := m.SolvePath().ListCells()
 
 	travelPath.RLock()
 	defer travelPath.RUnlock()
+
 	for x, segment := range travelPath.segments {
 		cell := segment.Cell()
 
@@ -623,7 +623,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, travelPath, solvePath *Path, markVisite
 		}
 
 		// TODO(dan): Change this to draw path between any two cells
-		segment.DrawPath(r, m, solvepathCells, isLast, isSolution) // solution is colored by a different color
+		segment.DrawPath(r, m, solvePath, isLast, isSolution) // solution is colored by a different color
 
 		if markVisited {
 			cell.DrawVisited(r)

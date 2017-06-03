@@ -32,18 +32,20 @@ func getDirections(facing string) []string {
 	case "west":
 		return []string{"north", "west", "south", "east"}
 	}
-	return nil
+	return []string{}
 }
 
 func pickNextCell(directions []string, facing string) string {
 	// always go in this order: "right", "forward", "left", "back"
 
 	dirs := getDirections(facing)
-	if dirs == nil {
-		return nil
+	if len(dirs) == 0 {
+		return ""
 	}
 
+	log.Printf("> directions: %v", directions)
 	for _, l := range dirs {
+		log.Printf("l: %v", l)
 		if utils.StrInList(directions, l) {
 			return l
 		}
@@ -51,7 +53,7 @@ func pickNextCell(directions []string, facing string) string {
 	return ""
 }
 
-func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error {
+func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	log.Printf("fromCell: %v; toCell: %v; directions: %v", fromCell, toCell, directions)
@@ -61,14 +63,25 @@ func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID s
 
 	currentCell := fromCell
 	facing := directions[0]
+	solved := false
 
 	// keep track of how many times each cell has been visited
 	visited := make(map[string]int)
+	log.Printf("available directions: %v; facing: %v", directions, facing)
 
-	for currentCell != toCell {
+	reply, err := a.Move(mazeID, clientID, facing)
+	if err != nil {
+		return err
+	}
+	directions = reply.GetAvailableDirections()
+	log.Printf("available directions: %v; facing: %v", directions, facing)
+	solved = reply.Solved
+
+	for !solved {
 		// animation delay
 		time.Sleep(delay)
 
+		// fix this
 		if _, ok := visited[currentCell.String()]; !ok {
 			visited[currentCell.String()] = 0
 		}
@@ -76,24 +89,19 @@ func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID s
 
 		if visited[currentCell.String()] > 4 {
 			// we are stuck in a loop, fail
-			return fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell, visited[currentCell.String()])
+			return fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell.String(), visited[currentCell.String()])
 		}
 
-		if nextCell := pickNextCell(currentCell, facing); nextCell != "" {
-			if currentCell.North() == nextCell {
-				facing = "north"
+		if nextCell := pickNextCell(directions, facing); nextCell != "" {
+			facing = nextCell
+			reply, err := a.Move(mazeID, clientID, nextCell)
+			if err != nil {
+				return err
 			}
-			if currentCell.East() == nextCell {
-				facing = "east"
-			}
-			if currentCell.West() == nextCell {
-				facing = "west"
-			}
-			if currentCell.South() == nextCell {
-				facing = "south"
-			}
-
-			currentCell = nextCell
+			directions = reply.GetAvailableDirections()
+			currentCell = reply.GetCurrentLocation()
+			log.Printf("available directions: %v; facing: %v", directions, facing)
+			solved = reply.Solved
 		} else {
 			// this can never happen unless the maze is broken
 			return fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
@@ -111,11 +119,6 @@ func (a *WallFollower) Solve(stream pb.Mazer_SolveMazeClient, mazeID, clientID s
 		//	// fmt.Println("no message received")
 		//}
 	}
-
-	// stats
-	//a.SetSolvePath(solvePath)
-	//a.SetTravelPath(travelPath)
-	//a.SetSolveSteps(travelPath.Length()) // always the same as the actual path
 
 	return nil
 }

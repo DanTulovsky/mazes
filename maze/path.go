@@ -128,7 +128,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 }
 
 // DrawPath draws the path as present in the cells
-func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bool, isLast, isSolution bool) *sdl.Renderer {
+func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
 	cell := p.Cell()
 
 	cell.RLock()
@@ -136,7 +136,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, g *Maze, solveCells map[*Cell]bo
 
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
-	solvePath := g.SolvePath()
+	// solveCells := solvePath.ListCells()
 
 	getPathRect := func(d string, inSolution bool) *sdl.Rect {
 		if !inSolution {
