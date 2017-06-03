@@ -484,6 +484,11 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				cell := client.CurrentLocation()
 				directions := cell.DirectionLinks()
 
+				s := maze.NewSegment(client.CurrentLocation(), "north")
+				client.CurrentLocation().SetVisited()
+				client.TravelPath.AddSegement(s)
+				client.SolvePath.AddSegement(s)
+
 				in.Reply <- commandReply{answer: directions}
 			}
 		case maze.CommandSetInitialClientLocation:

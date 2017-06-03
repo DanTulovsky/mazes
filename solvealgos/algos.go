@@ -18,10 +18,10 @@ type Algorithmer interface {
 	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
-	// delay is ms for animation
 	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error
 	Stream() pb.Mazer_SolveMazeClient
 	SetStream(pb.Mazer_SolveMazeClient)
+	ShowStats()
 	TravelPath() *maze.Path // all the cells traveled
 }
 
@@ -116,4 +116,8 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 
 	return reply, nil
 
+}
+
+func (a *Common) ShowStats() {
+	log.Printf("TODO: show stats")
 }

@@ -67,15 +67,6 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 
 	// keep track of how many times each cell has been visited
 	visited := make(map[string]int)
-	log.Printf("available directions: %v; facing: %v", directions, facing)
-
-	reply, err := a.Move(mazeID, clientID, facing)
-	if err != nil {
-		return err
-	}
-	directions = reply.GetAvailableDirections()
-	log.Printf("available directions: %v; facing: %v", directions, facing)
-	solved = reply.Solved
 
 	for !solved {
 		// animation delay
@@ -100,25 +91,16 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 			}
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
-			log.Printf("available directions: %v; facing: %v", directions, facing)
 			solved = reply.Solved
 		} else {
 			// this can never happen unless the maze is broken
 			return fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
 
 		}
-
-		//select {
-		//case key := <-keyInput:
-		//	switch strings.ToLower(key) {
-		//	case "q":
-		//		log.Print("Exiting...")
-		//		return errors.New("received cancel request, exiting...")
-		//	}
-		//default:
-		//	// fmt.Println("no message received")
-		//}
 	}
+
+	log.Printf("maze solved!")
+	a.ShowStats()
 
 	return nil
 }
