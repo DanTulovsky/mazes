@@ -15,13 +15,6 @@ service Mazer {
     }
 }
 
-enum Direction {
-    NORTH = 0;
-    SOUTH = 1;
-    WEST = 2;
-    EAST = 3;
-}
-
 // SolveMazeRequest is a message sent from the client trying to solve a maze
 message SolveMazeRequest{
     string mazeId = 1;  // the id of the maze we are solving
@@ -30,13 +23,16 @@ message SolveMazeRequest{
 
     // on first connect, this must be set true, the direction field is ignored, the client does not move
     bool initial = 4;
+
+    // move client back to previous location, direction is ignored
+    bool move_back = 5;
 }
 
 // SolveMazeResponse is a response sent from the server as the client tries to solve a maze
 message SolveMazeResponse {
     string mazeId = 1;  // the id of the maze we are solving
     string clientId = 2;  // the client id
-    repeated string available_directions = 3;  // available directions the client can move from here
+    repeated Direction available_directions = 3;  // available directions the client can move from here
     bool initial = 4;  // set true on initial response
     bool error = 5; // set if error occured
     string error_message = 6;
@@ -44,6 +40,11 @@ message SolveMazeResponse {
     MazeLocation from_cell = 8;
     MazeLocation to_cell = 9;
     bool solved = 10; // set to true when client reaches the target cell
+}
+
+message Direction {
+    string name = 1; // e.g. north, south, east, west
+    bool visited = 2; // set to true if the client has already visited the cell in that direction
 }
 
 // Maze defines a maze and its clients

@@ -5,6 +5,7 @@ const (
 	CommandGetDirections
 	CommandSetInitialClientLocation
 	CommandMove
+	CommandMoveBack
 	CommandCurrentLocation
 	CommandLocationInfo // current, from, to
 )

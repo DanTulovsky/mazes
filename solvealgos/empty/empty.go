@@ -15,7 +15,7 @@ type Empty struct {
 }
 
 // directions is the initial available directions to travel
-func (a *Empty) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error {
+func (a *Empty) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
 
 	log.Printf("fromCell: %v; toCell: %v; directions: %v", fromCell, toCell, directions)
 	if len(directions) < 1 {
@@ -26,7 +26,7 @@ func (a *Empty) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation
 
 	for !solved {
 
-		reply, err := a.Move(mazeID, clientID, directions[0])
+		reply, err := a.Move(mazeID, clientID, directions[0].GetName())
 		if err != nil {
 			return err
 		}

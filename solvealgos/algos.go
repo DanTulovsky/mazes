@@ -3,6 +3,7 @@ package solvealgos
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -18,7 +19,7 @@ type Algorithmer interface {
 	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
-	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error
+	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error
 	Stream() pb.Mazer_SolveMazeClient
 	SetStream(pb.Mazer_SolveMazeClient)
 	ShowStats()
@@ -34,8 +35,8 @@ type Common struct {
 }
 
 // Solve should write the path of the solution to the grid
-func (a *Common) Solve(g *maze.Maze, fromCell, toCell *maze.Cell) (*maze.Maze, error) {
-	return nil, errors.New("Solve() not implemented")
+func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
+	return errors.New("Solve() not implemented")
 }
 
 // TimeTrack tracks sets the time it took for the algorithm to run
@@ -114,8 +115,42 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 	}
 	log.Printf("received: %v", r)
 
+	if reply.Error {
+		return nil, fmt.Errorf("%v", reply.ErrorMessage)
+	}
+
 	return reply, nil
 
+}
+
+// MoveBack moves the client back to the previous location (where they just came from)
+func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error) {
+	log.Print("moving back")
+	stream := a.Stream()
+
+	r := &pb.SolveMazeRequest{
+		MazeId:   mazeID,
+		ClientId: clientID,
+		MoveBack: true,
+	}
+	log.Printf("sending move back request to server: %v", r)
+	if err := stream.Send(r); err != nil {
+		return nil, err
+	}
+	log.Printf("sent")
+
+	log.Printf("waiting for move reply from server")
+	reply, err := stream.Recv()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("received: %v", r)
+
+	if reply.Error {
+		return nil, fmt.Errorf("%v", reply.ErrorMessage)
+	}
+
+	return reply, nil
 }
 
 func (a *Common) ShowStats() {

@@ -484,8 +484,9 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				cell := client.CurrentLocation()
 				directions := cell.DirectionLinks()
 
-				s := maze.NewSegment(client.CurrentLocation(), "north")
-				client.CurrentLocation().SetVisited()
+				// Add initial location to paths
+				s := maze.NewSegment(cell, "north")
+				cell.SetVisited()
 				client.TravelPath.AddSegement(s)
 				client.SolvePath.AddSegement(s)
 
@@ -496,6 +497,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 			} else {
+				m.Reset()
 				client.SetCurrentLocation(m.FromCell())
 			}
 		case maze.CommandCurrentLocation:
@@ -507,7 +509,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{answer: cell.Location()}
 			}
 		case maze.CommandLocationInfo:
-			log.Print("returning locationd data")
+			log.Print("returning location data")
 			if client, err := m.Client(in.ClientID); err != nil {
 				log.Printf("failed to get client location: %v", err)
 			} else {
@@ -518,6 +520,48 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				}
 				in.Reply <- commandReply{answer: info}
 			}
+		case maze.CommandMoveBack:
+			log.Print("received client move back request")
+
+			client, err := m.Client(in.ClientID)
+			if err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
+			}
+
+			// remove from SolvePath if we are backtracking
+			client.SolvePath.DelSegement()
+
+			// previous cell
+			currentCell := client.CurrentLocation()
+			last := client.SolvePath.LastSegment().Cell()
+			client.SetCurrentLocation(last)
+
+			var facing string
+
+			switch {
+			case currentCell.North() == last:
+				facing = "north"
+			case currentCell.South() == last:
+				facing = "south"
+			case currentCell.West() == last:
+				facing = "west"
+			case currentCell.East() == last:
+				facing = "east"
+			}
+
+			s := maze.NewSegment(client.CurrentLocation(), facing)
+			client.TravelPath.AddSegement(s)
+			m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+
+			log.Printf("sending back reply")
+			in.Reply <- commandReply{
+				answer: &moveReply{
+					current:             client.CurrentLocation().Location(),
+					availableDirections: client.CurrentLocation().DirectionLinks(),
+					solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
+				},
+			}
+
 		case maze.CommandMove:
 			r := in.Request
 			direction := r.request.(string)
@@ -545,6 +589,10 @@ func checkComm(m *maze.Maze, comm commChannel) {
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
+				} else {
+					in.Reply <- commandReply{
+						error: fmt.Errorf("cannot move 'north' from %v", client.CurrentLocation().String()),
+					}
 				}
 			case "south":
 				if client.CurrentLocation().Linked(client.CurrentLocation().South()) {
@@ -561,6 +609,10 @@ func checkComm(m *maze.Maze, comm commChannel) {
 							availableDirections: client.CurrentLocation().DirectionLinks(),
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
+					}
+				} else {
+					in.Reply <- commandReply{
+						error: fmt.Errorf("cannot move 'south' from %v", client.CurrentLocation().String()),
 					}
 				}
 			case "west":
@@ -579,6 +631,10 @@ func checkComm(m *maze.Maze, comm commChannel) {
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
+				} else {
+					in.Reply <- commandReply{
+						error: fmt.Errorf("cannot move 'west' from %v", client.CurrentLocation().String()),
+					}
 				}
 			case "east":
 				if client.CurrentLocation().Linked(client.CurrentLocation().East()) {
@@ -596,6 +652,10 @@ func checkComm(m *maze.Maze, comm commChannel) {
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
+				} else {
+					in.Reply <- commandReply{
+						error: fmt.Errorf("cannot move 'east' from %v", client.CurrentLocation().String()),
+					}
 				}
 			default:
 				log.Printf("invalid direction: %v", direction)
@@ -603,7 +663,8 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			}
 
 		default:
-			log.Print("unknown command: %#v", in)
+			log.Printf("unknown command: %#v", in)
+			in.Reply <- commandReply{error: fmt.Errorf("unknown command: %v", in)}
 		}
 	default:
 
@@ -677,7 +738,7 @@ type locationInfo struct {
 
 type moveReply struct {
 	current             *pb.MazeLocation
-	availableDirections []string
+	availableDirections []*pb.Direction
 	solved              bool
 }
 
@@ -736,6 +797,7 @@ func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.Lis
 // SolveMaze is a streaming RPC to solve a maze
 func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 	log.Printf("received initial client connect...")
+
 	// initial connect
 	in, err := stream.Recv()
 	if err == io.EOF {
@@ -787,7 +849,7 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		Initial:             true,
 		MazeId:              in.GetMazeId(),
 		ClientId:            in.ClientId,
-		AvailableDirections: dirReply.answer.([]string),
+		AvailableDirections: dirReply.answer.([]*pb.Direction),
 		CurrentLocation:     locationInfo.current,
 		FromCell:            locationInfo.from,
 		ToCell:              locationInfo.to,
@@ -819,8 +881,15 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			continue
 		}
 
+		var action commandAction
+		if in.GetMoveBack() {
+			action = maze.CommandMoveBack
+		} else {
+			action = maze.CommandMove
+		}
+
 		data = commandData{
-			Action:   maze.CommandMove,
+			Action:   action,
 			ClientID: in.ClientId,
 			Request: commandRequest{
 				request: in.GetDirection(), // which way to move
@@ -831,7 +900,21 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		comm <- data
 		// get response from maze
 		log.Printf("waiting for move reply from maze")
-		moveReply := (<-data.Reply).answer.(*moveReply)
+		mazeReply := <-data.Reply
+		if err := mazeReply.error; err != nil {
+			log.Printf("error from maze: %v", err.(error))
+			r := &pb.SolveMazeResponse{
+				Error:        true,
+				ErrorMessage: err.(error).Error(),
+			}
+			log.Printf("sending error to client: %v", r)
+			if err := stream.Send(r); err != nil {
+				return err
+			}
+			continue
+		}
+
+		moveReply := mazeReply.answer.(*moveReply)
 		log.Printf("received: %v", moveReply)
 
 		r := &pb.SolveMazeResponse{

@@ -12,7 +12,6 @@ import (
 
 	pb "mazes/proto"
 	"mazes/solvealgos"
-	"mazes/utils"
 )
 
 type WallFollower struct {
@@ -35,7 +34,7 @@ func getDirections(facing string) []string {
 	return []string{}
 }
 
-func pickNextCell(directions []string, facing string) string {
+func pickNextDir(directions []*pb.Direction, facing string) string {
 	// always go in this order: "right", "forward", "left", "back"
 
 	dirs := getDirections(facing)
@@ -46,14 +45,16 @@ func pickNextCell(directions []string, facing string) string {
 	log.Printf("> directions: %v", directions)
 	for _, l := range dirs {
 		log.Printf("l: %v", l)
-		if utils.StrInList(directions, l) {
-			return l
+		for _, d := range directions {
+			if d.GetName() == l {
+				return l
+			}
 		}
 	}
 	return ""
 }
 
-func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []string) error {
+func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	log.Printf("fromCell: %v; toCell: %v; directions: %v", fromCell, toCell, directions)
@@ -62,7 +63,7 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 	}
 
 	currentCell := fromCell
-	facing := directions[0]
+	facing := directions[0].GetName()
 	solved := false
 
 	// keep track of how many times each cell has been visited
@@ -72,7 +73,6 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 		// animation delay
 		time.Sleep(delay)
 
-		// fix this
 		if _, ok := visited[currentCell.String()]; !ok {
 			visited[currentCell.String()] = 0
 		}
@@ -83,7 +83,7 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 			return fmt.Errorf("cell %v visited %v times, stuck in a loop", currentCell.String(), visited[currentCell.String()])
 		}
 
-		if nextCell := pickNextCell(directions, facing); nextCell != "" {
+		if nextCell := pickNextDir(directions, facing); nextCell != "" {
 			facing = nextCell
 			reply, err := a.Move(mazeID, clientID, nextCell)
 			if err != nil {

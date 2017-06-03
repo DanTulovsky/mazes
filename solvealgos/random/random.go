@@ -4,64 +4,51 @@
 package random
 
 import (
-	"errors"
+	"fmt"
 	"log"
-	"mazes/maze"
-	"mazes/solvealgos"
-	"strings"
 	"time"
+
+	pb "mazes/proto"
+	"mazes/solvealgos"
+	"mazes/utils"
 )
 
 type Random struct {
 	solvealgos.Common
 }
 
-func (a *Random) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
+// randomDirection returns a random direction from the list of available ones
+func randomDirection(d []*pb.Direction) string {
+	return d[utils.Random(0, len(d))].GetName()
+}
+
+func (a *Random) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var travelPath = m.TravelPath()
-	var solvePath = m.SolvePath()
 	currentCell := fromCell
-	facing := "north" // arbitrary
+	solved := false
 
-	for currentCell != toCell {
+	for !solved {
 		// animation delay
 		time.Sleep(delay)
 
-		currentCell.SetVisited()
-
-		segment := maze.NewSegment(currentCell, facing)
-		travelPath.AddSegement(segment)
-		solvePath.AddSegement(segment)
-		m.SetPathFromTo(fromCell, currentCell, travelPath)
-
-		nextCell := currentCell.RandomLink()
-		facing = currentCell.GetFacingDirection(nextCell)
-		currentCell = nextCell
-
-		select {
-		case key := <-keyInput:
-			switch strings.ToLower(key) {
-			case "q":
-				log.Print("Exiting...")
-				return m, errors.New("received cancel request, exiting...")
+		if nextCell := randomDirection(directions); nextCell != "" {
+			reply, err := a.Move(mazeID, clientID, nextCell)
+			if err != nil {
+				return err
 			}
-		default:
-			// fmt.Println("no message received")
+			directions = reply.GetAvailableDirections()
+			currentCell = reply.GetCurrentLocation()
+			solved = reply.Solved
+		} else {
+			// nowhere to go?
+			return fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
+
 		}
 	}
 
-	// add the last cell
-	facing = currentCell.GetFacingDirection(toCell)
-	segment := maze.NewSegment(toCell, facing)
-	travelPath.AddSegement(segment)
-	solvePath.AddSegement(segment)
-	m.SetPathFromTo(fromCell, toCell, travelPath)
+	log.Printf("maze solved!")
+	a.ShowStats()
 
-	// stats
-	a.SetSolvePath(solvePath)
-	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(travelPath.Length())
-
-	return m, nil
+	return nil
 }

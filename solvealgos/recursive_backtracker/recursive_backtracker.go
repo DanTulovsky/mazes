@@ -1,100 +1,70 @@
 // Package recursive_backtracker implements the recursive backtracker  maze solving algorithm
-
-// TODO(dant): Fix me!
 package recursive_backtracker
 
 import (
 	"fmt"
 	"log"
-	"mazes/maze"
-	"mazes/solvealgos"
-	"strings"
 	"time"
+
+	pb "mazes/proto"
+	"mazes/solvealgos"
 )
 
-var travelPath *maze.Path
-var facing string = "north"
-var startCell *maze.Cell
+// map of MazeLocation -> list of directions we've gone from that location
+var visited map[string][]string
 
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func Step(m *maze.Maze, currentCell, toCell *maze.Cell, solvePath *maze.Path, delay time.Duration, keyInput <-chan string) bool {
+func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.MazeLocation, directions []*pb.Direction, solved bool, delay time.Duration) bool {
 	// animation delay
-	// log.Printf("currentCell: %v", currentCell)
 	time.Sleep(delay)
 
-	var nextCell *maze.Cell
-	currentCell.SetVisited()
-
-	segment := maze.NewSegment(currentCell, facing)
-	solvePath.AddSegement(segment)
-	travelPath.AddSegement(segment)
-	m.SetPathFromTo(startCell, currentCell, travelPath)
-
-	if currentCell == toCell {
+	if solved {
 		return true
 	}
 
-	for _, nextCell = range currentCell.Links() {
-		if !nextCell.Visited() {
-			facing = currentCell.GetFacingDirection(nextCell)
-			segment.UpdateFacingDirection(facing)
-			if Step(m, nextCell, toCell, solvePath, delay, keyInput) {
+	log.Printf(">directions: %v", len(directions))
+	for _, nextDir := range directions {
+		log.Printf(">nextDir: %v", nextDir)
+		if !nextDir.Visited {
+			reply, err := a.Move(mazeID, clientID, nextDir.GetName())
+			if err != nil {
+				log.Printf("error moving: %v", err)
+				return false
+			}
+			directions = reply.GetAvailableDirections()
+			currentCell = reply.GetCurrentLocation()
+			solved = reply.Solved
+			log.Printf("currentLocation: %v", currentCell.String())
+
+			if a.Step(mazeID, clientID, currentCell, directions, solved, delay) {
 				return true
 			}
+
+			time.Sleep(delay)
 		}
-
-		facing = nextCell.GetFacingDirection(currentCell)
-
-		// don't add the same segment if it's already the last one
-		if travelPath.LastSegment().Cell() == currentCell {
-			continue
-		}
-
-		segmentReturn := maze.NewSegment(currentCell, facing)
-		travelPath.AddSegement(segmentReturn)
-		currentCell.SetVisited()
-		m.SetPathFromTo(startCell, currentCell, travelPath)
-
-	}
-	solvePath.DelSegement()
-	time.Sleep(delay)
-
-	select {
-	case key := <-keyInput:
-		switch strings.ToLower(key) {
-		case "q":
-			log.Print("Exiting...")
-			return true
-		}
-	default:
-		// fmt.Println("no message received")
 	}
 
+	a.MoveBack(mazeID, clientID)
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
+func (a *RecursiveBacktracker) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	var solvePath = g.SolvePath()
-	travelPath = g.TravelPath()
-	startCell = fromCell
+	solved := false
+	visited = make(map[string][]string)
 
 	// DFS traversal of the grid
-	if r := Step(g, fromCell, toCell, solvePath, delay, keyInput); !r {
-		return nil, fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
+	if r := a.Step(mazeID, clientID, fromCell, directions, solved, delay); !r {
+		return fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
-	g.SetPathFromTo(fromCell, toCell, solvePath)
+	log.Printf("maze solved!")
+	a.ShowStats()
 
-	// stats
-	a.SetSolvePath(solvePath)
-	a.SetSolveSteps(travelPath.Length())
-	a.SetTravelPath(travelPath)
-
-	return g, nil
+	return nil
 }

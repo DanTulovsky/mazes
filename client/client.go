@@ -154,6 +154,9 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID string) err
 	}
 	log.Printf("have reply: %#v", in)
 	log.Printf("current_location: %#v", in.GetCurrentLocation())
+	for _, d := range in.GetAvailableDirections() {
+		log.Printf("  can go: %#v", d)
+	}
 
 	log.Printf("maze id: %v; client id: %v", mazeID, clientID)
 
