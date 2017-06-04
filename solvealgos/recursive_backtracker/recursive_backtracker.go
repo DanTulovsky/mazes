@@ -10,9 +10,6 @@ import (
 	"mazes/solvealgos"
 )
 
-// map of MazeLocation -> list of directions we've gone from that location
-var visited map[string][]string
-
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
@@ -27,7 +24,7 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 	}
 
 	for _, nextDir := range directions {
-		if !nextDir.Visited {
+		if !nextDir.GetVisited() {
 			reply, err := a.Move(mazeID, clientID, nextDir.GetName())
 			if err != nil {
 				log.Printf("error moving: %v", err)
@@ -52,11 +49,8 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 func (a *RecursiveBacktracker) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	solved := false
-	visited = make(map[string][]string)
-
 	// DFS traversal of the grid
-	if r := a.Step(mazeID, clientID, fromCell, directions, solved, delay); !r {
+	if r := a.Step(mazeID, clientID, fromCell, directions, false, delay); !r {
 		return fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 

@@ -18,9 +18,19 @@ type RandomUnvisited struct {
 }
 
 // randomDirection returns a random direction from the list of available ones
-func randomUnvisitedDirection(d []*pb.Direction, v map[string]bool) string {
-	// TODO(dan): Fix this to keep track of visited locations
-	return d[utils.Random(0, len(d))].GetName()
+func randomUnvisitedDirection(directions []*pb.Direction) string {
+	available := []*pb.Direction{}
+	for _, dir := range directions {
+		if !dir.GetVisited() {
+			available = append(available, dir)
+		}
+	}
+
+	if len(available) > 0 {
+		return available[utils.Random(0, len(available))].GetName()
+	}
+
+	return directions[utils.Random(0, len(directions))].GetName()
 }
 
 func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
@@ -29,17 +39,11 @@ func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.Ma
 	currentCell := fromCell
 	solved := false
 
-	// keep track of visited cells
-	visited := make(map[string]bool)
-
 	for !solved {
 		// animation delay
 		time.Sleep(delay)
 
-		// mark cell as visited
-		visited[currentCell.String()] = true
-
-		if moveDir := randomUnvisitedDirection(directions, visited); moveDir != "" {
+		if moveDir := randomUnvisitedDirection(directions); moveDir != "" {
 			reply, err := a.Move(mazeID, clientID, moveDir)
 			if err != nil {
 				return err
