@@ -89,6 +89,34 @@ var (
 	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 )
 
+// opCreateSolveMulti creates and solves the maze
+func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
+	log.Print("creating maze...")
+	r, err := opCreate(ctx, c, config)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("solving maze1 (client=%v)...", r.GetClientId())
+	go opSolve(ctx, c, r.GetMazeId(), r.GetClientId())
+
+	// register second client
+	log.Printf("registering second client...")
+	regReply, err := c.RegisterClient(ctx, &pb.RegisterClientRequest{MazeId: r.GetMazeId()})
+	if err != nil {
+		return err
+	}
+
+	if !regReply.GetSuccess() {
+		return fmt.Errorf("failed to register second client: %v", regReply.GetMessage())
+	}
+
+	log.Printf("solving maze2 (client=%v)...", regReply.GetClientId())
+	opSolve(ctx, c, r.GetMazeId(), regReply.GetClientId())
+
+	return nil
+}
+
 // opCreateSolve creates and solves the maze
 func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
 	log.Print("creating maze...")
@@ -125,7 +153,7 @@ func opList(ctx context.Context, c pb.MazerClient) (*pb.ListMazeReply, error) {
 }
 
 func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID string) error {
-	log.Printf("in opSolve")
+	log.Printf("in opSolve, client: %v", clientID)
 	stream, err := c.SolveMaze(ctx)
 	if err != nil {
 		return err
@@ -170,28 +198,7 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID string) err
 	if err := solver.Solve(mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
 		return fmt.Errorf("error running solver: %v", err)
 	}
-	//log.Printf("time to solve: %v", solver.SolveTime())
-	//log.Printf("steps taken to solve:   %v", solver.SolveSteps())
-	//log.Printf("steps in shortest path: %v", solver.SolvePath().Length())
 
-	// Solve here
-	//for {
-	//
-	//	if err := stream.Send(r); err != nil {
-	//		return err
-	//	}
-	//
-	//	in, err := stream.Recv()
-	//	log.Printf("received: %#v", in)
-	//
-	//	if err == io.EOF {
-	//		return nil
-	//	}
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//}
 	return nil
 }
 
@@ -275,6 +282,10 @@ func main() {
 
 	case "create_solve":
 		if err := opCreateSolve(ctx, c, config); err != nil {
+			log.Print(err.Error())
+		}
+	case "create_solve_multi":
+		if err := opCreateSolveMulti(ctx, c, config); err != nil {
 			log.Print(err.Error())
 		}
 	}

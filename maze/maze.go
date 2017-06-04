@@ -168,6 +168,20 @@ func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
 	return m, nil
 }
 
+// AddClient adds a new client to the maze
+func (m *Maze) AddClient(id string) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.clients[id] = &client{
+		id: id,
+		// currentLocation: m.fromCell,
+		SolvePath:  NewPath(),
+		TravelPath: NewPath(),
+	}
+
+}
+
 // Braid removes dead ends from the maze with a probability p (p = 1 means no dead ends)
 func (m *Maze) Braid(p float64) {
 	log.Printf("Removing dead ends with probability %v", p)

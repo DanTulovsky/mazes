@@ -475,6 +475,12 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			}
 			// send reply via the reply channel
 			in.Reply <- commandReply{answer: clients}
+		case maze.CommandAddClient:
+			log.Print("adding client to existing maze...")
+			m.AddClient(in.ClientID)
+
+			// send reply via the reply channel
+			in.Reply <- commandReply{}
 		case maze.CommandGetDirections:
 			log.Print("listing directions...")
 			if client, err := m.Client(in.ClientID); err != nil {
@@ -748,7 +754,7 @@ type server struct{}
 // CreateMaze creates and displays the maze specified by the config
 func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {
 
-	log.Printf("running maze with config: %#v", in.Config)
+	log.Printf("creating maze with config: %#v", in.Config)
 
 	mazeID := uuid.NewV4().String()
 	clientID := uuid.NewV4().String()
@@ -760,6 +766,36 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	go createMaze(in.Config, comm, clientID)
 
 	return &pb.CreateMazeReply{MazeId: mazeID, ClientId: clientID}, nil
+}
+
+// RegisterClient registers a new client with an existing maze
+func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientRequest) (*pb.RegisterClientReply, error) {
+
+	log.Printf("associating new client with maze: %#v", in.GetMazeId())
+
+	clientID := uuid.NewV4().String()
+
+	m, found := mazeMap.Find(in.GetMazeId())
+	if !found {
+		return &pb.RegisterClientReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]: %v", in.GetMazeId())}, nil
+	}
+
+	comm := m.(chan commandData)
+
+	data := commandData{
+		Action:   maze.CommandAddClient,
+		ClientID: clientID,
+		Reply:    make(chan commandReply),
+	}
+	comm <- data
+	// get response from maze
+	reply := <-data.Reply
+
+	if reply.error != nil {
+		return &pb.RegisterClientReply{Success: false, Message: reply.error.(error).Error()}, nil
+	}
+	return &pb.RegisterClientReply{Success: true, ClientId: clientID}, nil
+
 }
 
 // ListMazes lists all the mazes

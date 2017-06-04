@@ -8,4 +8,5 @@ const (
 	CommandMoveBack
 	CommandCurrentLocation
 	CommandLocationInfo // current, from, to
+	CommandAddClient
 )

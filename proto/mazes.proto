@@ -11,14 +11,26 @@ service Mazer {
     rpc ListMazes(ListMazeRequest) returns (ListMazeReply) {}
 
     // Solve a maze, streaming, bidi
-    rpc SolveMaze(stream SolveMazeRequest) returns (stream SolveMazeResponse) {
-    }
+    rpc SolveMaze(stream SolveMazeRequest) returns (stream SolveMazeResponse) {}
+
+    // Register new client with an existing maze
+    rpc RegisterClient(RegisterClientRequest) returns (RegisterClientReply) {}
+}
+
+message RegisterClientRequest {
+  string mazeId = 1;
+}
+
+message RegisterClientReply {
+    bool success = 1;
+    string message = 2;
+    string client_id = 3;
 }
 
 // SolveMazeRequest is a message sent from the client trying to solve a maze
 message SolveMazeRequest{
     string mazeId = 1;  // the id of the maze we are solving
-    string clientId = 2;  // the client id
+    string client_id = 2;  // the client id
     string direction = 3;  // where the client wants to move next
 
     // on first connect, this must be set true, the direction field is ignored, the client does not move
@@ -30,8 +42,8 @@ message SolveMazeRequest{
 
 // SolveMazeResponse is a response sent from the server as the client tries to solve a maze
 message SolveMazeResponse {
-    string mazeId = 1;  // the id of the maze we are solving
-    string clientId = 2;  // the client id
+    string maze_id = 1;  // the id of the maze we are solving
+    string client_id = 2;  // the client id
     repeated Direction available_directions = 3;  // available directions the client can move from here
     bool initial = 4;  // set true on initial response
     bool error = 5; // set if error occured
