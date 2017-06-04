@@ -32,10 +32,10 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration, generating *abool.Ato
 	var visitedCells = make(map[*maze.Cell]bool)
 
 	start := g.RandomCell()
-	start.SetVisited()
+	start.SetVisited(maze.VisitedGenerator)
 	visitedCells[start] = true
 
-	for len(g.UnvisitedCells()) > 0 {
+	for len(g.UnvisitedCells(maze.VisitedGenerator)) > 0 {
 		if !generating.IsSet() {
 			return fmt.Errorf("stop requested")
 		}
@@ -43,7 +43,7 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration, generating *abool.Ato
 		time.Sleep(delay) // animation delay
 
 		// pick random, unvisited cell
-		randomCell = g.RandomCellFromList(g.UnvisitedCells())
+		randomCell = g.RandomCellFromList(g.UnvisitedCells(maze.VisitedGenerator))
 		currentCell = randomCell
 		g.SetGenCurrentLocation(currentCell)
 
@@ -73,7 +73,7 @@ func (a *Wilsons) Apply(g *maze.Maze, delay time.Duration, generating *abool.Ato
 		g.ConnectCells(walkPath)
 		for _, c := range walkPath {
 			visitedCells[c] = true
-			c.SetVisited()
+			c.SetVisited(maze.VisitedGenerator)
 		}
 
 		// clear path

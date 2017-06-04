@@ -1,9 +1,10 @@
-package hint_and_kill
+package hunt_and_kill
 
 import (
+	"testing"
+
 	"mazes/maze"
 	"mazes/utils"
-	"testing"
 )
 
 var applytests = []struct {

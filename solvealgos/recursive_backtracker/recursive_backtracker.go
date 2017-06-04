@@ -26,9 +26,7 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 		return true
 	}
 
-	log.Printf(">directions: %v", len(directions))
 	for _, nextDir := range directions {
-		log.Printf(">nextDir: %v", nextDir)
 		if !nextDir.Visited {
 			reply, err := a.Move(mazeID, clientID, nextDir.GetName())
 			if err != nil {
@@ -38,7 +36,6 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
 			solved = reply.Solved
-			log.Printf("currentLocation: %v", currentCell.String())
 
 			if a.Step(mazeID, clientID, currentCell, directions, solved, delay) {
 				return true

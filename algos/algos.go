@@ -8,7 +8,7 @@ import (
 	"mazes/genalgos/aldous_broder"
 	"mazes/genalgos/bintree"
 	"mazes/genalgos/ellers"
-	"mazes/genalgos/hint_and_kill"
+	"mazes/genalgos/hunt_and_kill"
 	"mazes/genalgos/kruskal"
 	"mazes/genalgos/prim"
 	gen_rb "mazes/genalgos/recursive_backtracker"
@@ -28,7 +28,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"aldous-broder":         &aldous_broder.AldousBroder{},
 	"bintree":               &bintree.Bintree{},
 	"ellers":                &ellers.Ellers{},
-	"hunt-and-kill":         &hint_and_kill.HuntAndKill{},
+	"hunt-and-kill":         &hunt_and_kill.HuntAndKill{},
 	"kruskal":               &kruskal.Kruskal{},
 	"prim":                  &prim.Prim{},
 	"recursive-backtracker": &gen_rb.RecursiveBacktracker{},

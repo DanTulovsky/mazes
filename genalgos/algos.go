@@ -26,10 +26,10 @@ func (a *Common) Apply(m *maze.Maze, duration time.Duration, bool *abool.AtomicB
 	return nil, errors.New("Apply() not implemented")
 }
 
-func Step(g *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
+func Step(m *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 
 	var nextCell *maze.Cell
-	currentCell.SetVisited()
+	currentCell.SetVisited(maze.VisitedGenerator)
 
 	if currentCell != parentCell {
 		currentNode := tree.NewNode(currentCell.String())
@@ -40,7 +40,7 @@ func Step(g *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 
 	// check for cycles
 	for _, nextCell = range currentCell.Links() {
-		if nextCell.Visited() {
+		if nextCell.Visited(maze.VisitedGenerator) {
 			currentNode := t.Node(currentCell.String())
 			nextNode := t.Node(nextCell.String())
 
@@ -58,13 +58,13 @@ func Step(g *maze.Maze, t *tree.Tree, currentCell, parentCell *maze.Cell) bool {
 	}
 
 	for _, nextCell = range currentCell.Links() {
-		if !nextCell.Visited() {
-			if Step(g, t, nextCell, currentCell) {
+		if !nextCell.Visited(maze.VisitedGenerator) {
+			if Step(m, t, nextCell, currentCell) {
 				return true
 			}
 		}
 
-		currentCell.SetVisited()
+		currentCell.SetVisited(maze.VisitedGenerator)
 	}
 
 	return false
@@ -115,7 +115,7 @@ func TimeTrack(m *maze.Maze, start time.Time) {
 func RandomUnvisitedCellFromList(neighbors []*maze.Cell) *maze.Cell {
 	var allowed []*maze.Cell
 	for _, n := range neighbors {
-		if !n.Visited() {
+		if !n.Visited(maze.VisitedGenerator) {
 			allowed = append(allowed, n)
 		}
 	}

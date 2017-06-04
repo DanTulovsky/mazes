@@ -35,7 +35,7 @@ func (a *RecursiveBacktracker) Apply(m *maze.Maze, delay time.Duration, generati
 		time.Sleep(delay) // animation delay
 
 		currentCell = cells.Top()
-		currentCell.SetVisited()
+		currentCell.SetVisited(maze.VisitedGenerator)
 		m.SetGenCurrentLocation(currentCell)
 
 		neighbors := currentCell.Neighbors()

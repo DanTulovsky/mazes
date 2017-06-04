@@ -481,16 +481,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client links: %v", err)}
 
 			} else {
-				cell := client.CurrentLocation()
-				directions := cell.DirectionLinks()
-
-				// Add initial location to paths
-				s := maze.NewSegment(cell, "north")
-				cell.SetVisited()
-				client.TravelPath.AddSegement(s)
-				client.SolvePath.AddSegement(s)
-
-				in.Reply <- commandReply{answer: directions}
+				in.Reply <- commandReply{answer: client.CurrentLocation().DirectionLinks(in.ClientID)}
 			}
 		case maze.CommandSetInitialClientLocation:
 			log.Printf("setting initial client location to: %v", m.FromCell())
@@ -498,7 +489,16 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 			} else {
 				m.Reset()
+
 				client.SetCurrentLocation(m.FromCell())
+				cell := client.CurrentLocation()
+
+				// Add initial location to paths
+				s := maze.NewSegment(cell, "north")
+				cell.SetVisited(in.ClientID)
+				client.TravelPath.AddSegement(s)
+				client.SolvePath.AddSegement(s)
+
 			}
 		case maze.CommandCurrentLocation:
 			log.Print("returning client current location")
@@ -557,7 +557,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			in.Reply <- commandReply{
 				answer: &moveReply{
 					current:             client.CurrentLocation().Location(),
-					availableDirections: client.CurrentLocation().DirectionLinks(),
+					availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
 					solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 				},
 			}
@@ -579,13 +579,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					s := maze.NewSegment(client.CurrentLocation(), "north")
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
-					client.CurrentLocation().SetVisited()
+					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(),
+							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
@@ -600,13 +600,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					s := maze.NewSegment(client.CurrentLocation(), "south")
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
-					client.CurrentLocation().SetVisited()
+					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(),
+							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
@@ -621,13 +621,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					s := maze.NewSegment(client.CurrentLocation(), "west")
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
-					client.CurrentLocation().SetVisited()
+					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(),
+							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}
@@ -642,13 +642,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					s := maze.NewSegment(client.CurrentLocation(), "east")
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
-					client.CurrentLocation().SetVisited()
+					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(),
+							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
 							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
 						},
 					}

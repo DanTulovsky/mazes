@@ -23,7 +23,7 @@ func (a *AldousBroder) Apply(m *maze.Maze, delay time.Duration, generating *aboo
 
 	var visitedCells int
 	currentCell := m.RandomCell()
-	currentCell.SetVisited()
+	currentCell.SetVisited(maze.VisitedGenerator)
 	visitedCells++
 
 	for visitedCells < len(m.Cells()) {
@@ -37,10 +37,10 @@ func (a *AldousBroder) Apply(m *maze.Maze, delay time.Duration, generating *aboo
 		neighbors := currentCell.Neighbors()
 
 		randomNeighbor := m.RandomCellFromList(neighbors)
-		if !randomNeighbor.Visited() {
+		if !randomNeighbor.Visited(maze.VisitedGenerator) {
 			visitedCells++
 			m.Link(currentCell, randomNeighbor)
-			randomNeighbor.SetVisited()
+			randomNeighbor.SetVisited(maze.VisitedGenerator)
 		}
 		currentCell = randomNeighbor
 	}

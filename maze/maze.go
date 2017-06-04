@@ -524,7 +524,7 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	// Draw the path and location of solver
 	clients := m.Clients()
 	for _, client := range clients {
-		m.drawPath(r, client.TravelPath, client.SolvePath, m.config.MarkVisitedCells)
+		m.drawPath(r, client, m.config.MarkVisitedCells)
 	}
 
 	return r
@@ -582,12 +582,10 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-func (m *Maze) drawPath(r *sdl.Renderer, travelPath, solvePath *Path, markVisited bool) *sdl.Renderer {
+func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "drawPath")
-	if travelPath == nil {
-		log.Print("travelPath is nil, not drawing...")
-		return r
-	}
+	travelPath := client.TravelPath
+	solvePath := client.SolvePath
 
 	alreadyDone := make(map[*PathSegment]bool)
 
@@ -623,10 +621,10 @@ func (m *Maze) drawPath(r *sdl.Renderer, travelPath, solvePath *Path, markVisite
 		}
 
 		// TODO(dan): Change this to draw path between any two cells
-		segment.DrawPath(r, m, solvePath, isLast, isSolution) // solution is colored by a different color
+		segment.DrawPath(r, m, client.id, solvePath, isLast, isSolution) // solution is colored by a different color
 
 		if markVisited {
-			cell.DrawVisited(r)
+			cell.DrawVisited(r, client)
 		}
 
 		if isLast {
@@ -823,11 +821,11 @@ func (m *Maze) setOrphanMazeCells(cells map[*Cell]bool) {
 }
 
 // UnvisitedCells returns a list of unvisited cells in the grid
-func (m *Maze) UnvisitedCells() []*Cell {
+func (m *Maze) UnvisitedCells(client string) []*Cell {
 	cells := []*Cell{}
 
 	for cell := range m.Cells() {
-		if !cell.Visited() {
+		if !cell.Visited(client) {
 			cells = append(cells, cell)
 		}
 	}
@@ -998,8 +996,6 @@ func (m *Maze) DeadEnds() []*Cell {
 
 // Reset resets vital maze stats for a new solver run
 func (m *Maze) Reset() {
-	// m.SetTravelPath(NewPath())
-	// m.SetSolvePath(NewPath())
 	m.resetVisited()
 	m.resetDistances()
 }
@@ -1018,10 +1014,10 @@ func (m *Maze) SetSolvePath(p *Path) {
 	m.solvePath = p
 }
 
-// resetVisited sets all cells to be unvisited
+// resetVisited sets all cells to be unvisited by the generator
 func (m *Maze) resetVisited() {
 	for c := range m.Cells() {
-		c.SetUnVisited()
+		c.SetUnVisited(VisitedGenerator)
 	}
 }
 

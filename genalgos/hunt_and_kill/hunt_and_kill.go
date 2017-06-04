@@ -1,6 +1,6 @@
 // Package hint_and_kill implements the hunt-and-Kill algorithm for maze generation
 
-package hint_and_kill
+package hunt_and_kill
 
 import (
 	"fmt"
@@ -20,12 +20,12 @@ type HuntAndKill struct {
 // Returns nil if there are no more
 func HuntAndLink(m *maze.Maze) *maze.Cell {
 	for cell := range m.Cells() {
-		if cell.Visited() {
+		if cell.Visited(maze.VisitedGenerator) {
 			continue
 		}
 		// shuffle the neighbors so we get a random one for linking
 		for _, n := range Shuffle(cell.Neighbors()) {
-			if n.Visited() {
+			if n.Visited(maze.VisitedGenerator) {
 				m.Link(cell, n) // link to random neighbor
 				return cell
 			}
@@ -57,7 +57,7 @@ func (a *HuntAndKill) Apply(m *maze.Maze, delay time.Duration, generating *abool
 		time.Sleep(delay) // animation delay
 		m.SetGenCurrentLocation(currentCell)
 
-		currentCell.SetVisited()
+		currentCell.SetVisited(maze.VisitedGenerator)
 		neighbors := currentCell.Neighbors()
 
 		randomNeighbor := genalgos.RandomUnvisitedCellFromList(neighbors)

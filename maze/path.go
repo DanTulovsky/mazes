@@ -128,7 +128,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 }
 
 // DrawPath draws the path as present in the cells
-func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
+func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client string, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
 	cell := p.Cell()
 
 	cell.RLock()
@@ -218,7 +218,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, solvePath *Path, isLast
 
 	currentSegmentInSolution := solvePath.SegmentInPath(p)
 
-	if isLast && !cell.Visited() {
+	if isLast && !cell.Visited(client) {
 		switch p.Facing() {
 		case "east":
 			r.FillRect(getPathRect("west", currentSegmentInSolution))

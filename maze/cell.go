@@ -13,6 +13,10 @@ import (
 	"mazes/utils"
 )
 
+const (
+	VisitedGenerator = "generator"
+)
+
 // Cell defines a single cell in the grid
 type Cell struct {
 	x, y, z int64
@@ -23,7 +27,8 @@ type Cell struct {
 	// distances to other cells
 	distances *Distances
 	// How many times has this cell been visited?
-	visited int64
+	// per client and 'generator'
+	visited map[string]int64
 	// Background color of the cell
 	bgColor colors.Color
 	// Wall color of the cell
@@ -95,6 +100,7 @@ func NewCell(x, y, z int64, c *pb.MazeConfig) *Cell {
 		orphan:    false,
 		havePath:  make(map[*Cell]*Cell),
 		weight:    1,
+		visited:   make(map[string]int64),
 	}
 	cell.distances = NewDistances(cell)
 
@@ -256,35 +262,48 @@ func (c *Cell) Location() *pb.MazeLocation {
 }
 
 // Visited returns true if the cell has been visited
-func (c *Cell) Visited() bool {
+func (c *Cell) Visited(client string) bool {
 	c.RLock()
 	defer c.RUnlock()
 
-	return c.visited > 0
+	if t, ok := c.visited[client]; ok {
+		return t > 0
+	}
+	return false
 }
 
 // VisitedTimes returns how many times a cell has been visited
-func (c *Cell) VisitedTimes() int64 {
+func (c *Cell) VisitedTimes(client string) int64 {
 	c.RLock()
 	defer c.RUnlock()
 
-	return c.visited
+	if t, ok := c.visited[client]; ok {
+		return t
+	}
+	return 0
 }
 
 // SetVisited marks the cell as visited
-func (c *Cell) SetVisited() {
+func (c *Cell) SetVisited(client string) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.visited++
+	if _, ok := c.visited[client]; !ok {
+		c.visited[client] = 0
+	}
+	c.visited[client]++
 }
 
 // SetUnVisited marks the cell as unvisited
-func (c *Cell) SetUnVisited() {
+func (c *Cell) SetUnVisited(client string) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.visited = 0
+	if _, ok := c.visited[client]; !ok {
+		c.visited[client] = 0
+	}
+
+	c.visited[client] = 0
 }
 
 // SetPaths sets the paths present in the cell
@@ -568,17 +587,17 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawVisited draws the visited marker.
-func (c *Cell) DrawVisited(r *sdl.Renderer) *sdl.Renderer {
+func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
 	c.RLock()
 	defer c.RUnlock()
 
 	PixelsPerCell := c.width
 
 	// don't mark cells under other cell
-	if c.config.MarkVisitedCells && c.Visited() && c.z >= 0 {
+	if c.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
 		colors.SetDrawColor(colors.GetColor(c.config.VisitedCellColor), r)
 
-		times := c.VisitedTimes()
+		times := c.VisitedTimes(client.id)
 		factor := times * 3
 
 		wallSpace := c.config.WallSpace / 2
@@ -627,28 +646,28 @@ func (c *Cell) Links() []*Cell {
 // directionTo returns the direction (north, south, east, west) of cell from c
 // c and cell must be linked
 // TODO(dan): raise appropriate error if cells are not linked
-func (c *Cell) directionTo(cell *Cell) *pb.Direction {
+func (c *Cell) directionTo(cell *Cell, client string) *pb.Direction {
 
 	switch {
 	case c.North() == cell:
-		return &pb.Direction{"north", cell.Visited()}
+		return &pb.Direction{"north", cell.Visited(client)}
 	case c.South() == cell:
-		return &pb.Direction{"south", cell.Visited()}
+		return &pb.Direction{"south", cell.Visited(client)}
 	case c.East() == cell:
-		return &pb.Direction{"east", cell.Visited()}
+		return &pb.Direction{"east", cell.Visited(client)}
 	case c.West() == cell:
-		return &pb.Direction{"west", cell.Visited()}
+		return &pb.Direction{"west", cell.Visited(client)}
 	}
 
 	return &pb.Direction{"", false}
 }
 
 // DirectionLinks returns a list of directions that have linked (passage to) cells
-func (c *Cell) DirectionLinks() []*pb.Direction {
+func (c *Cell) DirectionLinks(client string) []*pb.Direction {
 	var directions []*pb.Direction
 	for item := range c.links.Iter() {
 		if c.Linked(item.Key) {
-			directions = append(directions, c.directionTo(item.Key))
+			directions = append(directions, c.directionTo(item.Key, client))
 		}
 	}
 	return directions
@@ -710,11 +729,11 @@ func (c *Cell) RandomUnLinkPreferDeadends() *Cell {
 }
 
 // RandomUnvisitedLink returns a random cell linked to this one that has not been visited
-func (c *Cell) RandomUnvisitedLink() *Cell {
+func (c *Cell) RandomUnvisitedLink(client string) *Cell {
 	var keys []*Cell
 	for item := range c.links.Iter() {
 		linked := c.Linked(item.Key)
-		if linked && !item.Key.Visited() {
+		if linked && !item.Key.Visited(client) {
 			keys = append(keys, item.Key)
 		}
 	}
