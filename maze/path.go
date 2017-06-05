@@ -1,9 +1,10 @@
 package maze
 
 import (
+	"mazes/colors"
+
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
-	"mazes/colors"
 )
 
 // PathSegment is one segement of a path. A cell, and metadata.
@@ -128,7 +129,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 }
 
 // DrawPath draws the path as present in the cells
-func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client string, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
+func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
 	cell := p.Cell()
 
 	cell.RLock()
@@ -136,7 +137,6 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client string, solvePat
 
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
-	// solveCells := solvePath.ListCells()
 
 	getPathRect := func(d string, inSolution bool) *sdl.Rect {
 		if !inSolution {
@@ -207,7 +207,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client string, solvePat
 		return paths[d]
 	}
 
-	pathColor := cell.pathColor
+	pathColor := m.Clients()[client.id].pathColor
 	if isSolution {
 		pathColor = colors.SetOpacity(pathColor, 255) // solution is fully visible
 	} else {
@@ -218,7 +218,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client string, solvePat
 
 	currentSegmentInSolution := solvePath.SegmentInPath(p)
 
-	if isLast && !cell.Visited(client) {
+	if isLast && !cell.Visited(client.id) {
 		switch p.Facing() {
 		case "east":
 			r.FillRect(getPathRect("west", currentSegmentInSolution))

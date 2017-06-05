@@ -185,7 +185,7 @@ func configToCell(m *maze.Maze, config *pb.MazeConfig, c string) (*maze.Cell, er
 
 }
 
-func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string) {
+func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, clientPathColor colors.Color) {
 	var (
 		w *sdl.Window
 		r *sdl.Renderer
@@ -235,7 +235,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string) {
 		// Set these for correct window size
 		config.Columns, config.Rows = m.Dimensions()
 	} else {
-		m, err = maze.NewMaze(config, clientID)
+		m, err = maze.NewMaze(config, clientID, clientPathColor)
 		if err != nil {
 			log.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -477,7 +477,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			in.Reply <- commandReply{answer: clients}
 		case maze.CommandAddClient:
 			log.Print("adding client to existing maze...")
-			m.AddClient(in.ClientID)
+			m.AddClient(in.ClientID, colors.GetColor(in.ClientPathColor))
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{}
@@ -730,10 +730,11 @@ type commandReply struct {
 }
 
 type commandData struct {
-	Action   commandAction
-	ClientID string
-	Request  commandRequest
-	Reply    chan commandReply // reply from the maze is sent over this channel
+	Action          commandAction
+	ClientID        string
+	ClientPathColor string
+	Request         commandRequest
+	Reply           chan commandReply // reply from the maze is sent over this channel
 }
 
 type locationInfo struct {
@@ -758,12 +759,12 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 
 	mazeID := uuid.NewV4().String()
 	clientID := uuid.NewV4().String()
-	in.Config.Id = mazeID
+	in.GetConfig().Id = mazeID
 
 	comm := make(chan commandData)
 	mazeMap.Insert(mazeID, comm)
 
-	go createMaze(in.Config, comm, clientID)
+	go createMaze(in.Config, comm, clientID, colors.GetColor(in.GetConfig().GetPathColor()))
 
 	return &pb.CreateMazeReply{MazeId: mazeID, ClientId: clientID}, nil
 }
@@ -783,9 +784,10 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	comm := m.(chan commandData)
 
 	data := commandData{
-		Action:   maze.CommandAddClient,
-		ClientID: clientID,
-		Reply:    make(chan commandReply),
+		Action:          maze.CommandAddClient,
+		ClientID:        clientID,
+		ClientPathColor: in.GetPathColor(),
+		Reply:           make(chan commandReply),
 	}
 	comm <- data
 	// get response from maze

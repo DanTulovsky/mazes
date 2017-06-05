@@ -44,13 +44,9 @@ type Maze struct {
 	bgColor          colors.Color
 	borderColor      colors.Color
 	wallColor        colors.Color
-	pathColor        colors.Color
 	createTime       time.Duration // how long it took to apply the algorithm to create the grid
 	fromCell, toCell *Cell         // save these for proper coloring
-
-	// these need to go into the client
-	solvePath  *Path // the final solve path of the solver
-	travelPath *Path // the travel path of the solver, update in real time
+	nextClient       int           // number of the next client to connect
 
 	genCurrentLocation *Cell // the current location of generator
 
@@ -121,11 +117,11 @@ func NewMazeFromImage(c *pb.MazeConfig, f string, clientID string) (*Maze, error
 	}
 	c.OrphanMask = mask
 
-	return NewMaze(c, clientID)
+	return NewMaze(c, clientID, colors.GetColor(c.GetPathColor()))
 }
 
 // NewGrid returns a new grid.
-func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
+func NewMaze(c *pb.MazeConfig, clientID string, clientPathColor colors.Color) (*Maze, error) {
 	//if err := c.CheckConfig(); err != nil {
 	//	return nil, err
 	//}
@@ -141,26 +137,17 @@ func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
 		bgColor:     colors.GetColor(c.GetBgColor()),
 		borderColor: colors.GetColor(c.GetBorderColor()),
 		wallColor:   colors.GetColor(c.GetWallColor()),
-		pathColor:   colors.GetColor(c.GetPathColor()),
-		config:      c,
 
-		solvePath:  NewPath(),
-		travelPath: NewPath(),
+		config: c,
 
 		mazeCells:   make(map[*Cell]bool),
 		orphanCells: make(map[*Cell]bool),
+
+		clients: make(map[string]*client),
 	}
 
 	// new client
-	clients := make(map[string]*client)
-	clients[clientID] = &client{
-		id: clientID,
-		// currentLocation: m.fromCell,
-		SolvePath:  NewPath(),
-		TravelPath: NewPath(),
-	}
-
-	m.clients = clients
+	m.AddClient(clientID, clientPathColor)
 
 	m.prepareGrid()
 	m.configureCells()
@@ -169,7 +156,7 @@ func NewMaze(c *pb.MazeConfig, clientID string) (*Maze, error) {
 }
 
 // AddClient adds a new client to the maze
-func (m *Maze) AddClient(id string) {
+func (m *Maze) AddClient(id string, clientPathColor colors.Color) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -178,7 +165,11 @@ func (m *Maze) AddClient(id string) {
 		// currentLocation: m.fromCell,
 		SolvePath:  NewPath(),
 		TravelPath: NewPath(),
+		pathColor:  clientPathColor,
+		number:     m.nextClient,
 	}
+
+	m.nextClient++
 
 }
 
@@ -635,7 +626,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.
 		}
 
 		// TODO(dan): Change this to draw path between any two cells
-		segment.DrawPath(r, m, client.id, solvePath, isLast, isSolution) // solution is colored by a different color
+		segment.DrawPath(r, m, client, solvePath, isLast, isSolution) // solution is colored by a different color
 
 		if markVisited {
 			cell.DrawVisited(r, client)
@@ -1012,20 +1003,6 @@ func (m *Maze) DeadEnds() []*Cell {
 func (m *Maze) Reset() {
 	m.resetVisited()
 	m.resetDistances()
-}
-
-func (m *Maze) SolvePath() *Path {
-	m.RLock()
-	defer m.RUnlock()
-
-	return m.solvePath
-}
-
-func (m *Maze) SetSolvePath(p *Path) {
-	m.Lock()
-	defer m.Unlock()
-
-	m.solvePath = p
 }
 
 // resetVisited sets all cells to be unvisited by the generator

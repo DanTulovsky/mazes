@@ -19,6 +19,7 @@ service Mazer {
 
 message RegisterClientRequest {
   string mazeId = 1;
+  string pathColor = 2;
 }
 
 message RegisterClientReply {
