@@ -166,7 +166,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 	}
 
 	log.Printf("solving maze3 (client=%v)...", regReply3.GetClientId())
-	opSolve(ctx, c, r.GetMazeId(), regReply3.GetClientId(), "random-unvisited")
+	opSolve(ctx, c, r.GetMazeId(), regReply3.GetClientId(), "wall-follower")
 
 	return nil
 }
