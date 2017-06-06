@@ -3,6 +3,8 @@ package maze
 import (
 	"mazes/colors"
 
+	"mazes/utils"
+
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -144,29 +146,33 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		} else {
 			pathWidth = cell.pathWidth
 		}
+
+		// offset client path based on the client.id
+		offset := int32(utils.DrawOffset(client.number))
+
 		// these are the path segments from the middle towards the given direction
 		paths := map[string]*sdl.Rect{
 			"east": {
-				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
-				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
+				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(PixelsPerCell/2 + cell.wallWidth),
 				int32(pathWidth),
 			},
 			"west": {
-				int32(cell.x*PixelsPerCell + cell.wallWidth),
-				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell+cell.wallWidth) + offset,
+				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(PixelsPerCell/2 + pathWidth - cell.wallWidth),
 				int32(pathWidth),
 			},
 			"north": {
-				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.y*PixelsPerCell + cell.wallWidth),
 				int32(pathWidth),
 				int32(PixelsPerCell/2 - cell.wallWidth),
 			},
 			"south": {
-				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
-				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
+				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(pathWidth),
 				int32(PixelsPerCell/2 + cell.wallWidth),
 			},

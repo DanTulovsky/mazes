@@ -13,6 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+	"safemap"
+
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/satori/go.uuid"
@@ -22,11 +28,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-	"safemap"
 )
 
 const (
@@ -355,6 +356,9 @@ func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, c
 			log.Print("No fromCella and/or toCell set, defaulting to longestPath.")
 			_, fromCell, toCell, _ = m.LongestPath()
 		}
+
+		m.SetFromCell(fromCell)
+		m.SetToCell(toCell)
 
 		log.Printf("Path: %v -> %v", fromCell, toCell)
 

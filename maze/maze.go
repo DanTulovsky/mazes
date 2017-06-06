@@ -12,12 +12,13 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/sasha-s/go-deadlock"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_image"
 	"mazes/colors"
 	pb "mazes/proto"
 	"mazes/utils"
+
+	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_image"
 )
 
 func init() {
@@ -444,7 +445,7 @@ func (m *Maze) FromCell() *Cell {
 	return m.fromCell
 }
 
-func (m *Maze) setFromCell(c *Cell) {
+func (m *Maze) SetFromCell(c *Cell) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -458,7 +459,7 @@ func (m *Maze) ToCell() *Cell {
 	return m.toCell
 }
 
-func (m *Maze) setToCell(c *Cell) {
+func (m *Maze) SetToCell(c *Cell) {
 	m.Lock()
 	defer m.Unlock()
 
@@ -884,10 +885,6 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 	fromCell.SetBGColor(colors.GetColor(m.config.FromCellColor))
 	toCell.SetBGColor(colors.GetColor(m.config.ToCellColor))
 
-	// save these for color refresh.
-	m.setFromCell(fromCell)
-	m.setToCell(toCell)
-
 }
 
 // SetPathFromTo sets the given path in the cells from fromCell to toCell
@@ -983,7 +980,7 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 		cell.SetDistance(d)
 	}
 
-	m.setFromCell(c)
+	m.SetFromCell(c)
 }
 
 // DeadEnds returns a list of cells that are deadends (only linked to one neighbor)
