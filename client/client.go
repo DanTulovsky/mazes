@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -121,6 +122,27 @@ func newConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 	return config
 }
 
+func addClient(ctx context.Context, c pb.MazerClient, mazeID, algo, color string) error {
+	log.Printf("registering and running new client in maze %v...", mazeID)
+	r, err := c.RegisterClient(ctx,
+		&pb.RegisterClientRequest{
+			MazeId:    mazeID,
+			PathColor: color,
+		})
+	if err != nil {
+		return err
+	}
+
+	if !r.GetSuccess() {
+		return fmt.Errorf("failed to register second client: %v", r.GetMessage())
+	}
+
+	log.Printf("solving maze (client=%v)...", r.GetClientId())
+	opSolve(ctx, c, mazeID, r.GetClientId(), algo)
+
+	return nil
+}
+
 // opCreateSolveMulti creates and solves the maze
 func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
 	log.Print("creating maze...")
@@ -128,45 +150,23 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 	if err != nil {
 		return err
 	}
+	mazeId := r.GetMazeId()
+	var wd sync.WaitGroup
 
-	log.Printf("solving maze1 (client=%v)...", r.GetClientId())
-	go opSolve(ctx, c, r.GetMazeId(), r.GetClientId(), *solveAlgo)
+	log.Printf("solving maze1 (client=%v; maze=%v)...", r.GetClientId(), mazeID)
+	wd.Add(1)
+	go opSolve(ctx, c, mazeId, r.GetClientId(), *solveAlgo)
 
-	// register second client
-	log.Printf("registering second client...")
-	regReply, err := c.RegisterClient(ctx,
-		&pb.RegisterClientRequest{
-			MazeId:    r.GetMazeId(),
-			PathColor: "blue",
-		})
-	if err != nil {
-		return err
-	}
+	// register more clients
+	wd.Add(1)
+	go addClient(context.Background(), c, mazeId, "wall-follower", "blue")
+	wd.Add(1)
+	go addClient(context.Background(), c, mazeId, "recursive-backtracker", "green")
+	//wd.Add(1)
+	//go addClient(context.Background(), c, mazeId, "wall-follower", "purple")
 
-	if !regReply.GetSuccess() {
-		return fmt.Errorf("failed to register second client: %v", regReply.GetMessage())
-	}
-
-	log.Printf("solving maze2 (client=%v)...", regReply.GetClientId())
-	go opSolve(ctx, c, r.GetMazeId(), regReply.GetClientId(), "wall-follower")
-
-	// register third client
-	log.Printf("registering third client...")
-	regReply3, err := c.RegisterClient(ctx,
-		&pb.RegisterClientRequest{
-			MazeId:    r.GetMazeId(),
-			PathColor: "green",
-		})
-	if err != nil {
-		return err
-	}
-
-	if !regReply3.GetSuccess() {
-		return fmt.Errorf("failed to register third client: %v", regReply3.GetMessage())
-	}
-
-	log.Printf("solving maze3 (client=%v)...", regReply3.GetClientId())
-	opSolve(ctx, c, r.GetMazeId(), regReply3.GetClientId(), "wall-follower")
+	log.Printf("waiting for clients...")
+	wd.Wait()
 
 	return nil
 }

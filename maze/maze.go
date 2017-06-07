@@ -12,13 +12,12 @@ import (
 	"runtime/debug"
 	"time"
 
-	"mazes/colors"
-	pb "mazes/proto"
-	"mazes/utils"
-
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
+	"mazes/colors"
+	pb "mazes/proto"
+	"mazes/utils"
 )
 
 func init() {
@@ -888,7 +887,9 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 }
 
 // SetPathFromTo sets the given path in the cells from fromCell to toCell
-func (m *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
+func (m *Maze) SetPathFromTo(fromCell *Cell, client *client) {
+
+	path := client.TravelPath
 
 	var prev, next *Cell
 	for x := 0; x < path.Length(); x++ {
@@ -900,7 +901,7 @@ func (m *Maze) SetPathFromTo(fromCell, toCell *Cell, path *Path) {
 			next = path.segments[x+1].Cell()
 		}
 
-		path.segments[x].Cell().SetPaths(prev, next)
+		path.segments[x].Cell().SetPaths(client, prev, next)
 	}
 }
 

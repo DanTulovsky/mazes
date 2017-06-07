@@ -138,15 +138,16 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
 
+	// offset client path based on the client.id
+	offset := int32(utils.DrawOffset(client.number)) * int32(pathWidth)
+	// log.Printf(">>>> offset (client: %v) >>>> %v", client.number, offset)
+
 	getPathRect := func(d string, inSolution bool) *sdl.Rect {
 		if !inSolution {
 			pathWidth = cell.pathWidth / 2
 		} else {
 			pathWidth = cell.pathWidth
 		}
-
-		// offset client path based on the client.id
-		offset := int32(utils.DrawOffset(client.number)) * int32(pathWidth)
 
 		// these are the path segments from the middle towards the given direction
 		paths := map[string]*sdl.Rect{
@@ -235,7 +236,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		}
 
 	} else {
-		if cell.pathEast && cell.East() != nil {
+		if cell.pathEast[client.id] && cell.East() != nil {
 			// if current cell and neighbor is in the solution, solid color.
 			eastInSolution := solvePath.CellInPath(cell.East())
 			if eastInSolution && currentSegmentInSolution {
@@ -247,7 +248,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("east", eastInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathWest && cell.West() != nil {
+		if cell.pathWest[client.id] && cell.West() != nil {
 			westInSolution := solvePath.CellInPath(cell.West())
 			if westInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
@@ -258,7 +259,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("west", westInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathNorth && p.cell.North() != nil {
+		if cell.pathNorth[client.id] && p.cell.North() != nil {
 			northInSolution := solvePath.CellInPath(cell.North())
 			if northInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
@@ -269,7 +270,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("north", northInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathSouth && cell.South() != nil {
+		if cell.pathSouth[client.id] && cell.South() != nil {
 			southInSolution := solvePath.CellInPath(cell.South())
 			if southInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)

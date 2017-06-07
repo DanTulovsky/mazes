@@ -24,3 +24,43 @@ func TestAffineTransform(t *testing.T) {
 		}
 	}
 }
+
+var offsettests = []struct {
+	in       int
+	expected int
+}{
+	{in: 0, expected: 0},
+	{in: 1, expected: 1},
+	{in: 2, expected: -1},
+	{in: 3, expected: 2},
+	{in: 4, expected: -2},
+}
+
+func TestDrawOffset(t *testing.T) {
+	for _, tt := range offsettests {
+		r := DrawOffset(tt.in)
+		if r != tt.expected {
+			t.Errorf("expected %v for input %v, but got %v", tt.expected, tt.in, r)
+		}
+	}
+}
+
+var oddtests = []struct {
+	in       int
+	expected bool
+}{
+	{in: 0, expected: false},
+	{in: 1, expected: true},
+	{in: 2, expected: false},
+	{in: 6, expected: false},
+	{in: 3, expected: true},
+}
+
+func TestIsOdd(t *testing.T) {
+	for _, tt := range oddtests {
+		r := isOdd(tt.in)
+		if r != tt.expected {
+			t.Errorf("expected %v for input %v, but got %v", tt.expected, tt.in, r)
+		}
+	}
+}

@@ -13,12 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-	"safemap"
-
 	"github.com/pkg/profile"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/satori/go.uuid"
@@ -28,6 +22,11 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+	"safemap"
 )
 
 const (
@@ -561,7 +560,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 
 			s := maze.NewSegment(client.CurrentLocation(), facing)
 			client.TravelPath.AddSegement(s)
-			m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+			m.SetPathFromTo(m.FromCell(), client)
 
 			log.Printf("sending back reply")
 			in.Reply <- commandReply{
@@ -590,7 +589,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+					m.SetPathFromTo(m.FromCell(), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -611,7 +610,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+					m.SetPathFromTo(m.FromCell(), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -632,7 +631,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+					m.SetPathFromTo(m.FromCell(), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -653,7 +652,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client.CurrentLocation(), client.TravelPath)
+					m.SetPathFromTo(m.FromCell(), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
