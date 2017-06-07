@@ -33,8 +33,6 @@ type Cell struct {
 	bgColor colors.Color
 	// Wall color of the cell
 	wallColor colors.Color
-	// path color
-	pathColor colors.Color
 	// size of the cell
 	width     int64
 	wallWidth int64
@@ -91,7 +89,6 @@ func NewCell(x, y, z int64, c *pb.MazeConfig) *Cell {
 		links:     NewSafeMap2(),
 		bgColor:   colors.GetColor(c.BgColor),   // default
 		wallColor: colors.GetColor(c.WallColor), // default
-		pathColor: colors.GetColor(c.PathColor), //default
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
@@ -604,7 +601,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
 
 	// don't mark cells under other cell
 	if c.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
-		colors.SetDrawColor(colors.GetColor(c.config.VisitedCellColor), r)
+		colors.SetDrawColor(colors.GetColor(client.config.VisitedCellColor), r)
 
 		times := c.VisitedTimes(client.id)
 		factor := times * 3

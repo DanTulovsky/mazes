@@ -1,7 +1,6 @@
 package maze
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	_ "image/png"
@@ -10,11 +9,12 @@ import (
 	"math/rand"
 	"os"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_image"
 	"mazes/colors"
 	pb "mazes/proto"
 	"mazes/utils"
@@ -44,9 +44,9 @@ type Maze struct {
 	bgColor          colors.Color
 	borderColor      colors.Color
 	wallColor        colors.Color
-	createTime       time.Duration // how long it took to apply the algorithm to create the grid
-	fromCell, toCell *Cell         // save these for proper coloring
-	nextClient       int           // number of the next client to connect
+	createTime       time.Duration    // how long it took to apply the algorithm to create the grid
+	fromCell, toCell map[string]*Cell // save these for proper coloring, per client
+	nextClient       int              // number of the next client to connect
 
 	genCurrentLocation *Cell // the current location of generator
 
@@ -109,7 +109,7 @@ func setupMazeMask(f string, c *pb.MazeConfig, mask []*pb.MazeLocation) ([]*pb.M
 }
 
 // NewMazeFromImage creates a new maze from the image at file f
-func NewMazeFromImage(c *pb.MazeConfig, f string, clientID string) (*Maze, error) {
+func NewMazeFromImage(c *pb.MazeConfig, f string) (*Maze, error) {
 	mask := make([]*pb.MazeLocation, 0)
 	mask, err := setupMazeMask(f, c, mask)
 	if err != nil {
@@ -117,11 +117,11 @@ func NewMazeFromImage(c *pb.MazeConfig, f string, clientID string) (*Maze, error
 	}
 	c.OrphanMask = mask
 
-	return NewMaze(c, clientID, colors.GetColor(c.GetPathColor()))
+	return NewMaze(c)
 }
 
 // NewGrid returns a new grid.
-func NewMaze(c *pb.MazeConfig, clientID string, clientPathColor colors.Color) (*Maze, error) {
+func NewMaze(c *pb.MazeConfig) (*Maze, error) {
 	//if err := c.CheckConfig(); err != nil {
 	//	return nil, err
 	//}
@@ -137,6 +137,8 @@ func NewMaze(c *pb.MazeConfig, clientID string, clientPathColor colors.Color) (*
 		bgColor:     colors.GetColor(c.GetBgColor()),
 		borderColor: colors.GetColor(c.GetBorderColor()),
 		wallColor:   colors.GetColor(c.GetWallColor()),
+		fromCell:    make(map[string]*Cell),
+		toCell:      make(map[string]*Cell),
 
 		config: c,
 
@@ -146,17 +148,40 @@ func NewMaze(c *pb.MazeConfig, clientID string, clientPathColor colors.Color) (*
 		clients: make(map[string]*client),
 	}
 
-	// new client
-	m.AddClient(clientID, clientPathColor)
-
 	m.prepareGrid()
 	m.configureCells()
 
 	return m, nil
 }
 
+func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {
+
+	switch c {
+	case "min":
+		return m.SmallestCell(), nil
+	case "max":
+		return m.LargestCell(), nil
+	case "random":
+		return m.RandomCell(), nil
+	default:
+		from := strings.Split(c, ",")
+		if len(from) != 2 {
+			log.Fatalf("%v is not a valid coordinate", config.FromCell)
+		}
+		x, _ := strconv.ParseInt(from[0], 10, 64)
+		y, _ := strconv.ParseInt(from[1], 10, 64)
+		cell, err := m.Cell(x, y, 0)
+		if err != nil {
+			return nil, fmt.Errorf("invalid fromCell: %v", err)
+		}
+		return cell, nil
+	}
+
+}
+
 // AddClient adds a new client to the maze
-func (m *Maze) AddClient(id string, clientPathColor colors.Color) {
+func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
+	log.Printf("adding client: %v", id)
 	m.Lock()
 	defer m.Unlock()
 
@@ -165,12 +190,50 @@ func (m *Maze) AddClient(id string, clientPathColor colors.Color) {
 		// currentLocation: m.fromCell,
 		SolvePath:  NewPath(),
 		TravelPath: NewPath(),
-		pathColor:  clientPathColor,
+		config:     config,
 		number:     m.nextClient,
 	}
 
 	m.nextClient++
 
+	var fromCell, toCell *Cell
+	var err error
+
+	if config.GetFromCell() != "" {
+		fromCell, err = m.configToCell(config, config.FromCell)
+		if err != nil {
+			return err
+		}
+	}
+
+	if config.GetToCell() != "" {
+		toCell, err = m.configToCell(config, config.ToCell)
+		if err != nil {
+			return err
+		}
+	}
+
+	// solve the longest path
+	if fromCell == nil || toCell == nil {
+		log.Print("No fromCella and/or toCell set, defaulting to longestPath.")
+		_, fromCell, toCell, _ = m.LongestPath()
+	}
+
+	m.SetFromCell(m.clients[id], fromCell)
+	m.SetToCell(m.clients[id], toCell)
+
+	log.Printf("Path: %v -> %v", fromCell, toCell)
+
+	m.SetFromToColors(m.clients[id], fromCell, toCell)
+
+	// this will color the maze based on the last client to register
+	log.Printf("setting distance colors")
+	if m.Config().GetShowDistanceColors() {
+		m.SetDistanceInfo(m.clients[id], fromCell)
+	}
+
+	log.Printf("added client: %v", id)
+	return nil
 }
 
 // Braid removes dead ends from the maze with a probability p (p = 1 means no dead ends)
@@ -265,27 +328,29 @@ func (m *Maze) Link(c1, c2 *Cell) {
 
 }
 
-// loadAvatar reads in the avatar image
-func (m *Maze) loadAvatar(r *sdl.Renderer) {
-	if m.avatar != nil {
-		return
-	}
-
-	var err error
-	m.avatar, err = img.LoadTexture(r, m.config.AvatarImage)
-	if err != nil {
-		Fail(err)
-	}
-	m.avatar.SetBlendMode(sdl.BLENDMODE_BLEND)
-	m.avatar.SetAlphaMod(255)
-}
-
+//// loadAvatar reads in the avatar image
+//func (m *Maze) loadAvatar(r *sdl.Renderer) {
+//	if m.avatar != nil {
+//		return
+//	}
+//
+//	var err error
+//	m.avatar, err = img.LoadTexture(r, m.config.AvatarImage)
+//	if err != nil {
+//		Fail(err)
+//	}
+//	m.avatar.SetBlendMode(sdl.BLENDMODE_BLEND)
+//	m.avatar.SetAlphaMod(255)
+//}
+//
 // getAvatar returns the avatar texture
 func (m *Maze) getAvatar() *sdl.Texture {
-	if m.avatar == nil && m.config.AvatarImage != "" {
-		Fail(errors.New("calling getAvatar() before loadVatar()"))
-	}
-	return m.avatar
+	// TODO: Fix this to be per client
+	return nil
+	//if m.avatar == nil && m.config.AvatarImage != "" {
+	//	Fail(errors.New("calling getAvatar() before loadVatar()"))
+	//}
+	//return m.avatar
 }
 
 // prepareGrid initializes the grid with cells
@@ -437,48 +502,47 @@ func (m *Maze) String() string {
 	return output
 }
 
-func (m *Maze) FromCell() *Cell {
+func (m *Maze) FromCell(client *client) *Cell {
 	m.RLock()
 	defer m.RUnlock()
 
-	return m.fromCell
+	if c, ok := m.fromCell[client.id]; ok {
+		return c
+	}
+	return nil
 }
 
-func (m *Maze) SetFromCell(c *Cell) {
-	m.Lock()
-	defer m.Unlock()
-
-	m.fromCell = c
+func (m *Maze) SetFromCell(client *client, c *Cell) {
+	// TODO: switch to safemap
+	m.fromCell[client.id] = c
 }
 
-func (m *Maze) ToCell() *Cell {
+func (m *Maze) ToCell(client *client) *Cell {
 	m.RLock()
 	defer m.RUnlock()
 
-	return m.toCell
+	if c, ok := m.toCell[client.id]; ok {
+		return c
+	}
+
+	return nil
 }
 
-func (m *Maze) SetToCell(c *Cell) {
-	m.Lock()
-	defer m.Unlock()
-
-	m.toCell = c
+func (m *Maze) SetToCell(client *client, c *Cell) {
+	// TODO: switch to safe map
+	m.toCell[client.id] = c
 }
 
 // DrawMazeBackground renders the gui maze background in memory
 func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	// defer utils.TimeTrack(time.Now(), "DrawMaze")
 
-	fromCell := m.FromCell()
-	toCell := m.ToCell()
-
-	// If saved, draw distance colors
-	if fromCell != nil && m.config.ShowDistanceColors {
-		m.SetDistanceInfo(fromCell)
-	}
-	if fromCell != nil && toCell != nil {
-		m.SetFromToColors(fromCell, toCell)
-	}
+	//fromCell := m.FromCell()
+	//
+	//// If saved, draw distance colors
+	//if fromCell != nil && m.config.ShowDistanceColors {
+	//	m.SetDistanceInfo(fromCell)
+	//}
 
 	// Each cell draws its background, half the wall as well as anything inside it
 	for x := int64(0); x < m.columns; x++ {
@@ -508,9 +572,9 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	// m.drawBorder(r)
 
 	// Load avatar if needed
-	if m.config.AvatarImage != "" {
-		m.loadAvatar(r)
-	}
+	//if m.config.AvatarImage != "" {
+	//	m.loadAvatar(r)
+	//}
 
 	return r
 }
@@ -873,7 +937,7 @@ func (m *Maze) LongestPath() (dist int, fromCell, toCell *Cell, path *Path) {
 }
 
 // SetFromToColors sets the opacity of the from and to cells to be highly visible
-func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
+func (m *Maze) SetFromToColors(client *client, fromCell, toCell *Cell) {
 	// defer utils.TimeTrack(time.Now(), "SetFromToColors")
 
 	if fromCell == nil || toCell == nil {
@@ -881,8 +945,8 @@ func (m *Maze) SetFromToColors(fromCell, toCell *Cell) {
 		return
 	}
 	// Set path start and end colors
-	fromCell.SetBGColor(colors.GetColor(m.config.FromCellColor))
-	toCell.SetBGColor(colors.GetColor(m.config.ToCellColor))
+	fromCell.SetBGColor(colors.GetColor(client.config.FromCellColor))
+	toCell.SetBGColor(colors.GetColor(client.config.ToCellColor))
 
 }
 
@@ -954,7 +1018,7 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 }
 
 // SetDistanceInfo sets distance info based on fromCell
-func (m *Maze) SetDistanceInfo(c *Cell) {
+func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 	// defer utils.TimeTrack(time.Now(), "SetDistanceColors")
 	// figure out the distances if needed
 	c.Distances()
@@ -981,7 +1045,8 @@ func (m *Maze) SetDistanceInfo(c *Cell) {
 		cell.SetDistance(d)
 	}
 
-	m.SetFromCell(c)
+	log.Printf("************")
+	m.SetFromCell(client, c)
 }
 
 // DeadEnds returns a list of cells that are deadends (only linked to one neighbor)

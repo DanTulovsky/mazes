@@ -8,8 +8,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -160,32 +158,7 @@ func checkQuit(running *abool.AtomicBool) {
 	})
 }
 
-func configToCell(m *maze.Maze, config *pb.MazeConfig, c string) (*maze.Cell, error) {
-
-	switch c {
-	case "min":
-		return m.SmallestCell(), nil
-	case "max":
-		return m.LargestCell(), nil
-	case "random":
-		return m.RandomCell(), nil
-	default:
-		from := strings.Split(c, ",")
-		if len(from) != 2 {
-			log.Fatalf("%v is not a valid coordinate", config.FromCell)
-		}
-		x, _ := strconv.ParseInt(from[0], 10, 64)
-		y, _ := strconv.ParseInt(from[1], 10, 64)
-		cell, err := m.Cell(x, y, 0)
-		if err != nil {
-			return nil, fmt.Errorf("invalid fromCell: %v", err)
-		}
-		return cell, nil
-	}
-
-}
-
-func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, clientPathColor colors.Color) {
+func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	var (
 		w *sdl.Window
 		r *sdl.Renderer
@@ -220,14 +193,13 @@ func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, c
 	}
 
 	var m *maze.Maze
-	var fromCell, toCell *maze.Cell
 	var err error
 
 	// Mask image if provided.
 	// If the mask image is provided, use that as the dimensions of the grid
 	if *maskImage != "" {
 		log.Printf("Using %v as grid mask", *maskImage)
-		m, err = maze.NewMazeFromImage(config, *maskImage, clientID)
+		m, err = maze.NewMazeFromImage(config, *maskImage)
 		if err != nil {
 			log.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -235,7 +207,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, c
 		// Set these for correct window size
 		config.Columns, config.Rows = m.Dimensions()
 	} else {
-		m, err = maze.NewMaze(config, clientID, clientPathColor)
+		m, err = maze.NewMaze(config)
 		if err != nil {
 			log.Printf("invalid config: %v", err)
 			os.Exit(1)
@@ -342,27 +314,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, c
 		//	c.SetWeight(1000)
 		//}
 
-		if config.FromCell != "" {
-			fromCell, err = configToCell(m, config, config.FromCell)
-		}
-
-		if config.ToCell != "" {
-			toCell, err = configToCell(m, config, config.ToCell)
-		}
-
-		// solve the longest path
-		if fromCell == nil || toCell == nil {
-			log.Print("No fromCella and/or toCell set, defaulting to longestPath.")
-			_, fromCell, toCell, _ = m.LongestPath()
-		}
-
-		m.SetFromCell(fromCell)
-		m.SetToCell(toCell)
-
-		log.Printf("Path: %v -> %v", fromCell, toCell)
-
-		m.SetDistanceInfo(fromCell)
-
 		generating.UnSet()
 	}()
 
@@ -383,10 +334,10 @@ func createMaze(config *pb.MazeConfig, comm chan commandData, clientID string, c
 	}
 	wd.Wait()
 
-	if config.ShowFromToColors {
-		// Set the colors for the from and to cells
-		m.SetFromToColors(fromCell, toCell)
-	}
+	//if config.ShowFromToColors {
+	//	// Set the colors for the from and to cells
+	//	m.SetFromToColors(fromCell, toCell)
+	//}
 	///////////////////////////////////////////////////////////////////////////
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
@@ -480,7 +431,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			in.Reply <- commandReply{answer: clients}
 		case maze.CommandAddClient:
 			log.Print("adding client to existing maze...")
-			m.AddClient(in.ClientID, colors.GetColor(in.ClientPathColor))
+			m.AddClient(in.ClientID, in.ClientConfig)
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{}
@@ -493,13 +444,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{answer: client.CurrentLocation().DirectionLinks(in.ClientID)}
 			}
 		case maze.CommandSetInitialClientLocation:
-			log.Printf("setting initial client location to: %v", m.FromCell())
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 			} else {
+				log.Printf("setting initial client location to: %v", m.FromCell(client))
 				m.Reset()
 
-				client.SetCurrentLocation(m.FromCell())
+				client.SetCurrentLocation(m.FromCell(client))
 				cell := client.CurrentLocation()
 
 				// Add initial location to paths
@@ -524,8 +475,8 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			} else {
 				info := &locationInfo{
 					current: client.CurrentLocation().Location(),
-					from:    m.FromCell().Location(),
-					to:      m.ToCell().Location(),
+					from:    m.FromCell(client).Location(),
+					to:      m.ToCell(client).Location(),
 				}
 				in.Reply <- commandReply{answer: info}
 			}
@@ -560,14 +511,14 @@ func checkComm(m *maze.Maze, comm commChannel) {
 
 			s := maze.NewSegment(client.CurrentLocation(), facing)
 			client.TravelPath.AddSegement(s)
-			m.SetPathFromTo(m.FromCell(), client)
+			m.SetPathFromTo(m.FromCell(client), client)
 
 			log.Printf("sending back reply")
 			in.Reply <- commandReply{
 				answer: &moveReply{
 					current:             client.CurrentLocation().Location(),
 					availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-					solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
+					solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
 				},
 			}
 
@@ -589,13 +540,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client)
+					m.SetPathFromTo(m.FromCell(client), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
 						},
 					}
 				} else {
@@ -610,13 +561,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client)
+					m.SetPathFromTo(m.FromCell(client), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
 						},
 					}
 				} else {
@@ -631,13 +582,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client)
+					m.SetPathFromTo(m.FromCell(client), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
 						},
 					}
 				} else {
@@ -652,13 +603,13 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(), client)
+					m.SetPathFromTo(m.FromCell(client), client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
 							current:             client.CurrentLocation().Location(),
 							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell().Location().String(),
+							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
 						},
 					}
 				} else {
@@ -733,11 +684,11 @@ type commandReply struct {
 }
 
 type commandData struct {
-	Action          commandAction
-	ClientID        string
-	ClientPathColor string
-	Request         commandRequest
-	Reply           chan commandReply // reply from the maze is sent over this channel
+	Action       commandAction
+	ClientConfig *pb.ClientConfig
+	ClientID     string
+	Request      commandRequest
+	Reply        chan commandReply // reply from the maze is sent over this channel
 }
 
 type locationInfo struct {
@@ -767,7 +718,7 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	comm := make(chan commandData)
 	mazeMap.Insert(mazeID, comm)
 
-	go createMaze(in.Config, comm, clientID, colors.GetColor(in.GetConfig().GetPathColor()))
+	go createMaze(in.Config, comm)
 
 	return &pb.CreateMazeReply{MazeId: mazeID, ClientId: clientID}, nil
 }
@@ -787,10 +738,10 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	comm := m.(chan commandData)
 
 	data := commandData{
-		Action:          maze.CommandAddClient,
-		ClientID:        clientID,
-		ClientPathColor: in.GetPathColor(),
-		Reply:           make(chan commandReply),
+		Action:       maze.CommandAddClient,
+		ClientID:     clientID,
+		ClientConfig: in.GetClientConfig(),
+		Reply:        make(chan commandReply),
 	}
 	comm <- data
 	// get response from maze

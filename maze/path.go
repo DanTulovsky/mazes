@@ -212,7 +212,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		return paths[d]
 	}
 
-	pathColor := m.Clients()[client.id].pathColor
+	pathColor := colors.GetColor(m.Clients()[client.id].config.GetPathColor())
 	if isSolution {
 		pathColor = colors.SetOpacity(pathColor, 255) // solution is fully visible
 	} else {

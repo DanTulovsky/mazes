@@ -19,7 +19,7 @@ service Mazer {
 
 message RegisterClientRequest {
   string mazeId = 1;
-  string pathColor = 2;
+  ClientConfig client_config = 2;
 }
 
 message RegisterClientReply {
@@ -96,21 +96,27 @@ message MazeConfig {
     bool ShowDistanceColors = 11;
     bool SkipGridCheck = 12;
     repeated MazeLocation OrphanMask = 13;
-    string AvatarImage = 14;
-    string VisitedCellColor = 15;
     string BgColor = 16;
     string BorderColor = 17;
     string WallColor = 18;
-    string PathColor = 19;
     string CurrentLocationColor = 20;
+    string GenDrawDelay = 25;  // time string, e.g. 500ms
+    string CreateAlgo = 26;
+
+    string Id = 28;
+}
+
+// ClientConfig has all the per-client config settings in it
+message ClientConfig {
+    string SolveAlgo = 1;
+    string AvatarImage = 14;
+    string VisitedCellColor = 15;
+    string PathColor = 19;
     string FromCellColor = 21;
     string ToCellColor = 22;
     string FromCell = 23; // "min", "max", "random" or "x,y"
     string ToCell = 24;  // "min", "max", "random" or "x,y"
-    string GenDrawDelay = 25;  // time string, e.g. 500ms
-    string CreateAlgo = 26;
     bool ShowFromToColors = 27;
-    string Id = 28;
 }
 
 message Cell {
