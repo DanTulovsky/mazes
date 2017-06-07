@@ -949,8 +949,8 @@ func (m *Maze) SetFromToColors(client *client, fromCell, toCell *Cell) {
 
 	log.Printf("Setting fromToColors colors for %v", client.id)
 	// Set path start and end colors
-	fromCell.SetBGColor(colors.GetColor(client.config.FromCellColor))
-	toCell.SetBGColor(colors.GetColor(client.config.ToCellColor))
+	fromCell.SetBGColor(colors.GetColor(client.config.GetFromCellColor()))
+	toCell.SetBGColor(colors.GetColor(client.config.GetToCellColor()))
 
 }
 
