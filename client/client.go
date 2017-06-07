@@ -210,6 +210,8 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 		PathColor:        *pathColor,
 		FromCell:         *fromCellStr,
 		ToCell:           *toCellStr,
+		FromCellColor:    *fromCellColor,
+		ToCellColor:      *toCellColor,
 		ShowFromToColors: *showFromToColors,
 		VisitedCellColor: *visitedCellColor,
 	})

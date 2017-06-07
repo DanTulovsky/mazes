@@ -224,15 +224,18 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 
 	log.Printf("Path: %v -> %v", fromCell, toCell)
 
-	if m.clients[id].config.ShowFromToColors {
-		m.SetFromToColors(m.clients[id], fromCell, toCell)
-	}
-
 	// this will color the maze based on the last client to register
 	log.Printf("setting distance colors")
 	if m.Config().GetShowDistanceColors() {
 		m.SetDistanceInfo(m.clients[id], fromCell)
 	}
+
+	if m.clients[id].config.ShowFromToColors {
+		m.SetFromToColors(m.clients[id], fromCell, toCell)
+	}
+
+	m.clients[id].fromCell = fromCell
+	m.clients[id].toCell = toCell
 
 	log.Printf("added client: %v", id)
 	return nil
@@ -596,6 +599,12 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	clients := m.Clients()
 	for _, client := range clients {
 		m.drawPath(r, client, m.config.MarkVisitedCells)
+
+		client.fromCell.SetBGColor(colors.GetColor(client.config.GetFromCellColor()))
+		client.toCell.SetBGColor(colors.GetColor(client.config.ToCellColor))
+
+		client.fromCell.Draw(r)
+		client.toCell.Draw(r)
 	}
 
 	return r
@@ -947,7 +956,7 @@ func (m *Maze) SetFromToColors(client *client, fromCell, toCell *Cell) {
 		return
 	}
 
-	log.Printf("Setting fromToColors colors for %v", client.id)
+	log.Printf("Setting fromToColors (%v, %v) (%v, %v) colors for %v", fromCell, toCell, client.config.GetFromCellColor(), client.config.GetToCellColor(), client.id)
 	// Set path start and end colors
 	fromCell.SetBGColor(colors.GetColor(client.config.GetFromCellColor()))
 	toCell.SetBGColor(colors.GetColor(client.config.GetToCellColor()))

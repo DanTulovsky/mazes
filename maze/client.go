@@ -11,6 +11,8 @@ type client struct {
 	config          *pb.ClientConfig
 	SolvePath       *Path
 	TravelPath      *Path
+	fromCell        *Cell
+	toCell          *Cell
 }
 
 // SetCurrentLocation sets the client's current location

@@ -416,10 +416,8 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 func checkComm(m *maze.Maze, comm commChannel) {
 	select {
 	case in := <-comm: // type == commandData
-		log.Printf("received command: %#v", in)
 		switch in.Action {
 		case maze.CommandListClients:
-			log.Print("listing clients...")
 			answer := m.Clients()
 			var clients []string
 			for c := range answer {
@@ -428,13 +426,11 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			// send reply via the reply channel
 			in.Reply <- commandReply{answer: clients}
 		case maze.CommandAddClient:
-			log.Print("adding client to existing maze...")
 			m.AddClient(in.ClientID, in.ClientConfig)
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{}
 		case maze.CommandGetDirections:
-			log.Print("listing directions...")
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client links: %v", err)}
 
@@ -445,7 +441,6 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 			} else {
-				log.Printf("setting initial client location to: %v", m.FromCell(client))
 				m.Reset()
 
 				client.SetCurrentLocation(m.FromCell(client))
@@ -459,7 +454,6 @@ func checkComm(m *maze.Maze, comm commChannel) {
 
 			}
 		case maze.CommandCurrentLocation:
-			log.Print("returning client current location")
 			if client, err := m.Client(in.ClientID); err != nil {
 				log.Printf("failed to get client location: %v", err)
 			} else {
@@ -467,7 +461,6 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{answer: cell.Location()}
 			}
 		case maze.CommandLocationInfo:
-			log.Print("returning location data")
 			if client, err := m.Client(in.ClientID); err != nil {
 				log.Printf("failed to get client location: %v", err)
 			} else {
@@ -479,8 +472,6 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{answer: info}
 			}
 		case maze.CommandMoveBack:
-			log.Print("received client move back request")
-
 			client, err := m.Client(in.ClientID)
 			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
@@ -511,7 +502,6 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			client.TravelPath.AddSegement(s)
 			m.SetPathFromTo(m.FromCell(client), client)
 
-			log.Printf("sending back reply")
 			in.Reply <- commandReply{
 				answer: &moveReply{
 					current:             client.CurrentLocation().Location(),
@@ -523,7 +513,6 @@ func checkComm(m *maze.Maze, comm commChannel) {
 		case maze.CommandMove:
 			r := in.Request
 			direction := r.request.(string)
-			log.Printf("received client move request: %v", direction)
 
 			client, err := m.Client(in.ClientID)
 			if err != nil {
@@ -857,7 +846,6 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("received: %#v", in)
 
 		if in.Initial {
 			// client is mis-behaving!
@@ -889,15 +877,12 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 
 		comm <- data
 		// get response from maze
-		log.Printf("waiting for move reply from maze")
 		mazeReply := <-data.Reply
 		if err := mazeReply.error; err != nil {
-			log.Printf("error from maze: %v", err.(error))
 			r := &pb.SolveMazeResponse{
 				Error:        true,
 				ErrorMessage: err.(error).Error(),
 			}
-			log.Printf("sending error to client: %v", r)
 			if err := stream.Send(r); err != nil {
 				return err
 			}
@@ -905,7 +890,6 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		}
 
 		moveReply := mazeReply.answer.(*moveReply)
-		log.Printf("received: %v", moveReply)
 
 		r := &pb.SolveMazeResponse{
 			MazeId:              in.GetMazeId(),
@@ -914,7 +898,6 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			AvailableDirections: moveReply.availableDirections,
 			Solved:              moveReply.solved,
 		}
-		log.Printf("sending response to client: %v", r)
 		if err := stream.Send(r); err != nil {
 			return err
 		}
