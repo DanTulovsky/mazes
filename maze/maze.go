@@ -224,7 +224,9 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 
 	log.Printf("Path: %v -> %v", fromCell, toCell)
 
-	m.SetFromToColors(m.clients[id], fromCell, toCell)
+	if m.clients[id].config.ShowFromToColors {
+		m.SetFromToColors(m.clients[id], fromCell, toCell)
+	}
 
 	// this will color the maze based on the last client to register
 	log.Printf("setting distance colors")
@@ -944,6 +946,8 @@ func (m *Maze) SetFromToColors(client *client, fromCell, toCell *Cell) {
 		log.Printf("not setting fromToColors on nil: from: %v, to: %v", fromCell, toCell)
 		return
 	}
+
+	log.Printf("Setting fromToColors colors for %v", client.id)
 	// Set path start and end colors
 	fromCell.SetBGColor(colors.GetColor(client.config.FromCellColor))
 	toCell.SetBGColor(colors.GetColor(client.config.ToCellColor))
@@ -1045,7 +1049,6 @@ func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 		cell.SetDistance(d)
 	}
 
-	log.Printf("************")
 	m.SetFromCell(client, c)
 }
 

@@ -102,6 +102,7 @@ message MazeConfig {
     string CurrentLocationColor = 20;
     string GenDrawDelay = 25;  // time string, e.g. 500ms
     string CreateAlgo = 26;
+    double BraidProbability = 27;
 
     string Id = 28;
 }

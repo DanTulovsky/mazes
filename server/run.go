@@ -48,15 +48,13 @@ var (
 	sdlErr error
 
 	// maze
-	maskImage        = flag.String("mask_image", "", "file name of mask image")
-	braidProbability = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
+	maskImage = flag.String("mask_image", "", "file name of mask image")
 
 	// maze draw
 	showGUI = flag.Bool("gui", true, "show gui maze")
 
 	// display
-	frameRate        = flag.Uint("frame_rate", 120, "frame rate for animation")
-	showFromToColors = flag.Bool("show_from_to_colors", false, "show from/to colors")
+	frameRate = flag.Uint("frame_rate", 120, "frame rate for animation")
 
 	// misc
 	bgMusic = flag.String("bg_music", "", "file name of background music to play")
@@ -298,8 +296,8 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		}
 
 		// braid if requested
-		if *braidProbability > 0 {
-			m.Braid(*braidProbability)
+		if m.Config().GetBraidProbability() > 0 {
+			m.Braid(m.Config().GetBraidProbability())
 		}
 
 		if *showStats {

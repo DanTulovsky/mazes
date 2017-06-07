@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/profile"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"google.golang.org/grpc"
 	"mazes/algos"
 	pb "mazes/proto"
@@ -52,10 +54,6 @@ var (
 	pathWidth = flag.Int64("path_width", 2, "path width")
 	wallWidth = flag.Int64("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")
-
-	// maze draw
-	showAscii = flag.Bool("ascii", false, "show ascii maze")
-	showGUI   = flag.Bool("gui", true, "show gui maze")
 
 	// display
 	avatarImage        = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
@@ -110,6 +108,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		BgColor:              *bgColor,
 		BorderColor:          *borderColor,
 		CreateAlgo:           createAlgo,
+		BraidProbability:     *braidProbability,
 	}
 	return config
 }
@@ -150,6 +149,8 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		PathColor:        *pathColor,
 		FromCell:         *fromCellStr,
 		ToCell:           *toCellStr,
+		FromCellColor:    *fromCellColor,
+		ToCellColor:      *toCellColor,
 		ShowFromToColors: *showFromToColors,
 		VisitedCellColor: *visitedCellColor,
 	})
@@ -161,6 +162,8 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		PathColor:        "blue",
 		FromCell:         *fromCellStr,
 		ToCell:           *toCellStr,
+		FromCellColor:    *fromCellColor,
+		ToCellColor:      *toCellColor,
 		ShowFromToColors: *showFromToColors,
 		VisitedCellColor: "blue",
 	})
@@ -170,6 +173,8 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		PathColor:        "green",
 		FromCell:         *fromCellStr,
 		ToCell:           *toCellStr,
+		FromCellColor:    *fromCellColor,
+		ToCellColor:      *toCellColor,
 		ShowFromToColors: *showFromToColors,
 		VisitedCellColor: "green",
 	})
@@ -179,6 +184,8 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		PathColor:        "purple",
 		FromCell:         *fromCellStr,
 		ToCell:           *toCellStr,
+		FromCellColor:    *fromCellColor,
+		ToCellColor:      *toCellColor,
 		ShowFromToColors: *showFromToColors,
 		VisitedCellColor: "purple",
 	})
@@ -292,6 +299,18 @@ func checkSolveAlgo(a string) bool {
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	if *enableDeadlockDetection {
+		log.Println("enabling deadlock detection, this slows things down considerably!")
+		deadlock.Opts.Disable = false
+	} else {
+		deadlock.Opts.Disable = true
+	}
+
+	if *enableProfile {
+		log.Println("enabling profiling...")
+		defer profile.Start().Stop()
+	}
 
 	ctx := context.Background()
 
