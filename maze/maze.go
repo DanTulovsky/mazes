@@ -686,8 +686,23 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	for _, client := range clients {
 		m.drawPath(r, client, m.config.MarkVisitedCells)
 
-		client.fromCell.SetBGColor(colors.GetColor(client.config.GetFromCellColor()))
-		client.toCell.SetBGColor(colors.GetColor(client.config.ToCellColor))
+		var fromColor colors.Color
+		var toColor colors.Color
+
+		if client.config.GetFromCellColor() != "" {
+			fromColor = colors.GetColor(client.config.GetFromCellColor())
+		} else {
+			fromColor = colors.Darker(client.config.GetPathColor(), 0.5)
+		}
+
+		if client.config.GetToCellColor() != "" {
+			toColor = colors.GetColor(client.config.GetToCellColor())
+		} else {
+			toColor = colors.Lighter(client.config.GetPathColor(), 0.5)
+		}
+
+		client.fromCell.SetBGColor(fromColor)
+		client.toCell.SetBGColor(toColor)
 
 		client.fromCell.Draw(r)
 		client.toCell.Draw(r)
@@ -772,7 +787,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.
 
 		if _, ok := alreadyDone[segment]; ok {
 			if isLast {
-				segment.DrawCurrentLocation(r, m.getAvatar())
+				segment.DrawCurrentLocation(r, client, m.getAvatar())
 			}
 			continue
 		}
@@ -794,7 +809,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.
 		}
 
 		if isLast {
-			segment.DrawCurrentLocation(r, m.getAvatar())
+			segment.DrawCurrentLocation(r, client, m.getAvatar())
 		}
 
 	}

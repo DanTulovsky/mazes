@@ -72,7 +72,7 @@ func (p *Path) ReverseCells() {
 }
 
 // DrawCurrentLocation marks the current location of the user
-func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) *sdl.Renderer {
+func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) *sdl.Renderer {
 	p.RLock()
 	defer p.RUnlock()
 
@@ -105,7 +105,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 	}
 
 	if avatar == nil {
-		colors.SetDrawColor(colors.GetColor(c.config.CurrentLocationColor), r)
+		colors.SetDrawColor(colors.GetColor(client.config.CurrentLocationColor), r)
 		// draw a standard box
 		sq := &sdl.Rect{
 			int32(c.x*PixelsPerCell + PixelsPerCell/4),
@@ -138,9 +138,12 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
 
+	var offset int32
 	// offset client path based on the client.id
-	offset := int32(utils.DrawOffset(client.number)) * int32(pathWidth)
-	// log.Printf(">>>> offset (client: %v) >>>> %v", client.number, offset)
+	if !client.config.GetDisableDrawOffset() {
+		offset = int32(utils.DrawOffset(client.number)) * int32(pathWidth)
+	}
+	// TODO: Limit offset to fit inside cell
 
 	getPathRect := func(d string, inSolution bool) *sdl.Rect {
 		if !inSolution {

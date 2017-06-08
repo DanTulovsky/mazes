@@ -40,12 +40,12 @@ var (
 	// colors
 	bgColor              = flag.String("bgcolor", "white", "background color")
 	borderColor          = flag.String("border_color", "black", "border color")
-	currentLocationColor = flag.String("location_color", "lime", "border color")
+	currentLocationColor = flag.String("location_color", "", "current location color, if empty, path color is used")
 	pathColor            = flag.String("path_color", "red", "border color")
 	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
 	wallColor            = flag.String("wall_color", "black", "wall color")
-	fromCellColor        = flag.String("from_cell_color", "gold", "from cell color")
-	toCellColor          = flag.String("to_cell_color", "yellow", "to cell color")
+	fromCellColor        = flag.String("from_cell_color", "", "from cell color, based on path if empty")
+	toCellColor          = flag.String("to_cell_color", "", "to cell color, based on path if empty")
 
 	// width
 	cellWidth = flag.Int64("w", 20, "cell width (best as multiple of 2)")
@@ -68,8 +68,8 @@ var (
 	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
-	mazeID   = flag.String("maze_id", "", "maze id")
-	clientID = flag.String("client_id", "", "client id")
+	mazeID        = flag.String("maze_id", "", "maze id")
+	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
 
 	// misc
 	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
@@ -144,49 +144,57 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
-		SolveAlgo:        *solveAlgo,
-		PathColor:        *pathColor,
-		FromCell:         *fromCellStr,
-		ToCell:           *toCellStr,
-		FromCellColor:    *fromCellColor,
-		ToCellColor:      *toCellColor,
-		ShowFromToColors: *showFromToColors,
-		VisitedCellColor: *visitedCellColor,
+		SolveAlgo:            *solveAlgo,
+		PathColor:            *pathColor,
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     *visitedCellColor,
+		CurrentLocationColor: *currentLocationColor,
+		DisableDrawOffset:    *disableOffset,
 	})
 
 	// register more clients
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
-		SolveAlgo:        "wall-follower",
-		PathColor:        "blue",
-		FromCell:         *fromCellStr,
-		ToCell:           *toCellStr,
-		FromCellColor:    *fromCellColor,
-		ToCellColor:      *toCellColor,
-		ShowFromToColors: *showFromToColors,
-		VisitedCellColor: "blue",
+		SolveAlgo:            "wall-follower",
+		PathColor:            "blue",
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     "blue",
+		CurrentLocationColor: "blue",
+		DisableDrawOffset:    *disableOffset,
 	})
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
-		SolveAlgo:        "recursive-backtracker",
-		PathColor:        "green",
-		FromCell:         *fromCellStr,
-		ToCell:           *toCellStr,
-		FromCellColor:    *fromCellColor,
-		ToCellColor:      *toCellColor,
-		ShowFromToColors: *showFromToColors,
-		VisitedCellColor: "green",
+		SolveAlgo:            "recursive-backtracker",
+		PathColor:            "green",
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     "green",
+		CurrentLocationColor: "green",
+		DisableDrawOffset:    *disableOffset,
 	})
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
-		SolveAlgo:        "recursive-backtracker",
-		PathColor:        "purple",
-		FromCell:         *fromCellStr,
-		ToCell:           *toCellStr,
-		FromCellColor:    *fromCellColor,
-		ToCellColor:      *toCellColor,
-		ShowFromToColors: *showFromToColors,
-		VisitedCellColor: "purple",
+		SolveAlgo:            "recursive-backtracker",
+		PathColor:            "purple",
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     "purple",
+		CurrentLocationColor: "purple",
+		DisableDrawOffset:    *disableOffset,
 	})
 
 	log.Printf("waiting for clients...")
@@ -209,14 +217,15 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 		*toCellStr = "random"
 	}
 	return addClient(context.Background(), c, r.GetMazeId(), &pb.ClientConfig{
-		SolveAlgo:        *solveAlgo,
-		PathColor:        *pathColor,
-		FromCell:         *fromCellStr,
-		ToCell:           *toCellStr,
-		FromCellColor:    *fromCellColor,
-		ToCellColor:      *toCellColor,
-		ShowFromToColors: *showFromToColors,
-		VisitedCellColor: *visitedCellColor,
+		SolveAlgo:            *solveAlgo,
+		PathColor:            *pathColor,
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     *visitedCellColor,
+		CurrentLocationColor: *currentLocationColor,
 	})
 }
 
@@ -256,19 +265,14 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID, solveAlgo 
 		MazeId:   mazeID,
 		ClientId: clientID,
 	}
-	log.Print("initial send to server")
 	if err := stream.Send(r); err != nil {
 		log.Fatalf("talking to server: %v", err)
 	}
-	log.Print("sent...")
 
-	log.Print("waiting for reply")
 	in, err := stream.Recv()
 	if err != nil {
 		log.Fatalf("error talking to server: %v", err)
 	}
-	log.Printf("have reply: %#v", in)
-	log.Printf("current_location: %#v", in.GetCurrentLocation())
 	for _, d := range in.GetAvailableDirections() {
 		log.Printf("  can go: %#v", d)
 	}
@@ -299,6 +303,12 @@ func checkSolveAlgo(a string) bool {
 	return false
 }
 
+func setFlags() {
+	if *currentLocationColor == "" {
+		*currentLocationColor = *pathColor
+	}
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -314,6 +324,8 @@ func main() {
 		log.Println("enabling profiling...")
 		defer profile.Start().Stop()
 	}
+
+	setFlags()
 
 	ctx := context.Background()
 
@@ -348,6 +360,11 @@ func main() {
 			}
 		}
 	case "solve":
+		if *randomFromTo {
+			*fromCellStr = "random"
+			*toCellStr = "random"
+		}
+
 		if err := addClient(ctx, c, *mazeID, &pb.ClientConfig{
 			SolveAlgo:        *solveAlgo,
 			PathColor:        *pathColor,

@@ -42,9 +42,7 @@ func pickNextDir(directions []*pb.Direction, facing string) string {
 		return ""
 	}
 
-	log.Printf("> directions: %v", directions)
 	for _, l := range dirs {
-		log.Printf("l: %v", l)
 		for _, d := range directions {
 			if d.GetName() == l {
 				return l
@@ -57,7 +55,6 @@ func pickNextDir(directions []*pb.Direction, facing string) string {
 func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
-	log.Printf("fromCell: %v; toCell: %v; directions: %v", fromCell, toCell, directions)
 	if len(directions) < 1 {
 		return fmt.Errorf("no available directions to move: %v", directions)
 	}

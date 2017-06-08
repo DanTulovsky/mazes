@@ -78,7 +78,6 @@ message CreateMazeRequest {
 
 message CreateMazeReply {
   string MazeId = 1;
-  string ClientId = 2;  // the client id for this client
 }
 
 // MazeConfig is the full config for a maze
@@ -110,8 +109,10 @@ message MazeConfig {
 // ClientConfig has all the per-client config settings in it
 message ClientConfig {
     string SolveAlgo = 1;
+    bool disableDrawOffset = 2;  // used to disable the path draw offset
     string AvatarImage = 14;
     string VisitedCellColor = 15;
+    string CurrentLocationColor = 16;
     string PathColor = 19;
     string FromCellColor = 21;
     string ToCellColor = 22;

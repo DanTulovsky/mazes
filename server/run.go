@@ -60,7 +60,7 @@ var (
 	bgMusic = flag.String("bg_music", "", "file name of background music to play")
 
 	// stats
-	showStats = flag.Bool("stats", false, "show maze stats")
+	showStats = flag.Bool("maze_stats", false, "show maze stats")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -676,7 +676,6 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	log.Printf("creating maze with config: %#v", in.Config)
 
 	mazeID := uuid.NewV4().String()
-	clientID := uuid.NewV4().String()
 	in.GetConfig().Id = mazeID
 
 	comm := make(chan commandData)
@@ -684,7 +683,7 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 
 	go createMaze(in.Config, comm)
 
-	return &pb.CreateMazeReply{MazeId: mazeID, ClientId: clientID}, nil
+	return &pb.CreateMazeReply{MazeId: mazeID}, nil
 }
 
 // RegisterClient registers a new client with an existing maze
