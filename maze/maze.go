@@ -52,7 +52,8 @@ type Maze struct {
 	genCurrentLocation *Cell // the current location of generator
 
 	// map of client IDs to client structures
-	clients map[string]*client
+	clients     map[string]*client
+	clientsLock deadlock.RWMutex
 
 	avatar *sdl.Texture
 
@@ -235,6 +236,9 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 
 // AddClient adds a new client to the maze
 func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
+	m.clientsLock.Lock()
+	defer m.clientsLock.Unlock()
+
 	log.Printf("adding client: %v", id)
 
 	m.clients[id] = &client{
@@ -319,6 +323,9 @@ func (m *Maze) Braid(p float64) {
 
 // Client returns a single client
 func (m *Maze) Client(id string) (*client, error) {
+	m.clientsLock.RLock()
+	defer m.clientsLock.RUnlock()
+
 	if c, found := m.clients[id]; found {
 		return c, nil
 	}
@@ -327,11 +334,17 @@ func (m *Maze) Client(id string) (*client, error) {
 
 // Clients returns the clients connected to this maze
 func (m *Maze) Clients() map[string]*client {
+	m.clientsLock.RLock()
+	defer m.clientsLock.RUnlock()
+
 	return m.clients
 }
 
 // Clients returns the clients connected to this maze in a deterministic order
 func (m *Maze) ClientsSorted() []*client {
+	m.clientsLock.RLock()
+	defer m.clientsLock.RUnlock()
+
 	keys := []string{}
 	for k := range m.clients {
 		keys = append(keys, k)
