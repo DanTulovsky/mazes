@@ -331,11 +331,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		}
 	}
 	wd.Wait()
-
-	//if config.ShowFromToColors {
-	//	// Set the colors for the from and to cells
-	//	m.SetFromToColors(fromCell, toCell)
-	//}
 	///////////////////////////////////////////////////////////////////////////
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
@@ -364,7 +359,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		}
 		m.SetBGTexture(mTexture)
 
-		// Allow clients to connect, solvers can start here
+		// Allow clients to connect, solvers can start running
 		mazeReady.Set()
 
 		for running.IsSet() {
@@ -375,7 +370,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 
 			// Displays the maze
 			sdl.Do(func() {
-				// reset the clear color back to white
+				// reset the clear color back to black
 				// but it doesn't matter, as background texture takes up the entire view
 				colors.SetDrawColor(colors.GetColor("black"), r)
 

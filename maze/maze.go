@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -327,6 +328,21 @@ func (m *Maze) Client(id string) (*client, error) {
 // Clients returns the clients connected to this maze
 func (m *Maze) Clients() map[string]*client {
 	return m.clients
+}
+
+// Clients returns the clients connected to this maze in a deterministic order
+func (m *Maze) ClientsSorted() []*client {
+	keys := []string{}
+	for k := range m.clients {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	r := []*client{}
+	for _, k := range keys {
+		r = append(r, m.clients[k])
+	}
+	return r
 }
 
 // Link links c1 to c2 to its neighbor (adds passage)
@@ -653,7 +669,7 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	m.drawGenCurrentLocation(r)
 
 	// Draw the path and location of solver
-	clients := m.Clients()
+	clients := m.ClientsSorted()
 	for _, client := range clients {
 		m.drawPath(r, client, m.config.MarkVisitedCells)
 
