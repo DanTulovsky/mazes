@@ -148,7 +148,8 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		}
 
 		// offset client path based on the client.id
-		offset := int32(utils.DrawOffset(client.number))
+		// TODO: offset needs to be the pathWidth
+		offset := int32(utils.DrawOffset(client.number)) * int32(pathWidth)
 
 		// these are the path segments from the middle towards the given direction
 		paths := map[string]*sdl.Rect{
