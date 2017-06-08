@@ -1,6 +1,6 @@
 package maze
 
-import "mazes/colors"
+import pb "mazes/proto"
 
 // Define a Client struct to keep track of the clients in the maze
 
@@ -8,9 +8,11 @@ type client struct {
 	id              string
 	number          int // the number of this client for the maze
 	currentLocation *Cell
-	pathColor       colors.Color
+	config          *pb.ClientConfig
 	SolvePath       *Path
 	TravelPath      *Path
+	fromCell        *Cell
+	toCell          *Cell
 }
 
 // SetCurrentLocation sets the client's current location

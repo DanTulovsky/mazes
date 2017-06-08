@@ -2,7 +2,6 @@ package maze
 
 import (
 	"mazes/colors"
-
 	"mazes/utils"
 
 	"github.com/sasha-s/go-deadlock"
@@ -74,7 +73,7 @@ func (p *Path) ReverseCells() {
 }
 
 // DrawCurrentLocation marks the current location of the user
-func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) *sdl.Renderer {
+func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) *sdl.Renderer {
 	p.RLock()
 	defer p.RUnlock()
 
@@ -107,7 +106,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, avatar *sdl.Texture) 
 	}
 
 	if avatar == nil {
-		colors.SetDrawColor(colors.GetColor(c.config.CurrentLocationColor), r)
+		colors.SetDrawColor(colors.GetColor(client.config.CurrentLocationColor), r)
 		// draw a standard box
 		sq := &sdl.Rect{
 			int32(c.x*PixelsPerCell + PixelsPerCell/4),
@@ -140,6 +139,13 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
 
+	var offset int32
+	// offset client path based on the client.id
+	if !client.config.GetDisableDrawOffset() {
+		offset = int32(utils.DrawOffset(client.number)) * int32(pathWidth)
+	}
+	// TODO: Limit offset to fit inside cell
+
 	getPathRect := func(d string, inSolution bool) *sdl.Rect {
 		if !inSolution {
 			pathWidth = cell.pathWidth / 2
@@ -148,7 +154,6 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		}
 
 		// offset client path based on the client.id
-		// TODO: offset needs to be the pathWidth
 		offset := int32(utils.DrawOffset(client.number)) * int32(pathWidth)
 
 		// these are the path segments from the middle towards the given direction
@@ -156,26 +161,26 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			"east": {
 				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
-				int32(PixelsPerCell/2 + cell.wallWidth),
+				int32(PixelsPerCell/2+cell.wallWidth) - offset,
 				int32(pathWidth),
 			},
 			"west": {
-				int32(cell.x*PixelsPerCell+cell.wallWidth) + offset,
+				int32(cell.x*PixelsPerCell + cell.wallWidth),
 				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
-				int32(PixelsPerCell/2 + pathWidth - cell.wallWidth),
+				int32(PixelsPerCell/2+pathWidth-cell.wallWidth) + offset,
 				int32(pathWidth),
 			},
 			"north": {
 				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.y*PixelsPerCell + cell.wallWidth),
 				int32(pathWidth),
-				int32(PixelsPerCell/2 - cell.wallWidth),
+				int32(PixelsPerCell/2-cell.wallWidth) + offset,
 			},
 			"south": {
 				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(pathWidth),
-				int32(PixelsPerCell/2 + cell.wallWidth),
+				int32(PixelsPerCell/2+cell.wallWidth) - offset,
 			},
 		}
 
@@ -183,24 +188,24 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		stubs := map[string]*sdl.Rect{
 			"east": {
 				int32(cell.x*PixelsPerCell + PixelsPerCell + cell.wallWidth - cell.config.WallSpace/2),
-				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.config.WallSpace / 2),
 				int32(pathWidth),
 			},
 			"west": {
 				int32(cell.x*PixelsPerCell + cell.wallWidth),
-				int32(cell.y*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.y*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.config.WallSpace / 2),
 				int32(pathWidth),
 			},
 			"north": {
-				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.y*PixelsPerCell + cell.wallWidth),
 				int32(pathWidth),
 				int32(cell.config.WallSpace / 2),
 			},
 			"south": {
-				int32(cell.x*PixelsPerCell + PixelsPerCell/2),
+				int32(cell.x*PixelsPerCell+PixelsPerCell/2) + offset,
 				int32(cell.y*PixelsPerCell + PixelsPerCell + cell.wallWidth - cell.config.WallSpace/2),
 				int32(pathWidth),
 				int32(cell.config.WallSpace / 2),
@@ -214,7 +219,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		return paths[d]
 	}
 
-	pathColor := m.Clients()[client.id].pathColor
+	pathColor := colors.GetColor(m.Clients()[client.id].config.GetPathColor())
 	if isSolution {
 		pathColor = colors.SetOpacity(pathColor, 255) // solution is fully visible
 	} else {
@@ -238,7 +243,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		}
 
 	} else {
-		if cell.pathEast && cell.East() != nil {
+		if cell.pathEast[client.id] && cell.East() != nil {
 			// if current cell and neighbor is in the solution, solid color.
 			eastInSolution := solvePath.CellInPath(cell.East())
 			if eastInSolution && currentSegmentInSolution {
@@ -250,7 +255,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("east", eastInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathWest && cell.West() != nil {
+		if cell.pathWest[client.id] && cell.West() != nil {
 			westInSolution := solvePath.CellInPath(cell.West())
 			if westInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
@@ -261,7 +266,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("west", westInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathNorth && p.cell.North() != nil {
+		if cell.pathNorth[client.id] && p.cell.North() != nil {
 			northInSolution := solvePath.CellInPath(cell.North())
 			if northInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
@@ -272,7 +277,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("north", northInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathSouth && cell.South() != nil {
+		if cell.pathSouth[client.id] && cell.South() != nil {
 			southInSolution := solvePath.CellInPath(cell.South())
 			if southInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)

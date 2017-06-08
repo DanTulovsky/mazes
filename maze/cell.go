@@ -33,8 +33,6 @@ type Cell struct {
 	bgColor colors.Color
 	// Wall color of the cell
 	wallColor colors.Color
-	// path color
-	pathColor colors.Color
 	// size of the cell
 	width     int64
 	wallWidth int64
@@ -43,8 +41,8 @@ type Cell struct {
 	// config
 	config *pb.MazeConfig
 
-	// keep track of what cells we have a path to
-	pathNorth, pathSouth, pathEast, pathWest bool
+	// keep track of what cells we have a path to for each client
+	pathNorth, pathSouth, pathEast, pathWest map[string]bool
 
 	// keep track of paths to specific cells
 	paths *safeMap2
@@ -52,8 +50,8 @@ type Cell struct {
 	// cell is isolated
 	orphan bool
 
-	// havePath cache; previous, next
-	havePath map[*Cell]*Cell
+	// havePath cache; previous, next, per client
+	havePath map[string]map[*Cell]*Cell
 
 	// weight of the cell, how expensive it is to traverse it
 	weight int
@@ -91,16 +89,19 @@ func NewCell(x, y, z int64, c *pb.MazeConfig) *Cell {
 		links:     NewSafeMap2(),
 		bgColor:   colors.GetColor(c.BgColor),   // default
 		wallColor: colors.GetColor(c.WallColor), // default
-		pathColor: colors.GetColor(c.PathColor), //default
 		width:     c.CellWidth,
 		wallWidth: c.WallWidth,
 		pathWidth: c.PathWidth,
 		paths:     NewSafeMap2(),
 		config:    c,
 		orphan:    false,
-		havePath:  make(map[*Cell]*Cell),
+		havePath:  make(map[string]map[*Cell]*Cell),
 		weight:    1,
 		visited:   make(map[string]int64),
+		pathNorth: make(map[string]bool),
+		pathSouth: make(map[string]bool),
+		pathEast:  make(map[string]bool),
+		pathWest:  make(map[string]bool),
 	}
 	cell.distances = NewDistances(cell)
 
@@ -168,36 +169,36 @@ func (c *Cell) West() *Cell {
 }
 
 // HavePath returns true if there is a path to s (north, south, east, west)
-func (c *Cell) HavePath(s string) (have bool) {
+func (c *Cell) HavePath(client *client, s string) (have bool) {
 	c.RLock()
 	defer c.RUnlock()
 
 	switch s {
 	case "north":
-		have = c.pathNorth
+		have = c.pathNorth[client.id]
 	case "south":
-		have = c.pathSouth
+		have = c.pathSouth[client.id]
 	case "east":
-		have = c.pathEast
+		have = c.pathEast[client.id]
 	case "west":
-		have = c.pathWest
+		have = c.pathWest[client.id]
 	}
 	return have
 }
 
-func (c *Cell) SetHavePath(s string) {
+func (c *Cell) SetHavePath(client *client, s string) {
 	c.Lock()
 	defer c.Unlock()
 
 	switch s {
 	case "north":
-		c.pathNorth = true
+		c.pathNorth[client.id] = true
 	case "south":
-		c.pathSouth = true
+		c.pathSouth[client.id] = true
 	case "east":
-		c.pathEast = true
+		c.pathEast[client.id] = true
 	case "west":
-		c.pathWest = true
+		c.pathWest[client.id] = true
 	}
 }
 
@@ -307,27 +308,32 @@ func (c *Cell) SetUnVisited(client string) {
 }
 
 // SetPaths sets the paths present in the cell
-func (c *Cell) SetPaths(previous, next *Cell) {
+func (c *Cell) SetPaths(client *client, previous, next *Cell) {
 	// no lock needed, only ever called from one thread (for now)
-	if n, ok := c.havePath[previous]; ok {
+
+	if _, ok := c.havePath[client.id]; !ok {
+		c.havePath[client.id] = make(map[*Cell]*Cell)
+	}
+
+	if n, ok := c.havePath[client.id][previous]; ok {
 		if n == next {
 			return
 		}
 	}
 	if c.North() == previous || c.North() == next {
-		c.SetHavePath("north")
+		c.SetHavePath(client, "north")
 	}
 	if c.South() == previous || c.South() == next {
-		c.SetHavePath("south")
+		c.SetHavePath(client, "south")
 	}
 	if c.East() == previous || c.East() == next {
-		c.SetHavePath("east")
+		c.SetHavePath(client, "east")
 	}
 	if c.West() == previous || c.West() == next {
-		c.SetHavePath("west")
+		c.SetHavePath(client, "west")
 	}
 
-	c.havePath[previous] = next
+	c.havePath[client.id][previous] = next
 }
 
 // FurthestCell returns the cell and distance of the cell that is furthest from this one
@@ -595,7 +601,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
 
 	// don't mark cells under other cell
 	if c.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
-		colors.SetDrawColor(colors.GetColor(c.config.VisitedCellColor), r)
+		colors.SetDrawColor(colors.GetColor(client.config.VisitedCellColor), r)
 
 		times := c.VisitedTimes(client.id)
 		factor := times * 3

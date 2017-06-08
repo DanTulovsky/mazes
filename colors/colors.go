@@ -42,6 +42,35 @@ func (c Color) String() string {
 	return c.Name
 }
 
+// Darker returns the dark version of this color
+// A shade is produced by "darkening" a hue or "adding black"
+func Darker(clr string, f float64) Color {
+	c := GetColor(clr)
+
+	return Color{
+		R:    uint8(float64(c.R) * (1 - f)),
+		G:    uint8(float64(c.G) * (1 - f)),
+		B:    uint8(float64(c.B) * (1 - f)),
+		A:    c.A,
+		Name: c.Name,
+	}
+}
+
+// Ligter returns the lighter version of this color
+// A tint is produced by "ligthening" a hue or "adding white"
+func Lighter(clr string, f float64) Color {
+	c := GetColor(clr)
+
+	// newR = currentR + (255 - currentR) * tint_factor
+	return Color{
+		R:    uint8(float64(c.R) + float64((255-c.R))*f),
+		G:    uint8(float64(c.G) + float64((255-c.R))*f),
+		B:    uint8(float64(c.B) + float64((255-c.R))*f),
+		A:    c.A,
+		Name: c.Name,
+	}
+}
+
 // OpacityAdjust returns a Color object with its opacity adjust by "i". i can be negative.
 func OpacityAdjust(c Color, i int) Color {
 	a := int(c.A) - i

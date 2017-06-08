@@ -3,12 +3,18 @@ package solvealgos
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"time"
 
 	"mazes/maze"
 	pb "mazes/proto"
+)
+
+var (
+	// stats
+	showStats = flag.Bool("stats", false, "show maze stats")
 )
 
 type Algorithmer interface {
@@ -94,7 +100,6 @@ func (a *Common) SetStream(s pb.Mazer_SolveMazeClient) {
 
 // Move sends a move request to the server and returns the reply
 func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error) {
-	log.Printf("moving: %s", d)
 	stream := a.Stream()
 
 	r := &pb.SolveMazeRequest{
@@ -102,18 +107,14 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 		ClientId:  clientID,
 		Direction: d,
 	}
-	log.Printf("sending move request to server: %v", r)
 	if err := stream.Send(r); err != nil {
 		return nil, err
 	}
-	log.Printf("sent")
 
-	log.Printf("waiting for move reply from server")
 	reply, err := stream.Recv()
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("received: %v", r)
 
 	if reply.Error {
 		return nil, fmt.Errorf("%v", reply.ErrorMessage)
@@ -125,7 +126,6 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 
 // MoveBack moves the client back to the previous location (where they just came from)
 func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error) {
-	log.Print("moving back")
 	stream := a.Stream()
 
 	r := &pb.SolveMazeRequest{
@@ -133,18 +133,14 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 		ClientId: clientID,
 		MoveBack: true,
 	}
-	log.Printf("sending move back request to server: %v", r)
 	if err := stream.Send(r); err != nil {
 		return nil, err
 	}
-	log.Printf("sent")
 
-	log.Printf("waiting for move reply from server")
 	reply, err := stream.Recv()
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("received: %v", r)
 
 	if reply.Error {
 		return nil, fmt.Errorf("%v", reply.ErrorMessage)
@@ -154,5 +150,7 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 }
 
 func (a *Common) ShowStats() {
-	log.Printf("TODO: show stats")
+	if *showStats {
+		log.Printf("TODO: show stats")
+	}
 }

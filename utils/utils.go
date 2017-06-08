@@ -2,7 +2,6 @@ package utils
 
 import (
 	"log"
-	"math"
 	"math/rand"
 	"time"
 )
@@ -52,7 +51,7 @@ func StrInList(l []string, s string) bool {
 }
 
 func isOdd(n int) bool {
-	return math.Signbit(float64(n))
+	return !(n%2 == 0)
 }
 
 // offset returns the path offset of the given client number n
