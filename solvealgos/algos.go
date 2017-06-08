@@ -3,12 +3,18 @@ package solvealgos
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"time"
 
 	"mazes/maze"
 	pb "mazes/proto"
+)
+
+var (
+	// stats
+	showStats = flag.Bool("stats", false, "show maze stats")
 )
 
 type Algorithmer interface {
@@ -154,5 +160,7 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 }
 
 func (a *Common) ShowStats() {
-	log.Printf("TODO: show stats")
+	if *showStats {
+		log.Printf("TODO: show stats")
+	}
 }

@@ -77,9 +77,6 @@ var (
 	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
 	bgMusic    = flag.String("bg_music", "", "file name of background music to play")
 
-	// stats
-	showStats = flag.Bool("stats", false, "show maze stats")
-
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
@@ -142,7 +139,11 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 	mazeId := r.GetMazeId()
 	var wd sync.WaitGroup
 
-	log.Printf("solving maze1 (client=%v; maze=%v)...", r.GetClientId(), mazeID)
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
 		SolveAlgo:        *solveAlgo,
@@ -205,6 +206,10 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 	}
 
 	log.Print("solving maze...")
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
 	return addClient(context.Background(), c, r.GetMazeId(), &pb.ClientConfig{
 		SolveAlgo:        *solveAlgo,
 		PathColor:        *pathColor,
