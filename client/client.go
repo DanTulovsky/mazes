@@ -21,8 +21,6 @@ const (
 )
 
 var (
-	winTitle string = "Maze"
-
 	solver solvealgos.Algorithmer = algos.SolveAlgorithms[*solveAlgo]
 
 	// operation
@@ -350,10 +348,18 @@ func main() {
 			}
 		}
 	case "solve":
-		if err := opSolve(ctx, c, *mazeID, *clientID, *solveAlgo); err != nil {
+		if err := addClient(ctx, c, *mazeID, &pb.ClientConfig{
+			SolveAlgo:        *solveAlgo,
+			PathColor:        *pathColor,
+			FromCell:         *fromCellStr,
+			ToCell:           *toCellStr,
+			FromCellColor:    *fromCellColor,
+			ToCellColor:      *toCellColor,
+			ShowFromToColors: *showFromToColors,
+			VisitedCellColor: *visitedCellColor,
+		}); err != nil {
 			log.Fatalf(err.Error())
 		}
-
 	case "create_solve":
 		if err := opCreateSolve(ctx, c, config); err != nil {
 			log.Print(err.Error())
