@@ -205,7 +205,7 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 	}
 
 	log.Print("solving maze...")
-	addClient(context.Background(), c, r.GetMazeId(), &pb.ClientConfig{
+	return addClient(context.Background(), c, r.GetMazeId(), &pb.ClientConfig{
 		SolveAlgo:        *solveAlgo,
 		PathColor:        *pathColor,
 		FromCell:         *fromCellStr,
@@ -215,8 +215,6 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 		ShowFromToColors: *showFromToColors,
 		VisitedCellColor: *visitedCellColor,
 	})
-
-	return opSolve(ctx, c, r.GetMazeId(), r.GetClientId(), *solveAlgo)
 }
 
 // opCreate creates a new maze

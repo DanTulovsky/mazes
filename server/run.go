@@ -190,31 +190,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		log.Printf("cell_width and wall_width both 2, adjusting wall_width to %v", config.WallWidth)
 	}
 
-	var m *maze.Maze
-	var err error
-
-	// Mask image if provided.
-	// If the mask image is provided, use that as the dimensions of the grid
-	if *maskImage != "" {
-		log.Printf("Using %v as grid mask", *maskImage)
-		m, err = maze.NewMazeFromImage(config, *maskImage)
-		if err != nil {
-			log.Printf("invalid config: %v", err)
-			os.Exit(1)
-		}
-		// Set these for correct window size
-		config.Columns, config.Rows = m.Dimensions()
-	} else {
-		m, err = maze.NewMaze(config)
-		if err != nil {
-			log.Printf("invalid config: %v", err)
-			os.Exit(1)
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// End Configure new grid
-	//////////////////////////////////////////////////////////////////////////////////////////////
-
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,6 +207,31 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	}()
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	var m *maze.Maze
+	var err error
+
+	// Mask image if provided.
+	// If the mask image is provided, use that as the dimensions of the grid
+	if *maskImage != "" {
+		log.Printf("Using %v as grid mask", *maskImage)
+		m, err = maze.NewMazeFromImage(config, *maskImage, r)
+		if err != nil {
+			log.Printf("invalid config: %v", err)
+			os.Exit(1)
+		}
+		// Set these for correct window size
+		config.Columns, config.Rows = m.Dimensions()
+	} else {
+		m, err = maze.NewMaze(config, r)
+		if err != nil {
+			log.Printf("invalid config: %v", err)
+			os.Exit(1)
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	if !checkCreateAlgo(config.CreateAlgo) {
@@ -358,29 +358,11 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		running.Set()
 
 		// create background texture, it is saved and re-rendered as a picture
-		mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
+		mTexture, err := m.MakeBGTexture()
 		if err != nil {
 			log.Fatalf("failed to create background: %v", err)
 		}
-
-		// draw on the texture
-		sdl.Do(func() {
-			r.SetRenderTarget(mTexture)
-			// background is black so that transparency works
-			colors.SetDrawColor(colors.GetColor("white"), r)
-			r.Clear()
-		})
-		m.DrawMazeBackground(r)
-		sdl.Do(func() {
-			r.Present()
-		})
-
-		// Reset to drawing on the screen
-		sdl.Do(func() {
-			r.SetRenderTarget(nil)
-			r.Copy(mTexture, nil, nil)
-			r.Present()
-		})
+		m.SetBGTexture(mTexture)
 
 		// Allow clients to connect, solvers can start here
 		mazeReady.Set()
@@ -398,7 +380,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 				colors.SetDrawColor(colors.GetColor("black"), r)
 
 				r.Clear()
-				m.DrawMaze(r, mTexture)
+				m.DrawMaze(r, m.BGTexture())
 
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))

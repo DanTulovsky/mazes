@@ -55,11 +55,30 @@ type Maze struct {
 
 	avatar *sdl.Texture
 
+	bg                  *sdl.Texture
+	bgLock              deadlock.RWMutex
+	winWidth, winHeight int
+	r                   *sdl.Renderer
+
 	deadlock.RWMutex
 }
 
 func (m *Maze) Config() *pb.MazeConfig {
 	return m.config
+}
+
+// BGTexture returns the maze's background texture
+func (m *Maze) BGTexture() *sdl.Texture {
+	m.bgLock.RLock()
+	defer m.bgLock.RUnlock()
+	return m.bg
+}
+
+// SetBGTexture sets the maze's background texture
+func (m *Maze) SetBGTexture(t *sdl.Texture) {
+	m.bgLock.Lock()
+	defer m.bgLock.Unlock()
+	m.bg = t
 }
 
 // setupMazeMask reads in the mask image and creates the maze based on it.
@@ -109,7 +128,7 @@ func setupMazeMask(f string, c *pb.MazeConfig, mask []*pb.MazeLocation) ([]*pb.M
 }
 
 // NewMazeFromImage creates a new maze from the image at file f
-func NewMazeFromImage(c *pb.MazeConfig, f string) (*Maze, error) {
+func NewMazeFromImage(c *pb.MazeConfig, f string, r *sdl.Renderer) (*Maze, error) {
 	mask := make([]*pb.MazeLocation, 0)
 	mask, err := setupMazeMask(f, c, mask)
 	if err != nil {
@@ -117,11 +136,11 @@ func NewMazeFromImage(c *pb.MazeConfig, f string) (*Maze, error) {
 	}
 	c.OrphanMask = mask
 
-	return NewMaze(c)
+	return NewMaze(c, r)
 }
 
 // NewGrid returns a new grid.
-func NewMaze(c *pb.MazeConfig) (*Maze, error) {
+func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 	//if err := c.CheckConfig(); err != nil {
 	//	return nil, err
 	//}
@@ -139,6 +158,9 @@ func NewMaze(c *pb.MazeConfig) (*Maze, error) {
 		wallColor:   colors.GetColor(c.GetWallColor()),
 		fromCell:    make(map[string]*Cell),
 		toCell:      make(map[string]*Cell),
+		winWidth:    int((c.GetColumns())*c.GetCellWidth() + c.GetWallWidth()*2),
+		winHeight:   int((c.GetRows())*c.GetCellWidth() + c.GetWallWidth()*2),
+		r:           r,
 
 		config: c,
 
@@ -179,11 +201,40 @@ func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {
 
 }
 
+func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
+	r := m.r
+	winWidth := m.winWidth
+	winHeight := m.winHeight
+	mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	// draw on the texture
+	sdl.Do(func() {
+		r.SetRenderTarget(mTexture)
+		// background is black so that transparency works
+		colors.SetDrawColor(colors.GetColor("white"), r)
+		r.Clear()
+	})
+	m.DrawMazeBackground(r)
+	sdl.Do(func() {
+		r.Present()
+	})
+
+	// Reset to drawing on the screen
+	sdl.Do(func() {
+		r.SetRenderTarget(nil)
+		r.Copy(mTexture, nil, nil)
+		r.Present()
+	})
+
+	return mTexture, nil
+}
+
 // AddClient adds a new client to the maze
 func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 	log.Printf("adding client: %v", id)
-	m.Lock()
-	defer m.Unlock()
 
 	m.clients[id] = &client{
 		id: id,
@@ -236,6 +287,12 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 
 	m.clients[id].fromCell = fromCell
 	m.clients[id].toCell = toCell
+
+	mTexture, err := m.MakeBGTexture()
+	if err != nil {
+		log.Fatalf("failed to create background: %v", err)
+	}
+	m.SetBGTexture(mTexture)
 
 	log.Printf("added client: %v", id)
 	return nil
@@ -956,7 +1013,6 @@ func (m *Maze) SetFromToColors(client *client, fromCell, toCell *Cell) {
 		return
 	}
 
-	log.Printf("Setting fromToColors (%v, %v) (%v, %v) colors for %v", fromCell, toCell, client.config.GetFromCellColor(), client.config.GetToCellColor(), client.id)
 	// Set path start and end colors
 	fromCell.SetBGColor(colors.GetColor(client.config.GetFromCellColor()))
 	toCell.SetBGColor(colors.GetColor(client.config.GetToCellColor()))
@@ -1048,6 +1104,7 @@ func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 		}
 		// dColor := d - int(cell.Weight()) // ignore weights when coloring distance
 
+		// TODO: this must redo the background picture to work
 		if m.config.ShowDistanceColors {
 			// decrease bridghtnessAdjustto make the longest cells brighter. max = 255 (good = 228)
 			bridghtnessAdjust := 228
