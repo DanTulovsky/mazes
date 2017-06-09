@@ -244,7 +244,6 @@ func opList(ctx context.Context, c pb.MazerClient) (*pb.ListMazeReply, error) {
 	if err != nil {
 		log.Fatalf("could not list mazes: %v", err)
 	}
-	log.Printf("> %v", r)
 	return r, nil
 }
 
