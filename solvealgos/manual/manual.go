@@ -56,7 +56,7 @@ func (a *Manual) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Dur
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 
-		m.SetPathFromTo(fromCell, currentCell, travelPath)
+		m.SetClientPath(fromCell, currentCell, travelPath)
 
 		var nextCell *maze.Cell
 		var err error = errors.New("no new cell yet")
@@ -86,7 +86,7 @@ func (a *Manual) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Dur
 	segment := maze.NewSegment(toCell, facing)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
-	m.SetPathFromTo(fromCell, toCell, travelPath)
+	m.SetClientPath(fromCell, toCell, travelPath)
 
 	// Set final paths
 	a.SetSolvePath(solvePath)

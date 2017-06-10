@@ -55,9 +55,6 @@ var (
 	// maze
 	maskImage = flag.String("mask_image", "", "file name of mask image")
 
-	// maze draw
-	showGUI = flag.Bool("gui", true, "show gui maze")
-
 	// display
 	frameRate = flag.Uint("frame_rate", 120, "frame rate for animation")
 
@@ -87,7 +84,7 @@ var (
 //}
 
 func setupSDL(config *pb.MazeConfig, w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
-	if !*showGUI {
+	if !config.GetGui() {
 		return nil, nil
 	}
 	sdl.Do(func() {
@@ -320,7 +317,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		generating.UnSet()
 	}()
 
-	if *showGUI {
+	if m.Config().GetGui() {
 		for generating.IsSet() {
 			checkQuit(generating)
 			// Displays the main maze while generating it
@@ -346,9 +343,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
 	// gui maze
-	if !*showGUI {
-		return
-	}
 
 	// this is the main maze thread that draws the maze and interacts with it via comm
 	wd.Add(1)
@@ -357,13 +351,14 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		running := abool.New()
 		running.Set()
 
-		// create background texture, it is saved and re-rendered as a picture
-		mTexture, err := m.MakeBGTexture()
-		if err != nil {
-			log.Fatalf("failed to create background: %v", err)
+		if m.Config().GetGui() {
+			// create background texture, it is saved and re-rendered as a picture
+			mTexture, err := m.MakeBGTexture()
+			if err != nil {
+				log.Fatalf("failed to create background: %v", err)
+			}
+			m.SetBGTexture(mTexture)
 		}
-		m.SetBGTexture(mTexture)
-
 		// Allow clients to connect, solvers can start running
 		mazeReady.Set()
 
@@ -376,18 +371,20 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 			// check for client communications, they are serialized for one maze
 			checkComm(m, comm)
 
-			// Displays the maze
-			sdl.Do(func() {
-				// reset the clear color back to black
-				// but it doesn't matter, as background texture takes up the entire view
-				colors.SetDrawColor(colors.GetColor("black"), r)
+			if m.Config().GetGui() {
+				// Displays the maze
+				sdl.Do(func() {
+					// reset the clear color back to black
+					// but it doesn't matter, as background texture takes up the entire view
+					colors.SetDrawColor(colors.GetColor("black"), r)
 
-				r.Clear()
-				m.DrawMaze(r, m.BGTexture())
+					r.Clear()
+					m.DrawMaze(r, m.BGTexture())
 
-				r.Present()
-				sdl.Delay(uint32(1000 / *frameRate))
-			})
+					r.Present()
+					sdl.Delay(uint32(1000 / *frameRate))
+				})
+			}
 			t.UpdateSince(start)
 		}
 		mazeMap.Delete(m.Config().GetId())
@@ -513,7 +510,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 
 			s := maze.NewSegment(client.CurrentLocation(), facing)
 			client.TravelPath.AddSegement(s)
-			m.SetPathFromTo(m.FromCell(client), client)
+			m.SetClientPath(client)
 
 			in.Reply <- commandReply{
 				answer: &moveReply{
@@ -544,7 +541,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(client), client)
+					m.SetClientPath(client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -565,7 +562,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(client), client)
+					m.SetClientPath(client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -586,7 +583,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(client), client)
+					m.SetClientPath(client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -607,7 +604,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					client.TravelPath.AddSegement(s)
 					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetPathFromTo(m.FromCell(client), client)
+					m.SetClientPath(client)
 
 					in.Reply <- commandReply{
 						answer: &moveReply{
@@ -649,7 +646,7 @@ func runServer() {
 	log.Printf("server ready on port %v", port)
 
 	log.Printf("starting metrics...")
-	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	exp.Exp(metrics.DefaultRegistry)
 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
 	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
@@ -878,8 +875,12 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		return err
 	}
 
+	trpc := metrics.GetOrRegisterTimer("maze.rpc.solve-maze-loop.latency", nil)
+
 	// this is the main loop as the client tries to solve the maze
 	for {
+		start := time.Now()
+
 		in, err := stream.Recv()
 		if err == io.EOF {
 			return nil
@@ -907,6 +908,8 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			action = maze.CommandMove
 		}
 
+		commStart := time.Now()
+		tcomm := metrics.GetOrRegisterTimer("maze.rpc.solve-maze-loop-comm.latency", nil)
 		data = commandData{
 			Action:   action,
 			ClientID: in.ClientId,
@@ -929,6 +932,7 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			}
 			continue
 		}
+		tcomm.UpdateSince(commStart)
 
 		moveReply := mazeReply.answer.(*moveReply)
 
@@ -942,6 +946,8 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		if err := stream.Send(r); err != nil {
 			return err
 		}
+
+		trpc.UpdateSince(start)
 	}
 
 	return nil

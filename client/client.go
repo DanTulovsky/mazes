@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -38,6 +37,7 @@ var (
 	weavingProbability = flag.Float64("weaving_probability", 1, "controls the amount of weaving that happens, with 1 being the max")
 	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
 	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
+	showGUI            = flag.Bool("gui", true, "show gui maze")
 
 	// dimensions
 	rows    = flag.Int64("r", 30, "number of rows in the maze")
@@ -110,6 +110,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		BorderColor:          *borderColor,
 		CreateAlgo:           createAlgo,
 		BraidProbability:     *braidProbability,
+		Gui:                  *showGUI,
 	}
 	return config
 }
@@ -319,7 +320,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	exp.Exp(metrics.DefaultRegistry)
 
 	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
@@ -331,7 +332,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 	go func() {
-		fmt.Println("HTTP now available at port 8123")
+		fmt.Println("metrics now available at http://localhost:8124/debug/metrics")
 		http.Serve(sock, nil)
 	}()
 

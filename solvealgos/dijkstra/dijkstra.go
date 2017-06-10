@@ -4,9 +4,10 @@ package dijkstra
 
 import (
 	"math"
+	"time"
+
 	"mazes/maze"
 	"mazes/solvealgos"
-	"time"
 )
 
 type Dijkstra struct {
@@ -54,7 +55,7 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 
-		g.SetPathFromTo(fromCell, currentCell, travelPath)
+		g.SetClientPath(fromCell, currentCell, travelPath)
 		currentCell = nextCell
 	}
 
@@ -66,7 +67,7 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 
-	g.SetPathFromTo(fromCell, toCell, travelPath)
+	g.SetClientPath(fromCell, toCell, travelPath)
 
 	// stats
 	a.SetSolvePath(solvePath)

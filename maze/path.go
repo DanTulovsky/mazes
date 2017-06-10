@@ -1,6 +1,9 @@
 package maze
 
 import (
+	"time"
+
+	"github.com/rcrowley/go-metrics"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 	"mazes/colors"
@@ -130,6 +133,9 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avata
 
 // DrawPath draws the path as present in the cells
 func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
+	t := metrics.GetOrRegisterTimer("maze.draw.path.segment.latency", nil)
+	defer t.UpdateSince(time.Now())
+
 	cell := p.Cell()
 
 	cell.RLock()
