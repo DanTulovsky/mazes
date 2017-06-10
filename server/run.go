@@ -2,16 +2,21 @@
 package main
 
 import (
+	_ "expvar"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"sync"
 	"time"
 
+	graphite "github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
+	"github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics/exp"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/satori/go.uuid"
 	"github.com/tevino/abool"
@@ -363,6 +368,9 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		mazeReady.Set()
 
 		for running.IsSet() {
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
+
 			checkQuit(running)
 
 			// check for client communications, they are serialized for one maze
@@ -380,6 +388,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
 			})
+			t.UpdateSince(start)
 		}
 		mazeMap.Delete(m.Config().GetId())
 
@@ -395,6 +404,9 @@ func checkComm(m *maze.Maze, comm commChannel) {
 	case in := <-comm: // type == commandData
 		switch in.Action {
 		case maze.CommandListClients:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.list-clients.latency", nil)
+
 			answer := m.Clients()
 			var clients []string
 			for c := range answer {
@@ -402,19 +414,32 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			}
 			// send reply via the reply channel
 			in.Reply <- commandReply{answer: clients}
+
+			t.UpdateSince(start)
 		case maze.CommandAddClient:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.add-client.latency", nil)
+
 			m.AddClient(in.ClientID, in.ClientConfig)
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{}
+			t.UpdateSince(start)
 		case maze.CommandGetDirections:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.get-direction.latency", nil)
+
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client links: %v", err)}
 
 			} else {
 				in.Reply <- commandReply{answer: client.CurrentLocation().DirectionLinks(in.ClientID)}
 			}
+			t.UpdateSince(start)
 		case maze.CommandSetInitialClientLocation:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.set-initial-client-location.latency", nil)
+
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 			} else {
@@ -428,16 +453,23 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				cell.SetVisited(in.ClientID)
 				client.TravelPath.AddSegement(s)
 				client.SolvePath.AddSegement(s)
-
 			}
+			t.UpdateSince(start)
 		case maze.CommandCurrentLocation:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.current-location.latency", nil)
+
 			if client, err := m.Client(in.ClientID); err != nil {
 				log.Printf("failed to get client location: %v", err)
 			} else {
 				cell := client.CurrentLocation()
 				in.Reply <- commandReply{answer: cell.Location()}
 			}
+			t.UpdateSince(start)
 		case maze.CommandLocationInfo:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.location-info.latency", nil)
+
 			if client, err := m.Client(in.ClientID); err != nil {
 				log.Printf("failed to get client location: %v", err)
 			} else {
@@ -448,7 +480,11 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				}
 				in.Reply <- commandReply{answer: info}
 			}
+			t.UpdateSince(start)
 		case maze.CommandMoveBack:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.moveback", nil)
+
 			client, err := m.Client(in.ClientID)
 			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
@@ -486,8 +522,12 @@ func checkComm(m *maze.Maze, comm commChannel) {
 					solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
 				},
 			}
+			t.UpdateSince(start)
 
 		case maze.CommandMove:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.move", nil)
+
 			r := in.Request
 			direction := r.request.(string)
 
@@ -585,6 +625,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				log.Printf("invalid direction: %v", direction)
 				in.Reply <- commandReply{error: fmt.Errorf("invalid direction: %v", direction)}
 			}
+			t.UpdateSince(start)
 
 		default:
 			log.Printf("unknown command: %#v", in)
@@ -607,6 +648,12 @@ func runServer() {
 
 	log.Printf("server ready on port %v", port)
 
+	log.Printf("starting metrics...")
+	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+	exp.Exp(metrics.DefaultRegistry)
+	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
+	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
@@ -627,6 +674,16 @@ func main() {
 		log.Println("enabling profiling...")
 		defer profile.Start().Stop()
 	}
+
+	// run http server for expvars
+	sock, err := net.Listen("tcp", "localhost:8123")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	go func() {
+		fmt.Println("metrics now available at http://localhost:8123/debug/metrics")
+		http.Serve(sock, nil)
+	}()
 
 	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
@@ -672,8 +729,10 @@ type server struct{}
 
 // CreateMaze creates and displays the maze specified by the config
 func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {
-
 	log.Printf("creating maze with config: %#v", in.Config)
+
+	t := metrics.GetOrRegisterTimer("maze.rpc.create-maze.latency", nil)
+	defer t.UpdateSince(time.Now())
 
 	mazeID := uuid.NewV4().String()
 	in.GetConfig().Id = mazeID
@@ -688,8 +747,9 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 
 // RegisterClient registers a new client with an existing maze
 func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientRequest) (*pb.RegisterClientReply, error) {
-
 	log.Printf("associating new client with maze: %#v", in.GetMazeId())
+	t := metrics.GetOrRegisterTimer("maze.rpc.register-client.latency", nil)
+	defer t.UpdateSince(time.Now())
 
 	clientID := uuid.NewV4().String()
 
@@ -719,6 +779,9 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 
 // ListMazes lists all the mazes
 func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
+	t := metrics.GetOrRegisterTimer("maze.rpc.list-mazes.latency", nil)
+	defer t.UpdateSince(time.Now())
+
 	response := &pb.ListMazeReply{}
 	for _, k := range mazeMap.Keys() {
 		m := &pb.Maze{MazeId: k}
@@ -752,6 +815,8 @@ func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.Lis
 // SolveMaze is a streaming RPC to solve a maze
 func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 	log.Printf("received initial client connect...")
+	t := metrics.GetOrRegisterTimer("maze.rpc.solve-maze.latency", nil)
+	defer t.UpdateSince(time.Now())
 
 	// initial connect
 	in, err := stream.Recv()

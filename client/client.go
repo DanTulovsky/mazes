@@ -5,10 +5,16 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
+	metrics "github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics/exp"
 	deadlock "github.com/sasha-s/go-deadlock"
 	"google.golang.org/grpc"
 	"mazes/algos"
@@ -159,7 +165,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 	// register more clients
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
-		SolveAlgo:            "wall-follower",
+		SolveAlgo:            "recursive-backtracker",
 		PathColor:            "blue",
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
@@ -286,6 +292,7 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID, solveAlgo 
 	}
 
 	log.Printf("running solver %v", solveAlgo)
+
 	if err := solver.Solve(mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
 		return fmt.Errorf("error running solver: %v", err)
 	}
@@ -312,6 +319,22 @@ func setFlags() {
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+	exp.Exp(metrics.DefaultRegistry)
+
+	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
+	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+
+	// run http server for expvars
+	sock, err := net.Listen("tcp", "localhost:8124")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	go func() {
+		fmt.Println("HTTP now available at port 8123")
+		http.Serve(sock, nil)
+	}()
 
 	if *enableDeadlockDetection {
 		log.Println("enabling deadlock detection, this slows things down considerably!")

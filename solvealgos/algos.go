@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/rcrowley/go-metrics"
 	"mazes/maze"
 	pb "mazes/proto"
 )
@@ -19,6 +20,7 @@ var (
 
 type Algorithmer interface {
 	Move(d string, mazeID string, clientID string) (*pb.SolveMazeResponse, error) // move a direction
+	MoveBack(mazeID string, clientID string) (*pb.SolveMazeResponse, error)       // move back
 	SolvePath() *maze.Path                                                        // final path
 	SolveSteps() int
 	SolveTime() time.Duration
@@ -100,6 +102,9 @@ func (a *Common) SetStream(s pb.Mazer_SolveMazeClient) {
 
 // Move sends a move request to the server and returns the reply
 func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error) {
+	t := metrics.GetOrRegisterTimer("solver.step.latency", nil)
+	defer t.UpdateSince(time.Now())
+
 	stream := a.Stream()
 
 	r := &pb.SolveMazeRequest{
@@ -126,6 +131,9 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 
 // MoveBack moves the client back to the previous location (where they just came from)
 func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error) {
+	t := metrics.GetOrRegisterTimer("solver.step.latency", nil)
+	defer t.UpdateSince(time.Now())
+
 	stream := a.Stream()
 
 	r := &pb.SolveMazeRequest{
