@@ -33,7 +33,6 @@ func (a *Empty) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation
 		solved = reply.Solved
 
 		directions = reply.GetAvailableDirections()
-		log.Printf("i am at: %v and can go: %v", reply.GetCurrentLocation(), reply.GetAvailableDirections())
 		if len(directions) < 1 {
 			return fmt.Errorf("no available directions to move now: %v", directions)
 		}

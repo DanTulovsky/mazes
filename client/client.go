@@ -8,12 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/profile"
-	deadlock "github.com/sasha-s/go-deadlock"
-	"google.golang.org/grpc"
 	"mazes/algos"
 	pb "mazes/proto"
 	"mazes/solvealgos"
+
+	"github.com/pkg/profile"
+	deadlock "github.com/sasha-s/go-deadlock"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -64,12 +65,12 @@ var (
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo     = flag.String("solve_algo", "empty", "algorithm to solve the maze")
+	solveAlgo     = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
 	mazeID        = flag.String("maze_id", "", "maze id")
-	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
+	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset, paths are drawn on top of each other")
 
 	// misc
 	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
