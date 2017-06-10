@@ -337,17 +337,16 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
 
-	mazeReady := abool.New()
-
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
-	// gui maze
 
 	// this is the main maze thread that draws the maze and interacts with it via comm
 	wd.Add(1)
+	log.Printf("starting gui draw thread...")
 	go func(r *sdl.Renderer) {
 		defer wd.Done()
+
 		running := abool.New()
 		running.Set()
 
@@ -359,8 +358,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 			}
 			m.SetBGTexture(mTexture)
 		}
-		// Allow clients to connect, solvers can start running
-		mazeReady.Set()
 
 		for running.IsSet() {
 			start := time.Now()
@@ -382,7 +379,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 					m.DrawMaze(r, m.BGTexture())
 
 					r.Present()
-					sdl.Delay(uint32(1000 / *frameRate))
+					//sdl.Delay(uint32(1000 / *frameRate))
 				})
 			}
 			t.UpdateSince(start)
@@ -391,6 +388,17 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 
 		log.Printf("maze is done...")
 	}(r)
+
+	//wd.Add(1)
+	//go func() {
+	//	log.Print("starting client comm thread...")
+	//	log.Printf("%v", running.IsSet())
+	//	//for running.IsSet() {
+	//	//	// check for client communications, they are serialized for one maze
+	//	//	//checkComm(m, comm)
+	//	//}
+	//	wd.Done()
+	//}()
 
 	showMazeStats(m)
 	wd.Wait()

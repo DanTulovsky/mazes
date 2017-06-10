@@ -237,12 +237,10 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 
 // AddClient adds a new client to the maze
 func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
-	m.clientsLock.Lock()
-	defer m.clientsLock.Unlock()
 
 	log.Printf("adding client: %v", id)
 
-	m.clients[id] = &client{
+	c := &client{
 		id: id,
 		// currentLocation: m.fromCell,
 		SolvePath:  NewPath(),
@@ -250,8 +248,6 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 		config:     config,
 		number:     m.nextClient,
 	}
-
-	m.nextClient++
 
 	var fromCell, toCell *Cell
 	var err error
@@ -276,23 +272,23 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 		_, fromCell, toCell, _ = m.LongestPath()
 	}
 
-	m.SetFromCell(m.clients[id], fromCell)
-	m.SetToCell(m.clients[id], toCell)
+	m.SetFromCell(c, fromCell)
+	m.SetToCell(c, toCell)
 
 	log.Printf("Path: %v -> %v", fromCell, toCell)
 
 	// this will color the maze based on the last client to register
 	log.Printf("setting distance colors")
 	if m.Config().GetShowDistanceColors() {
-		m.SetDistanceInfo(m.clients[id], fromCell)
+		m.SetDistanceInfo(c, fromCell)
 	}
 
-	if m.clients[id].config.ShowFromToColors {
-		m.SetFromToColors(m.clients[id], fromCell, toCell)
+	if c.config.ShowFromToColors {
+		m.SetFromToColors(c, fromCell, toCell)
 	}
 
-	m.clients[id].fromCell = fromCell
-	m.clients[id].toCell = toCell
+	c.fromCell = fromCell
+	c.toCell = toCell
 
 	if m.Config().GetGui() {
 		mTexture, err := m.MakeBGTexture()
@@ -301,6 +297,12 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 		}
 		m.SetBGTexture(mTexture)
 	}
+
+	m.clientsLock.Lock()
+	defer m.clientsLock.Unlock()
+
+	m.clients[id] = c
+	m.nextClient++
 
 	log.Printf("added client: %v", id)
 	return nil
@@ -654,7 +656,6 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 			}
 
 			cell.Draw(r)
-
 		}
 	}
 
