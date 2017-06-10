@@ -104,6 +104,7 @@ message MazeConfig {
     double BraidProbability = 27;
 
     string Id = 28;
+    bool Gui = 29;
 }
 
 // ClientConfig has all the per-client config settings in it

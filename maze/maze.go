@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rcrowley/go-metrics"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 	"mazes/colors"
@@ -293,11 +294,13 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 	m.clients[id].fromCell = fromCell
 	m.clients[id].toCell = toCell
 
-	mTexture, err := m.MakeBGTexture()
-	if err != nil {
-		log.Fatalf("failed to create background: %v", err)
+	if m.Config().GetGui() {
+		mTexture, err := m.MakeBGTexture()
+		if err != nil {
+			log.Fatalf("failed to create background: %v", err)
+		}
+		m.SetBGTexture(mTexture)
 	}
-	m.SetBGTexture(mTexture)
 
 	log.Printf("added client: %v", id)
 	return nil
@@ -626,14 +629,10 @@ func (m *Maze) SetToCell(client *client, c *Cell) {
 
 // DrawMazeBackground renders the gui maze background in memory
 func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
-	// defer utils.TimeTrack(time.Now(), "DrawMaze")
+	t := metrics.GetOrRegisterTimer("maze.draw.background.latency", nil)
+	defer t.UpdateSince(time.Now())
 
-	//fromCell := m.FromCell()
-	//
-	//// If saved, draw distance colors
-	//if fromCell != nil && m.config.ShowDistanceColors {
-	//	m.SetDistanceInfo(fromCell)
-	//}
+	log.Printf("drawing background...")
 
 	// Each cell draws its background, half the wall as well as anything inside it
 	for x := int64(0); x < m.columns; x++ {
@@ -659,23 +658,18 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 		}
 	}
 
-	// Draw outside border
-	// m.drawBorder(r)
-
-	// Load avatar if needed
-	//if m.config.AvatarImage != "" {
-	//	m.loadAvatar(r)
-	//}
-
 	return r
 }
 
 // Draw renders the gui maze in memory, display by calling Present
 func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
-	// defer utils.TimeTrack(time.Now(), "DrawMaze")
+	t := metrics.GetOrRegisterTimer("maze.draw.all.latency", nil)
+	defer t.UpdateSince(time.Now())
+
+	tbg := metrics.GetOrRegisterTimer("maze.draw.bg-copy.latency", nil)
 
 	if bg != nil {
-		r.Copy(bg, nil, nil) // copy the background texture
+		tbg.Time(func() { r.Copy(bg, nil, nil) }) // copy the background texture
 	}
 
 	// Draw location of the generator algorithm
@@ -704,6 +698,7 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 		client.fromCell.SetBGColor(fromColor)
 		client.toCell.SetBGColor(toColor)
 
+		// update from/to cell colors
 		client.fromCell.Draw(r)
 		client.toCell.Draw(r)
 	}
@@ -713,7 +708,8 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 
 // DrawBorder renders the maze border in memory, display by calling Present
 func (m *Maze) drawBorder(r *sdl.Renderer) *sdl.Renderer {
-	// defer utils.TimeTrack(time.Now(), "drawBorder")
+	t := metrics.GetOrRegisterTimer("maze.draw.border.latency", nil)
+	defer t.UpdateSince(time.Now())
 
 	colors.SetDrawColor(m.borderColor, r)
 
@@ -746,6 +742,8 @@ func (m *Maze) drawBorder(r *sdl.Renderer) *sdl.Renderer {
 }
 
 func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
+	t := metrics.GetOrRegisterTimer("maze.draw.gen-current-location.latency", nil)
+	defer t.UpdateSince(time.Now())
 
 	current_location := m.GenCurrentLocation()
 
@@ -764,7 +762,9 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 
 // DrawPath renders the gui maze path in memory, display by calling Present
 func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.Renderer {
-	// defer utils.TimeTrack(time.Now(), "drawPath")
+	t := metrics.GetOrRegisterTimer("maze.draw.path.latency", nil)
+	defer t.UpdateSince(time.Now())
+
 	travelPath := client.TravelPath
 	solvePath := client.SolvePath
 
@@ -773,15 +773,17 @@ func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.
 	var isSolution bool
 	var isLast bool
 
-	pathLength := travelPath.Length()
+	travelPathLength := travelPath.Length()
+	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(travelPathLength))
+	metrics.GetOrRegisterGauge("maze.path.solve.length", nil).Update(int64(solvePath.Length()))
 
-	travelPath.RLock()
-	defer travelPath.RUnlock()
+	//travelPath.RLock()
+	//defer travelPath.RUnlock()
 
 	for x, segment := range travelPath.segments {
 		cell := segment.Cell()
 
-		if x == pathLength-1 {
+		if x == travelPathLength-1 {
 			isLast = true // last segment is drawn slightly different
 		}
 
@@ -1063,8 +1065,10 @@ func (m *Maze) SetFromToColors(client *client, fromCell, toCell *Cell) {
 
 }
 
-// SetPathFromTo sets the given path in the cells from fromCell to toCell
-func (m *Maze) SetPathFromTo(fromCell *Cell, client *client) {
+// SetClientPath sets client.TravelPath in the maze cells
+func (m *Maze) SetClientPath(client *client) {
+	t := metrics.GetOrRegisterTimer("maze.func.SetClientPath.latency", nil)
+	defer t.UpdateSince(time.Now())
 
 	path := client.TravelPath
 

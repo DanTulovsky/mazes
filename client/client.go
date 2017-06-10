@@ -5,16 +5,20 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
+	"github.com/cyberdelia/go-metrics-graphite"
+	"github.com/pkg/profile"
+	metrics "github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics/exp"
+	deadlock "github.com/sasha-s/go-deadlock"
+	"google.golang.org/grpc"
 	"mazes/algos"
 	pb "mazes/proto"
 	"mazes/solvealgos"
-
-	"github.com/pkg/profile"
-	deadlock "github.com/sasha-s/go-deadlock"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -33,6 +37,7 @@ var (
 	weavingProbability = flag.Float64("weaving_probability", 1, "controls the amount of weaving that happens, with 1 being the max")
 	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
 	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
+	showGUI            = flag.Bool("gui", true, "show gui maze")
 
 	// dimensions
 	rows    = flag.Int64("r", 30, "number of rows in the maze")
@@ -65,12 +70,12 @@ var (
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo     = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
+	solveAlgo     = flag.String("solve_algo", "empty", "algorithm to solve the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
 	mazeID        = flag.String("maze_id", "", "maze id")
-	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset, paths are drawn on top of each other")
+	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
 
 	// misc
 	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
@@ -105,6 +110,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		BorderColor:          *borderColor,
 		CreateAlgo:           createAlgo,
 		BraidProbability:     *braidProbability,
+		Gui:                  *showGUI,
 	}
 	return config
 }
@@ -160,7 +166,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 	// register more clients
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
-		SolveAlgo:            "wall-follower",
+		SolveAlgo:            "recursive-backtracker",
 		PathColor:            "blue",
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
@@ -286,6 +292,7 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID, solveAlgo 
 	}
 
 	log.Printf("running solver %v", solveAlgo)
+
 	if err := solver.Solve(mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
 		return fmt.Errorf("error running solver: %v", err)
 	}
@@ -312,6 +319,22 @@ func setFlags() {
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+	exp.Exp(metrics.DefaultRegistry)
+
+	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
+	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+
+	// run http server for expvars
+	sock, err := net.Listen("tcp", "localhost:8124")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	go func() {
+		fmt.Println("metrics now available at http://localhost:8124/debug/metrics")
+		http.Serve(sock, nil)
+	}()
 
 	if *enableDeadlockDetection {
 		log.Println("enabling deadlock detection, this slows things down considerably!")
