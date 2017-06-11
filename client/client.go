@@ -70,7 +70,7 @@ var (
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo     = flag.String("solve_algo", "empty", "algorithm to solve the maze")
+	solveAlgo     = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver

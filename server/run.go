@@ -342,69 +342,77 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	///////////////////////////////////////////////////////////////////////////
 
 	// this is the main maze thread that draws the maze and interacts with it via comm
-	wd.Add(1)
-	log.Printf("starting gui draw thread...")
-	go func(r *sdl.Renderer) {
-		defer wd.Done()
 
-		running := abool.New()
-		running.Set()
+	running := abool.New()
+	running.Set()
+
+	// when this is set to true, an redraw of the background texture is triggered
+	updateBG := abool.New()
+
+	if m.Config().GetGui() {
+		// create background texture, it is saved and re-rendered as a picture
+		mTexture, err := m.MakeBGTexture()
+		if err != nil {
+			log.Fatalf("failed to create background: %v", err)
+		}
+		m.SetBGTexture(mTexture)
+	}
+
+	wd.Add(1)
+	go func() {
+		defer wd.Done()
+		log.Print("starting client comm thread...")
+		for running.IsSet() {
+			// check for client communications, they are serialized for one maze
+			checkComm(m, comm, updateBG)
+		}
+		log.Printf("client comm thread died...")
+	}()
+
+	for running.IsSet() {
+		start := time.Now()
+		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
+
+		checkQuit(running)
+
+		if updateBG.IsSet() {
+			if m.Config().GetGui() {
+				log.Printf("setting background")
+				mTexture, err := m.MakeBGTexture()
+				if err != nil {
+					log.Fatalf("failed to create background: %v", err)
+				}
+				m.SetBGTexture(mTexture)
+			}
+			updateBG.UnSet()
+		}
 
 		if m.Config().GetGui() {
-			// create background texture, it is saved and re-rendered as a picture
-			mTexture, err := m.MakeBGTexture()
-			if err != nil {
-				log.Fatalf("failed to create background: %v", err)
-			}
-			m.SetBGTexture(mTexture)
+			// Displays the maze
+			sdl.Do(func() {
+				// reset the clear color back to black
+				// but it doesn't matter, as background texture takes up the entire view
+				colors.SetDrawColor(colors.GetColor("black"), r)
+
+				r.Clear()
+				m.DrawMaze(r, m.BGTexture())
+
+				r.Present()
+				sdl.Delay(uint32(1000 / *frameRate))
+			})
 		}
+		t.UpdateSince(start)
+	}
+	mazeMap.Delete(m.Config().GetId())
 
-		for running.IsSet() {
-			start := time.Now()
-			t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
-
-			checkQuit(running)
-
-			// check for client communications, they are serialized for one maze
-			checkComm(m, comm)
-
-			if m.Config().GetGui() {
-				// Displays the maze
-				sdl.Do(func() {
-					// reset the clear color back to black
-					// but it doesn't matter, as background texture takes up the entire view
-					colors.SetDrawColor(colors.GetColor("black"), r)
-
-					r.Clear()
-					m.DrawMaze(r, m.BGTexture())
-
-					r.Present()
-					//sdl.Delay(uint32(1000 / *frameRate))
-				})
-			}
-			t.UpdateSince(start)
-		}
-		mazeMap.Delete(m.Config().GetId())
-
-		log.Printf("maze is done...")
-	}(r)
-
-	//wd.Add(1)
-	//go func() {
-	//	log.Print("starting client comm thread...")
-	//	log.Printf("%v", running.IsSet())
-	//	//for running.IsSet() {
-	//	//	// check for client communications, they are serialized for one maze
-	//	//	//checkComm(m, comm)
-	//	//}
-	//	wd.Done()
-	//}()
+	log.Printf("maze is done...")
 
 	showMazeStats(m)
 	wd.Wait()
 }
 
-func checkComm(m *maze.Maze, comm commChannel) {
+func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
+	log.Print("checking comm")
 	select {
 	case in := <-comm: // type == commandData
 		switch in.Action {
@@ -426,6 +434,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			t := metrics.GetOrRegisterTimer("maze.command.add-client.latency", nil)
 
 			m.AddClient(in.ClientID, in.ClientConfig)
+			updateBG.Set()
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{}
@@ -639,6 +648,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 	default:
 
 	}
+	log.Print("done.")
 }
 
 func runServer() {

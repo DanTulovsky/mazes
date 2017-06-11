@@ -290,13 +290,13 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 	c.fromCell = fromCell
 	c.toCell = toCell
 
-	if m.Config().GetGui() {
-		mTexture, err := m.MakeBGTexture()
-		if err != nil {
-			log.Fatalf("failed to create background: %v", err)
-		}
-		m.SetBGTexture(mTexture)
-	}
+	//if m.Config().GetGui() {
+	//	mTexture, err := m.MakeBGTexture()
+	//	if err != nil {
+	//		log.Fatalf("failed to create background: %v", err)
+	//	}
+	//	m.SetBGTexture(mTexture)
+	//}
 
 	m.clientsLock.Lock()
 	defer m.clientsLock.Unlock()
