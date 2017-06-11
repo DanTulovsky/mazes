@@ -460,10 +460,9 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				cell := client.CurrentLocation()
 
 				// Add initial location to paths
-				s := maze.NewSegment(cell, "north")
+				s := maze.NewSegment(cell, "north", true)
 				cell.SetVisited(in.ClientID)
 				client.TravelPath.AddSegement(s)
-				client.SolvePath.AddSegement(s)
 			}
 			t.UpdateSince(start)
 		case maze.CommandCurrentLocation:
@@ -501,13 +500,24 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
 			}
 
-			// remove from SolvePath if we are backtracking
-			client.SolvePath.DelSegement()
+			//log.Print("path: ")
+			//for _, s := range client.TravelPath.Segments() {
+			//	log.Printf(" > %v (want to move: back", s)
+			//}
+
+			// remove from solution if we are backtracking
+			client.TravelPath.LastSegment().RemoveFromSolution()
+			log.Printf("last segment: %v", client.TravelPath.LastSegment())
 
 			// previous cell
 			currentCell := client.CurrentLocation()
-			last := client.SolvePath.LastSegment().Cell()
+			last := client.TravelPath.PreviousSegmentinSolution().Cell()
+			if last == nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to find previous unvisited cell, path is: %v", client.TravelPath)}
+
+			}
 			client.SetCurrentLocation(last)
+			log.Printf("last: %v", last)
 
 			var facing string
 
@@ -522,7 +532,8 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				facing = "east"
 			}
 
-			s := maze.NewSegment(client.CurrentLocation(), facing)
+			// moving back, don't set this cell where we've been as solution
+			s := maze.NewSegment(client.CurrentLocation(), facing, false)
 			client.TravelPath.AddSegement(s)
 			m.SetClientPath(client)
 
@@ -547,13 +558,17 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
 			}
 
+			//log.Print("path: ")
+			//for _, s := range client.TravelPath.Segments() {
+			//	log.Printf(" > %v (want to move: %v", s, direction)
+			//}
+
 			switch direction {
 			case "north":
 				if client.CurrentLocation().Linked(client.CurrentLocation().North()) {
 					client.SetCurrentLocation(client.CurrentLocation().North())
-					s := maze.NewSegment(client.CurrentLocation(), "north")
+					s := maze.NewSegment(client.CurrentLocation(), "north", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -572,9 +587,8 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			case "south":
 				if client.CurrentLocation().Linked(client.CurrentLocation().South()) {
 					client.SetCurrentLocation(client.CurrentLocation().South())
-					s := maze.NewSegment(client.CurrentLocation(), "south")
+					s := maze.NewSegment(client.CurrentLocation(), "south", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -593,9 +607,8 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			case "west":
 				if client.CurrentLocation().Linked(client.CurrentLocation().West()) {
 					client.SetCurrentLocation(client.CurrentLocation().West())
-					s := maze.NewSegment(client.CurrentLocation(), "west")
+					s := maze.NewSegment(client.CurrentLocation(), "west", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -614,9 +627,8 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			case "east":
 				if client.CurrentLocation().Linked(client.CurrentLocation().East()) {
 					client.SetCurrentLocation(client.CurrentLocation().East())
-					s := maze.NewSegment(client.CurrentLocation(), "east")
+					s := maze.NewSegment(client.CurrentLocation(), "east", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 

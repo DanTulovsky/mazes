@@ -1,6 +1,7 @@
 package maze
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rcrowley/go-metrics"
@@ -9,35 +10,6 @@ import (
 	"mazes/colors"
 	"mazes/utils"
 )
-
-// PathSegment is one segement of a path. A cell, and metadata.
-type PathSegment struct {
-	cell   *Cell
-	facing string // when you came in, which way were you facing (north, south, east, west)
-	deadlock.RWMutex
-}
-
-func NewSegment(c *Cell, f string) *PathSegment {
-	return &PathSegment{cell: c, facing: f}
-}
-
-func (ps *PathSegment) Cell() *Cell {
-	ps.RLock()
-	defer ps.RUnlock()
-	return ps.cell
-}
-
-func (ps *PathSegment) Facing() string {
-	ps.RLock()
-	defer ps.RUnlock()
-	return ps.facing
-}
-
-func (ps *PathSegment) UpdateFacingDirection(f string) {
-	ps.Lock()
-	defer ps.Unlock()
-	ps.facing = f
-}
 
 // Path is a path (ordered collection of cells) through the maze
 type Path struct {
@@ -80,68 +52,154 @@ func (p *Path) ReverseCells() {
 		p.segments[i], p.segments[j] = p.segments[j], p.segments[i]
 	}
 }
+func (p *Path) AddSegement(s *PathSegment) {
+	p.Lock()
+	defer p.Unlock()
 
-// DrawCurrentLocation marks the current location of the user
-func (ps *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) *sdl.Renderer {
-	c := ps.Cell()
+	p.segments = append(p.segments, s)
+	p.segmentMap[s] = true
+	p.cellMap[s.Cell()] = true
 
-	PixelsPerCell := c.width
-
-	// rotateAngle returns the angle of rotation based on facing direction
-	// the texture used for the avatar is assumed to be "facing" "west"
-	rotateAngle := func(f string) (angle float64, flip sdl.RendererFlip) {
-
-		switch f {
-		case "north":
-			angle = 90
-			flip = sdl.FLIP_NONE
-
-		case "east":
-			angle = 180
-			flip = sdl.FLIP_VERTICAL
-
-		case "south":
-			angle = -90
-			flip = sdl.FLIP_NONE
-
-		case "west":
-			angle = 0
-			flip = sdl.FLIP_NONE
-		}
-
-		return angle, flip
-	}
-
-	if avatar == nil {
-		colors.SetDrawColor(colors.GetColor(client.config.CurrentLocationColor), r)
-		// draw a standard box
-		sq := &sdl.Rect{
-			int32(c.x*PixelsPerCell + PixelsPerCell/4),
-			int32(c.y*PixelsPerCell + PixelsPerCell/4),
-			int32(PixelsPerCell/2 - c.wallWidth/2),
-			int32(PixelsPerCell/2 - c.wallWidth/2)}
-		r.FillRect(sq)
-	} else {
-		angle, flip := rotateAngle(ps.Facing())
-
-		sq := &sdl.Rect{
-			int32(c.x*PixelsPerCell + PixelsPerCell/4),
-			int32(c.y*PixelsPerCell + PixelsPerCell/4),
-			int32(c.pathWidth * 15),
-			int32(c.pathWidth * 15)}
-
-		r.CopyEx(avatar, nil, sq, angle, nil, flip)
-	}
-
-	return r
 }
 
-// DrawPath draws the path as present in the cell
-func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
+func (p *Path) AddSegements(s []*PathSegment) {
+	for _, seg := range s {
+		p.Lock()
+		defer p.Unlock()
+
+		p.segments = append(p.segments, seg)
+		p.segmentMap[seg] = true
+		p.cellMap[seg.Cell()] = true
+	}
+}
+
+func (p *Path) CellInPath(c *Cell) bool {
+	p.RLock()
+	defer p.RUnlock()
+
+	if _, ok := p.cellMap[c]; ok {
+		return true
+	}
+	return false
+}
+
+// LastSegment returns the last segment in the path, this is the one the client is standing on
+func (p *Path) LastSegment() *PathSegment {
+	p.RLock()
+	defer p.RUnlock()
+
+	if len(p.segments) == 0 {
+		return nil
+	}
+	return p.segments[len(p.segments)-1]
+}
+
+// PreviousSegmentinSolution returns the second to last segment in the solution path, this is the one the client came from
+func (p *Path) PreviousSegmentinSolution() *PathSegment {
+	p.RLock()
+	defer p.RUnlock()
+
+	if len(p.segments) <= 1 {
+		return nil
+	}
+
+	last := p.LastSegment().Cell() // where we are at
+
+	// walk back through the path until you hit the second solution == true
+	for x := len(p.segments) - 1; x >= 0; x-- {
+		if p.segments[x].solution {
+			if last == p.segments[x].Cell() {
+				p.segments[x].solution = false
+				continue
+			}
+			return p.segments[x]
+		}
+	}
+
+	return nil
+}
+
+// DelSegement removes the last segment from the path
+func (p *Path) DelSegement() {
+	p.Lock()
+	defer p.Unlock()
+
+	seg := p.segments[len(p.segments)-1]
+
+	delete(p.segmentMap, seg)
+	delete(p.cellMap, seg.Cell())
+	p.segments = p.segments[:len(p.segments)-1]
+}
+
+func (p *Path) List() []*PathSegment {
+	p.RLock()
+	defer p.RUnlock()
+
+	return p.segments
+}
+
+// Length returns the length of the path
+func (p *Path) Length() int {
+	p.RLock()
+	defer p.RUnlock()
+
+	return len(p.segments)
+}
+
+// ListCells returns a map containing all the cells in the path
+func (p *Path) ListCells() map[*Cell]bool {
+	p.Lock()
+	defer p.Unlock()
+
+	return p.cellMap
+}
+
+// Draw draws the path
+func (p *Path) Draw(r *sdl.Renderer, client *client, markVisited bool, avatar *sdl.Texture) {
+	alreadyDone := make(map[*PathSegment]bool)
+
+	var isLast bool
+
+	travelPathLength := p.Length()
+	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(travelPathLength))
+
+	for x, segment := range p.Segments() {
+		cell := segment.Cell()
+
+		if x == travelPathLength-1 {
+			isLast = true // last segment is drawn slightly different
+		}
+
+		if _, ok := alreadyDone[segment]; ok {
+			if isLast {
+				segment.drawCurrentLocation(r, client, avatar)
+			}
+			continue
+		}
+
+		// cache state of this cell
+		alreadyDone[segment] = true
+
+		p.drawSegment(segment, r, client, isLast)
+
+		if markVisited {
+			cell.DrawVisited(r, client)
+		}
+
+		if isLast {
+			segment.drawCurrentLocation(r, client, avatar)
+		}
+
+	}
+
+}
+
+// drawSegment draws one segment of the path
+func (p *Path) drawSegment(ps *PathSegment, r *sdl.Renderer, client *client, isLast bool) {
 	t := metrics.GetOrRegisterTimer("maze.draw.path.segment.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	cell := p.Cell()
+	cell := ps.Cell()
 
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
@@ -223,8 +281,10 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		return paths[d]
 	}
 
-	pathColor := colors.GetColor(m.Clients()[client.id].config.GetPathColor())
-	if isSolution {
+	currentSegmentInSolution := ps.solution
+	pathColor := colors.GetColor(client.config.GetPathColor())
+
+	if currentSegmentInSolution {
 		pathColor = colors.SetOpacity(pathColor, 255) // solution is fully visible
 	} else {
 		pathColor = colors.SetOpacity(pathColor, 60) // travel path is less visible
@@ -232,10 +292,8 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 
 	colors.SetDrawColor(pathColor, r)
 
-	currentSegmentInSolution := solvePath.SegmentInPath(p)
-
 	if isLast && !cell.Visited(client.id) {
-		switch p.Facing() {
+		switch ps.Facing() {
 		case "east":
 			r.FillRect(getPathRect("west", currentSegmentInSolution))
 		case "west":
@@ -249,7 +307,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 	} else {
 		if cell.HavePath(client, "east") && cell.East() != nil {
 			// if current cell and neighbor is in the solution, solid color.
-			eastInSolution := solvePath.CellInPath(cell.East())
+			eastInSolution := p.CellInPath(cell.East())
 			if eastInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -260,7 +318,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 
 		}
 		if cell.HavePath(client, "west") && cell.West() != nil {
-			westInSolution := solvePath.CellInPath(cell.West())
+			westInSolution := p.CellInPath(cell.West())
 			if westInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -270,8 +328,8 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("west", westInSolution && currentSegmentInSolution))
 
 		}
-		if cell.HavePath(client, "north") && p.cell.North() != nil {
-			northInSolution := solvePath.CellInPath(cell.North())
+		if cell.HavePath(client, "north") && ps.cell.North() != nil {
+			northInSolution := p.CellInPath(cell.North())
 			if northInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -282,7 +340,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 
 		}
 		if cell.HavePath(client, "south") && cell.South() != nil {
-			southInSolution := solvePath.CellInPath(cell.South())
+			southInSolution := p.CellInPath(cell.South())
 			if southInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
 			} else {
@@ -294,81 +352,103 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		}
 	}
 
-	return r
 }
 
-func (p *Path) AddSegement(s *PathSegment) {
-	p.Lock()
-	defer p.Unlock()
-
-	p.segments = append(p.segments, s)
-	p.segmentMap[s] = true
-	p.cellMap[s.Cell()] = true
-
+// PathSegment is one segement of a path. A cell, and metadata.
+type PathSegment struct {
+	cell     *Cell
+	facing   string // when you came in, which way were you facing (north, south, east, west)
+	solution bool
+	deadlock.RWMutex
 }
 
-func (p *Path) AddSegements(s []*PathSegment) {
-	for _, seg := range s {
-		p.Lock()
-		defer p.Unlock()
+func NewSegment(c *Cell, f string, s bool) *PathSegment {
+	return &PathSegment{cell: c, facing: f, solution: s}
+}
 
-		p.segments = append(p.segments, seg)
-		p.segmentMap[seg] = true
-		p.cellMap[seg.Cell()] = true
+func (ps *PathSegment) String() string {
+	return fmt.Sprintf("%v (solution=%v; facing=%v)", ps.cell, ps.solution, ps.facing)
+}
+
+func (ps *PathSegment) AddToSolution() {
+	ps.Lock()
+	defer ps.Unlock()
+	ps.solution = true
+}
+
+func (ps *PathSegment) RemoveFromSolution() {
+	ps.Lock()
+	defer ps.Unlock()
+	ps.solution = false
+}
+
+func (ps *PathSegment) Cell() *Cell {
+	ps.RLock()
+	defer ps.RUnlock()
+	return ps.cell
+}
+
+func (ps *PathSegment) Facing() string {
+	ps.RLock()
+	defer ps.RUnlock()
+	return ps.facing
+}
+
+func (ps *PathSegment) UpdateFacingDirection(f string) {
+	ps.Lock()
+	defer ps.Unlock()
+	ps.facing = f
+}
+
+// drawCurrentLocation marks the current location of the user
+func (ps *PathSegment) drawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
+	c := ps.Cell()
+
+	PixelsPerCell := c.width
+
+	// rotateAngle returns the angle of rotation based on facing direction
+	// the texture used for the avatar is assumed to be "facing" "west"
+	rotateAngle := func(f string) (angle float64, flip sdl.RendererFlip) {
+
+		switch f {
+		case "north":
+			angle = 90
+			flip = sdl.FLIP_NONE
+
+		case "east":
+			angle = 180
+			flip = sdl.FLIP_VERTICAL
+
+		case "south":
+			angle = -90
+			flip = sdl.FLIP_NONE
+
+		case "west":
+			angle = 0
+			flip = sdl.FLIP_NONE
+		}
+
+		return angle, flip
 	}
-}
 
-func (p *Path) CellInPath(c *Cell) bool {
-	p.RLock()
-	defer p.RUnlock()
+	if avatar == nil {
+		colors.SetDrawColor(colors.GetColor(client.config.CurrentLocationColor), r)
+		// draw a standard box
+		sq := &sdl.Rect{
+			int32(c.x*PixelsPerCell + PixelsPerCell/4),
+			int32(c.y*PixelsPerCell + PixelsPerCell/4),
+			int32(PixelsPerCell/2 - c.wallWidth/2),
+			int32(PixelsPerCell/2 - c.wallWidth/2)}
+		r.FillRect(sq)
+	} else {
+		angle, flip := rotateAngle(ps.Facing())
 
-	if _, ok := p.cellMap[c]; ok {
-		return true
+		sq := &sdl.Rect{
+			int32(c.x*PixelsPerCell + PixelsPerCell/4),
+			int32(c.y*PixelsPerCell + PixelsPerCell/4),
+			int32(c.pathWidth * 15),
+			int32(c.pathWidth * 15)}
+
+		r.CopyEx(avatar, nil, sq, angle, nil, flip)
 	}
-	return false
-}
-
-func (p *Path) LastSegment() *PathSegment {
-	p.RLock()
-	defer p.RUnlock()
-
-	if len(p.segments) == 0 {
-		return nil
-	}
-	return p.segments[len(p.segments)-1]
-}
-
-// DelSegement removes the last segment from the path
-func (p *Path) DelSegement() {
-	p.Lock()
-	defer p.Unlock()
-
-	seg := p.segments[len(p.segments)-1]
-
-	delete(p.segmentMap, seg)
-	delete(p.cellMap, seg.Cell())
-	p.segments = p.segments[:len(p.segments)-1]
-}
-
-func (p *Path) List() []*PathSegment {
-	p.RLock()
-	defer p.RUnlock()
-
-	return p.segments
-}
-
-// Length returns the length of the path
-func (p *Path) Length() int {
-	p.RLock()
-	defer p.RUnlock()
-
-	return len(p.segments)
-}
-
-// ListCells returns a map containing all the cells in the path
-func (p *Path) ListCells() map[*Cell]bool {
-	p.Lock()
-	defer p.Unlock()
-
-	return p.cellMap
 }

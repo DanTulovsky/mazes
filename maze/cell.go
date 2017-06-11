@@ -594,9 +594,9 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawVisited draws the visited marker.
-func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
-	c.RLock()
-	defer c.RUnlock()
+func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
+	//c.RLock()
+	//defer c.RUnlock()
 
 	PixelsPerCell := c.width
 
@@ -621,8 +621,6 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
 		box := &sdl.Rect{int32(c.x*PixelsPerCell+c.wallWidth) + offset, int32(c.y*PixelsPerCell+c.wallWidth) + offset, h, w}
 		r.FillRect(box)
 	}
-
-	return r
 }
 
 func (c *Cell) linkOneWay(cell *Cell) {

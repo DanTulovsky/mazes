@@ -9,7 +9,6 @@ type client struct {
 	number          int // the number of this client for the maze
 	currentLocation *Cell
 	config          *pb.ClientConfig
-	SolvePath       *Path
 	TravelPath      *Path
 	fromCell        *Cell
 	toCell          *Cell
