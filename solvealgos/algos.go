@@ -67,11 +67,6 @@ func (a *Common) SolvePath() *maze.Path {
 	return a.solvePath
 }
 
-// SetSolvePath sets the solvePath
-func (a *Common) SetSolvePath(p *maze.Path) {
-	a.solvePath = p
-}
-
 // SolveSteps returns the number of steps (visits to cells) it took to solve the maze
 func (a *Common) SolveSteps() int {
 	return a.travelPath.Length()

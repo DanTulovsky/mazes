@@ -94,7 +94,8 @@ func (p *Path) LastSegment() *PathSegment {
 	return p.segments[len(p.segments)-1]
 }
 
-// PreviousSegmentinSolution returns the second to last segment in the solution path, this is the one the client came from
+// PreviousSegmentinSolution returns the last segment that is in the solution and that is not the segment the client is current on
+// this is the one the client came from
 func (p *Path) PreviousSegmentinSolution() *PathSegment {
 	p.RLock()
 	defer p.RUnlock()
@@ -164,8 +165,6 @@ func (p *Path) Draw(r *sdl.Renderer, client *client, markVisited bool, avatar *s
 	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(travelPathLength))
 
 	for x, segment := range p.Segments() {
-		cell := segment.Cell()
-
 		if x == travelPathLength-1 {
 			isLast = true // last segment is drawn slightly different
 		}
@@ -183,7 +182,7 @@ func (p *Path) Draw(r *sdl.Renderer, client *client, markVisited bool, avatar *s
 		p.drawSegment(segment, r, client, isLast)
 
 		if markVisited {
-			cell.DrawVisited(r, client)
+			segment.Cell().DrawVisited(r, client)
 		}
 
 		if isLast {
