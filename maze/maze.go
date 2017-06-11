@@ -14,12 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
-	"github.com/sasha-s/go-deadlock"
-	"github.com/veandco/go-sdl2/sdl"
 	"mazes/colors"
 	pb "mazes/proto"
 	"mazes/utils"
+
+	"github.com/rcrowley/go-metrics"
+	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 func init() {
@@ -764,7 +765,7 @@ func (m *Maze) drawClientPath(r *sdl.Renderer, client *client) {
 	t := metrics.GetOrRegisterTimer("maze.draw.path.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	client.TravelPath.Draw(r, client, m.config.MarkVisitedCells, m.getAvatar())
+	client.TravelPath.Draw(r, client, m.getAvatar())
 }
 
 // Cell returns the cell at r,c

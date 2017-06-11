@@ -90,7 +90,6 @@ message MazeConfig {
     int64 WallWidth = 6;
     int64 WallSpace = 7;
     int64 PathWidth = 8;
-    bool MarkVisitedCells = 9;
     bool ShowDistanceValues = 10;
     bool ShowDistanceColors = 11;
     bool SkipGridCheck = 12;
@@ -111,6 +110,7 @@ message MazeConfig {
 message ClientConfig {
     string SolveAlgo = 1;
     bool disableDrawOffset = 2;  // used to disable the path draw offset
+    bool MarkVisitedCells = 9;
     string AvatarImage = 14;
     string VisitedCellColor = 15;
     string CurrentLocationColor = 16;

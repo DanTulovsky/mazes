@@ -47,6 +47,11 @@ func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 	return errors.New("Solve() not implemented")
 }
 
+// SetSolvePath sets the solvePath
+func (a *Common) SetSolvePath(p *maze.Path) {
+	a.solvePath = p
+}
+
 // TimeTrack tracks sets the time it took for the algorithm to run
 func TimeTrack(a Algorithmer, start time.Time) {
 	a.SetSolveTime(time.Since(start))

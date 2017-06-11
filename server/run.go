@@ -507,7 +507,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			// remove from solution if we are backtracking
 			client.TravelPath.LastSegment().RemoveFromSolution()
-			log.Printf("last segment: %v", client.TravelPath.LastSegment())
 
 			// previous cell
 			currentCell := client.CurrentLocation()
@@ -517,7 +516,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			}
 			client.SetCurrentLocation(last)
-			log.Printf("last: %v", last)
 
 			var facing string
 

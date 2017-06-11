@@ -156,7 +156,7 @@ func (p *Path) ListCells() map[*Cell]bool {
 }
 
 // Draw draws the path
-func (p *Path) Draw(r *sdl.Renderer, client *client, markVisited bool, avatar *sdl.Texture) {
+func (p *Path) Draw(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
 	alreadyDone := make(map[*PathSegment]bool)
 
 	var isLast bool
@@ -181,16 +181,14 @@ func (p *Path) Draw(r *sdl.Renderer, client *client, markVisited bool, avatar *s
 
 		p.drawSegment(segment, r, client, isLast)
 
-		if markVisited {
+		if client.config.MarkVisitedCells {
 			segment.Cell().DrawVisited(r, client)
 		}
 
 		if isLast {
 			segment.drawCurrentLocation(r, client, avatar)
 		}
-
 	}
-
 }
 
 // drawSegment draws one segment of the path

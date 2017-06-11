@@ -100,7 +100,6 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		WallSpace:            *wallSpace,
 		WallColor:            *wallColor,
 		PathWidth:            *pathWidth,
-		MarkVisitedCells:     *markVisitedCells,
 		ShowDistanceColors:   *showDistanceColors,
 		ShowDistanceValues:   *showDistanceValues,
 		SkipGridCheck:        *skipGridCheck,
@@ -161,6 +160,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     *visitedCellColor,
 		CurrentLocationColor: *currentLocationColor,
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
 	})
 
 	// register more clients
@@ -176,6 +176,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     "blue",
 		CurrentLocationColor: "blue",
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
 	})
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
@@ -189,6 +190,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     "green",
 		CurrentLocationColor: "green",
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
 	})
 	wd.Add(1)
 	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
@@ -202,6 +204,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     "purple",
 		CurrentLocationColor: "purple",
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
 	})
 
 	log.Printf("waiting for clients...")
