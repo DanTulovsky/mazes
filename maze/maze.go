@@ -308,7 +308,7 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 	return nil
 }
 
-// Braid removes dead ends from the maze with a probability p (p = 1 means no dead ends)
+// Braid removes dead ends from the maze with a probability ps (ps = 1 means no dead ends)
 func (m *Maze) Braid(p float64) {
 	log.Printf("Removing dead ends with probability %v", p)
 
@@ -778,10 +778,7 @@ func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.
 	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(travelPathLength))
 	metrics.GetOrRegisterGauge("maze.path.solve.length", nil).Update(int64(solvePath.Length()))
 
-	//travelPath.RLock()
-	//defer travelPath.RUnlock()
-
-	for x, segment := range travelPath.segments {
+	for x, segment := range travelPath.Segments() {
 		cell := segment.Cell()
 
 		if x == travelPathLength-1 {

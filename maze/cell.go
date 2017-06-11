@@ -256,8 +256,9 @@ func (c *Cell) RemovePathTo(toCell *Cell, path *Path) {
 
 // Location returns the x,y location of the cell
 func (c *Cell) Location() *pb.MazeLocation {
-	c.RLock()
-	defer c.RUnlock()
+	//c.RLock()
+	//defer c.RUnlock()
+	// no lock needed, never changes after cell creation
 
 	return &pb.MazeLocation{c.x, c.y, c.z}
 }

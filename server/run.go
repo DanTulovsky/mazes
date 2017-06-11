@@ -340,13 +340,11 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
-
 	// this is the main maze thread that draws the maze and interacts with it via comm
-
 	running := abool.New()
 	running.Set()
 
-	// when this is set to true, an redraw of the background texture is triggered
+	// when this is set to true, a redraw of the background texture is triggered
 	updateBG := abool.New()
 
 	if m.Config().GetGui() {
@@ -412,7 +410,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 }
 
 func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
-	log.Print("checking comm")
 	select {
 	case in := <-comm: // type == commandData
 		switch in.Action {
@@ -648,7 +645,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 	default:
 
 	}
-	log.Print("done.")
 }
 
 func runServer() {

@@ -22,7 +22,8 @@ func NewSegment(c *Cell, f string) *PathSegment {
 }
 
 func (ps *PathSegment) Cell() *Cell {
-	// no need to lock, this is never set after creation
+	ps.RLock()
+	defer ps.RUnlock()
 	return ps.cell
 }
 
@@ -54,6 +55,12 @@ func NewPath() *Path {
 	}
 }
 
+func (p *Path) Segments() []*PathSegment {
+	p.RLock()
+	defer p.RUnlock()
+	return p.segments
+}
+
 // SegmentInSegmentList returns true if segment is in path
 func (p *Path) SegmentInPath(segment *PathSegment) bool {
 	p.RLock()
@@ -75,11 +82,9 @@ func (p *Path) ReverseCells() {
 }
 
 // DrawCurrentLocation marks the current location of the user
-func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) *sdl.Renderer {
-	p.RLock()
-	defer p.RUnlock()
+func (ps *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) *sdl.Renderer {
+	c := ps.Cell()
 
-	c := p.Cell()
 	PixelsPerCell := c.width
 
 	// rotateAngle returns the angle of rotation based on facing direction
@@ -117,7 +122,7 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avata
 			int32(PixelsPerCell/2 - c.wallWidth/2)}
 		r.FillRect(sq)
 	} else {
-		angle, flip := rotateAngle(p.Facing())
+		angle, flip := rotateAngle(ps.Facing())
 
 		sq := &sdl.Rect{
 			int32(c.x*PixelsPerCell + PixelsPerCell/4),
@@ -131,15 +136,12 @@ func (p *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avata
 	return r
 }
 
-// DrawPath draws the path as present in the cells
+// DrawPath draws the path as present in the cell
 func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePath *Path, isLast, isSolution bool) *sdl.Renderer {
 	t := metrics.GetOrRegisterTimer("maze.draw.path.segment.latency", nil)
 	defer t.UpdateSince(time.Now())
 
 	cell := p.Cell()
-
-	cell.RLock()
-	defer cell.RUnlock()
 
 	pathWidth := cell.pathWidth
 	PixelsPerCell := cell.width
@@ -245,7 +247,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 		}
 
 	} else {
-		if cell.pathEast[client.id] && cell.East() != nil {
+		if cell.HavePath(client, "east") && cell.East() != nil {
 			// if current cell and neighbor is in the solution, solid color.
 			eastInSolution := solvePath.CellInPath(cell.East())
 			if eastInSolution && currentSegmentInSolution {
@@ -257,7 +259,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("east", eastInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathWest[client.id] && cell.West() != nil {
+		if cell.HavePath(client, "west") && cell.West() != nil {
 			westInSolution := solvePath.CellInPath(cell.West())
 			if westInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
@@ -268,7 +270,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("west", westInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathNorth[client.id] && p.cell.North() != nil {
+		if cell.HavePath(client, "north") && p.cell.North() != nil {
 			northInSolution := solvePath.CellInPath(cell.North())
 			if northInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
@@ -279,7 +281,7 @@ func (p *PathSegment) DrawPath(r *sdl.Renderer, m *Maze, client *client, solvePa
 			r.FillRect(getPathRect("north", northInSolution && currentSegmentInSolution))
 
 		}
-		if cell.pathSouth[client.id] && cell.South() != nil {
+		if cell.HavePath(client, "south") && cell.South() != nil {
 			southInSolution := solvePath.CellInPath(cell.South())
 			if southInSolution && currentSegmentInSolution {
 				pathColor = colors.SetOpacity(pathColor, 255)
