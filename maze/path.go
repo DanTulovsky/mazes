@@ -291,7 +291,7 @@ func (p *Path) drawSegment(ps *PathSegment, r *sdl.Renderer, client *client, isL
 		return paths[d]
 	}
 
-	currentSegmentInSolution := ps.solution
+	currentSegmentInSolution := ps.Solution()
 	pathColor := colors.GetColor(client.config.GetPathColor())
 
 	if currentSegmentInSolution {
@@ -377,7 +377,15 @@ func NewSegment(c *Cell, f string, s bool) *PathSegment {
 }
 
 func (ps *PathSegment) String() string {
+	ps.RLock()
+	defer ps.RUnlock()
 	return fmt.Sprintf("%v (solution=%v; facing=%v)", ps.cell, ps.solution, ps.facing)
+}
+
+func (ps *PathSegment) Solution() bool {
+	ps.RLock()
+	defer ps.RUnlock()
+	return ps.solution
 }
 
 func (ps *PathSegment) AddToSolution() {

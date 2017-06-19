@@ -37,23 +37,54 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"wilsons":               &wilsons.Wilsons{},
 }
 
-var SolveAlgorithms map[string]solvealgos.Algorithmer = map[string]solvealgos.Algorithmer{
+//var SolveAlgorithms map[string]solvealgos.Algorithmer = map[string]solvealgos.Algorithmer{
+//	//"dijkstra":              &dijkstra.Dijkstra{},
+//	//"manual":                &manual.Manual{},
+//	"random":                &random.Random{},
+//	"random-unvisited":      &random_unvisited.RandomUnvisited{},
+//	"recursive-backtracker": &solve_rb.RecursiveBacktracker{},
+//	"wall-follower":         &wall_follower.WallFollower{},
+//	"empty":                 &empty.Empty{},
+//}
+
+var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func() solvealgos.Algorithmer{
 	//"dijkstra":              &dijkstra.Dijkstra{},
 	//"manual":                &manual.Manual{},
-	"random":                &random.Random{},
-	"random-unvisited":      &random_unvisited.RandomUnvisited{},
-	"recursive-backtracker": &solve_rb.RecursiveBacktracker{},
-	"wall-follower":         &wall_follower.WallFollower{},
-	"empty":                 &empty.Empty{},
+	"random":                NewRandom,
+	"random-unvisited":      NewRandomUnvisited,
+	"recursive-backtracker": NewRecursiveBacktracker,
+	"wall-follower":         NewWallFollower,
+	"empty":                 NewEmpty,
+}
+
+func NewEmpty() solvealgos.Algorithmer {
+	return &empty.Empty{}
+}
+
+func NewWallFollower() solvealgos.Algorithmer {
+	return &wall_follower.WallFollower{}
+}
+
+func NewRandom() solvealgos.Algorithmer {
+	return &random.Random{}
+}
+
+func NewRandomUnvisited() solvealgos.Algorithmer {
+	return &random_unvisited.RandomUnvisited{}
+}
+
+func NewRecursiveBacktracker() solvealgos.Algorithmer {
+	return &solve_rb.RecursiveBacktracker{}
 }
 
 // NewSolver returns a new solver
 func NewSolver(n string, stream pb.Mazer_SolveMazeClient) solvealgos.Algorithmer {
-	a, ok := SolveAlgorithms[n]
+	af, ok := SolveAlgorithms[n]
 	if !ok {
 		log.Fatalf("invalid solve algorithm: %s", n)
 	}
 
+	a := af()
 	a.SetStream(stream)
 
 	return a
