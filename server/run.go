@@ -13,7 +13,13 @@ import (
 	"sync"
 	"time"
 
-	graphite "github.com/cyberdelia/go-metrics-graphite"
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+	"safemap"
+
+	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
@@ -25,11 +31,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-	"safemap"
 )
 
 const (
@@ -337,66 +338,79 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
 
-	mazeReady := abool.New()
-
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
-	// gui maze
-
 	// this is the main maze thread that draws the maze and interacts with it via comm
+	running := abool.New()
+	running.Set()
+
+	// when this is set to true, a redraw of the background texture is triggered
+	updateBG := abool.New()
+
+	if m.Config().GetGui() {
+		// create background texture, it is saved and re-rendered as a picture
+		mTexture, err := m.MakeBGTexture()
+		if err != nil {
+			log.Fatalf("failed to create background: %v", err)
+		}
+		m.SetBGTexture(mTexture)
+	}
+
 	wd.Add(1)
-	go func(r *sdl.Renderer) {
+	go func() {
 		defer wd.Done()
-		running := abool.New()
-		running.Set()
+		log.Print("starting client comm thread...")
+		for running.IsSet() {
+			// check for client communications, they are serialized for one maze
+			checkComm(m, comm, updateBG)
+		}
+		log.Printf("client comm thread died...")
+	}()
+
+	for running.IsSet() {
+		start := time.Now()
+		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
+
+		checkQuit(running)
+
+		if updateBG.IsSet() {
+			if m.Config().GetGui() {
+				log.Printf("setting background")
+				mTexture, err := m.MakeBGTexture()
+				if err != nil {
+					log.Fatalf("failed to create background: %v", err)
+				}
+				m.SetBGTexture(mTexture)
+			}
+			updateBG.UnSet()
+		}
 
 		if m.Config().GetGui() {
-			// create background texture, it is saved and re-rendered as a picture
-			mTexture, err := m.MakeBGTexture()
-			if err != nil {
-				log.Fatalf("failed to create background: %v", err)
-			}
-			m.SetBGTexture(mTexture)
+			// Displays the maze
+			sdl.Do(func() {
+				// reset the clear color back to black
+				// but it doesn't matter, as background texture takes up the entire view
+				colors.SetDrawColor(colors.GetColor("black"), r)
+
+				r.Clear()
+				m.DrawMaze(r, m.BGTexture())
+
+				r.Present()
+				sdl.Delay(uint32(1000 / *frameRate))
+			})
 		}
-		// Allow clients to connect, solvers can start running
-		mazeReady.Set()
+		t.UpdateSince(start)
+	}
+	mazeMap.Delete(m.Config().GetId())
 
-		for running.IsSet() {
-			start := time.Now()
-			t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
-
-			checkQuit(running)
-
-			// check for client communications, they are serialized for one maze
-			checkComm(m, comm)
-
-			if m.Config().GetGui() {
-				// Displays the maze
-				sdl.Do(func() {
-					// reset the clear color back to black
-					// but it doesn't matter, as background texture takes up the entire view
-					colors.SetDrawColor(colors.GetColor("black"), r)
-
-					r.Clear()
-					m.DrawMaze(r, m.BGTexture())
-
-					r.Present()
-					sdl.Delay(uint32(1000 / *frameRate))
-				})
-			}
-			t.UpdateSince(start)
-		}
-		mazeMap.Delete(m.Config().GetId())
-
-		log.Printf("maze is done...")
-	}(r)
+	log.Printf("maze is done...")
 
 	showMazeStats(m)
 	wd.Wait()
 }
 
-func checkComm(m *maze.Maze, comm commChannel) {
+func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 	select {
 	case in := <-comm: // type == commandData
 		switch in.Action {
@@ -418,6 +432,7 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			t := metrics.GetOrRegisterTimer("maze.command.add-client.latency", nil)
 
 			m.AddClient(in.ClientID, in.ClientConfig)
+			updateBG.Set()
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{}
@@ -446,10 +461,9 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				cell := client.CurrentLocation()
 
 				// Add initial location to paths
-				s := maze.NewSegment(cell, "north")
+				s := maze.NewSegment(cell, "north", true)
 				cell.SetVisited(in.ClientID)
 				client.TravelPath.AddSegement(s)
-				client.SolvePath.AddSegement(s)
 			}
 			t.UpdateSince(start)
 		case maze.CommandCurrentLocation:
@@ -487,12 +501,21 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
 			}
 
-			// remove from SolvePath if we are backtracking
-			client.SolvePath.DelSegement()
+			//log.Print("path: ")
+			//for _, s := range client.TravelPath.Segments() {
+			//	log.Printf(" > %v (want to move: back", s)
+			//}
+
+			// remove from solution if we are backtracking
+			client.TravelPath.LastSegment().RemoveFromSolution()
 
 			// previous cell
 			currentCell := client.CurrentLocation()
-			last := client.SolvePath.LastSegment().Cell()
+			last := client.TravelPath.PreviousSegmentinSolution().Cell()
+			if last == nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to find previous unvisited cell, path is: %v", client.TravelPath)}
+
+			}
 			client.SetCurrentLocation(last)
 
 			var facing string
@@ -508,7 +531,8 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				facing = "east"
 			}
 
-			s := maze.NewSegment(client.CurrentLocation(), facing)
+			// moving back, don't set this cell where we've been as solution
+			s := maze.NewSegment(client.CurrentLocation(), facing, false)
 			client.TravelPath.AddSegement(s)
 			m.SetClientPath(client)
 
@@ -533,13 +557,17 @@ func checkComm(m *maze.Maze, comm commChannel) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
 			}
 
+			//log.Print("path: ")
+			//for _, s := range client.TravelPath.Segments() {
+			//	log.Printf(" > %v (want to move: %v", s, direction)
+			//}
+
 			switch direction {
 			case "north":
 				if client.CurrentLocation().Linked(client.CurrentLocation().North()) {
 					client.SetCurrentLocation(client.CurrentLocation().North())
-					s := maze.NewSegment(client.CurrentLocation(), "north")
+					s := maze.NewSegment(client.CurrentLocation(), "north", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -558,9 +586,8 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			case "south":
 				if client.CurrentLocation().Linked(client.CurrentLocation().South()) {
 					client.SetCurrentLocation(client.CurrentLocation().South())
-					s := maze.NewSegment(client.CurrentLocation(), "south")
+					s := maze.NewSegment(client.CurrentLocation(), "south", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -579,9 +606,8 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			case "west":
 				if client.CurrentLocation().Linked(client.CurrentLocation().West()) {
 					client.SetCurrentLocation(client.CurrentLocation().West())
-					s := maze.NewSegment(client.CurrentLocation(), "west")
+					s := maze.NewSegment(client.CurrentLocation(), "west", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -600,9 +626,8 @@ func checkComm(m *maze.Maze, comm commChannel) {
 			case "east":
 				if client.CurrentLocation().Linked(client.CurrentLocation().East()) {
 					client.SetCurrentLocation(client.CurrentLocation().East())
-					s := maze.NewSegment(client.CurrentLocation(), "east")
+					s := maze.NewSegment(client.CurrentLocation(), "east", true)
 					client.TravelPath.AddSegement(s)
-					client.SolvePath.AddSegement(s)
 					client.CurrentLocation().SetVisited(in.ClientID)
 					m.SetClientPath(client)
 
@@ -648,7 +673,7 @@ func runServer() {
 	log.Printf("starting metrics...")
 	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	exp.Exp(metrics.DefaultRegistry)
-	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
+	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:32772")
 	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
 
 	if err := s.Serve(lis); err != nil {

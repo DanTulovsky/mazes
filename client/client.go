@@ -10,15 +10,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyberdelia/go-metrics-graphite"
-	"github.com/pkg/profile"
-	metrics "github.com/rcrowley/go-metrics"
-	"github.com/rcrowley/go-metrics/exp"
-	deadlock "github.com/sasha-s/go-deadlock"
-	"google.golang.org/grpc"
 	"mazes/algos"
 	pb "mazes/proto"
-	"mazes/solvealgos"
+
+	"github.com/cyberdelia/go-metrics-graphite"
+	"github.com/pkg/profile"
+	"github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics/exp"
+	"github.com/sasha-s/go-deadlock"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -26,8 +26,6 @@ const (
 )
 
 var (
-	solver solvealgos.Algorithmer = algos.SolveAlgorithms[*solveAlgo]
-
 	// operation
 	op = flag.String("op", "list", "operation to run")
 
@@ -66,11 +64,12 @@ var (
 	showFromToColors   = flag.Bool("show_from_to_colors", false, "show from/to colors")
 	showDistanceColors = flag.Bool("show_distance_colors", false, "show distance colors")
 	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
+	drawPathLength     = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
 	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo     = flag.String("solve_algo", "empty", "algorithm to solve the maze")
+	solveAlgo     = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
@@ -100,7 +99,6 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		WallSpace:            *wallSpace,
 		WallColor:            *wallColor,
 		PathWidth:            *pathWidth,
-		MarkVisitedCells:     *markVisitedCells,
 		ShowDistanceColors:   *showDistanceColors,
 		ShowDistanceValues:   *showDistanceValues,
 		SkipGridCheck:        *skipGridCheck,
@@ -115,8 +113,10 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 	return config
 }
 
-func addClient(ctx context.Context, c pb.MazerClient, mazeID string, config *pb.ClientConfig) error {
+func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig) error {
 	log.Printf("registering and running new client in maze %v...", mazeID)
+	c := NewClient()
+
 	r, err := c.RegisterClient(ctx,
 		&pb.RegisterClientRequest{
 			MazeId:       mazeID,
@@ -131,13 +131,14 @@ func addClient(ctx context.Context, c pb.MazerClient, mazeID string, config *pb.
 	}
 
 	log.Printf("solving maze (client=%v)...", r.GetClientId())
-	return opSolve(ctx, c, mazeID, r.GetClientId(), config.GetSolveAlgo())
+	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo())
 }
 
 // opCreateSolveMulti creates and solves the maze
-func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
+func opCreateSolveMulti() error {
 	log.Print("creating maze...")
-	r, err := opCreate(ctx, c, config)
+
+	r, err := opCreate()
 	if err != nil {
 		return err
 	}
@@ -150,7 +151,7 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 	}
 
 	wd.Add(1)
-	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
 		SolveAlgo:            *solveAlgo,
 		PathColor:            *pathColor,
 		FromCell:             *fromCellStr,
@@ -161,11 +162,13 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     *visitedCellColor,
 		CurrentLocationColor: *currentLocationColor,
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
 	})
 
 	// register more clients
 	wd.Add(1)
-	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
 		SolveAlgo:            "recursive-backtracker",
 		PathColor:            "blue",
 		FromCell:             *fromCellStr,
@@ -176,9 +179,12 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     "blue",
 		CurrentLocationColor: "blue",
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
 	})
+
 	wd.Add(1)
-	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
 		SolveAlgo:            "recursive-backtracker",
 		PathColor:            "green",
 		FromCell:             *fromCellStr,
@@ -189,9 +195,12 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     "green",
 		CurrentLocationColor: "green",
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
 	})
+
 	wd.Add(1)
-	go addClient(context.Background(), c, mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
 		SolveAlgo:            "recursive-backtracker",
 		PathColor:            "purple",
 		FromCell:             *fromCellStr,
@@ -202,8 +211,57 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 		VisitedCellColor:     "purple",
 		CurrentLocationColor: "purple",
 		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
 	})
 
+	wd.Add(1)
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		SolveAlgo:            "recursive-backtracker",
+		PathColor:            "pink",
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     "pink",
+		CurrentLocationColor: "pink",
+		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
+	})
+
+	wd.Add(1)
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		SolveAlgo:            "recursive-backtracker",
+		PathColor:            "gold",
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     "gold",
+		CurrentLocationColor: "gold",
+		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
+	})
+
+	wd.Add(1)
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		SolveAlgo:            "recursive-backtracker",
+		PathColor:            "teal",
+		FromCell:             *fromCellStr,
+		ToCell:               *toCellStr,
+		FromCellColor:        *fromCellColor,
+		ToCellColor:          *toCellColor,
+		ShowFromToColors:     *showFromToColors,
+		VisitedCellColor:     "teal",
+		CurrentLocationColor: "teal",
+		DisableDrawOffset:    *disableOffset,
+		MarkVisitedCells:     *markVisitedCells,
+		DrawPathLength:       *drawPathLength,
+	})
 	log.Printf("waiting for clients...")
 	wd.Wait()
 
@@ -211,9 +269,10 @@ func opCreateSolveMulti(ctx context.Context, c pb.MazerClient, config *pb.MazeCo
 }
 
 // opCreateSolve creates and solves the maze
-func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) error {
+func opCreateSolve() error {
 	log.Print("creating maze...")
-	r, err := opCreate(ctx, c, config)
+
+	r, err := opCreate()
 	if err != nil {
 		return err
 	}
@@ -223,7 +282,7 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 		*fromCellStr = "random"
 		*toCellStr = "random"
 	}
-	return addClient(context.Background(), c, r.GetMazeId(), &pb.ClientConfig{
+	return addClient(context.Background(), r.GetMazeId(), &pb.ClientConfig{
 		SolveAlgo:            *solveAlgo,
 		PathColor:            *pathColor,
 		FromCell:             *fromCellStr,
@@ -233,12 +292,16 @@ func opCreateSolve(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig)
 		ShowFromToColors:     *showFromToColors,
 		VisitedCellColor:     *visitedCellColor,
 		CurrentLocationColor: *currentLocationColor,
+		DrawPathLength:       *drawPathLength,
 	})
 }
 
 // opCreate creates a new maze
-func opCreate(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) (*pb.CreateMazeReply, error) {
-	r, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
+func opCreate() (*pb.CreateMazeReply, error) {
+	config := newMazeConfig(*createAlgo, *currentLocationColor)
+	c := NewClient()
+
+	r, err := c.CreateMaze(context.Background(), &pb.CreateMazeRequest{Config: config})
 	if err != nil {
 		log.Fatalf("could not show maze: %v", err)
 	}
@@ -246,17 +309,21 @@ func opCreate(ctx context.Context, c pb.MazerClient, config *pb.MazeConfig) (*pb
 }
 
 // opList lists available mazes by their id
-func opList(ctx context.Context, c pb.MazerClient) (*pb.ListMazeReply, error) {
-	r, err := c.ListMazes(ctx, &pb.ListMazeRequest{})
+func opList() (*pb.ListMazeReply, error) {
+	c := NewClient()
+
+	r, err := c.ListMazes(context.Background(), &pb.ListMazeRequest{})
 	if err != nil {
 		log.Fatalf("could not list mazes: %v", err)
 	}
 	return r, nil
 }
 
-func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID, solveAlgo string) error {
+func opSolve(mazeID, clientID, solveAlgo string) error {
 	log.Printf("in opSolve, client: %v", clientID)
-	stream, err := c.SolveMaze(ctx)
+	c := NewClient()
+
+	stream, err := c.SolveMaze(context.Background())
 	if err != nil {
 		return err
 	}
@@ -285,7 +352,7 @@ func opSolve(ctx context.Context, c pb.MazerClient, mazeID, clientID, solveAlgo 
 
 	log.Printf("maze id: %v; client id: %v", mazeID, clientID)
 
-	solver = algos.NewSolver(solveAlgo, stream)
+	solver := algos.NewSolver(solveAlgo, stream)
 	delay, err := time.ParseDuration(*solveDrawDelay)
 	if err != nil {
 		return err
@@ -316,6 +383,17 @@ func setFlags() {
 	}
 }
 
+// NewClient creates a server connection and returns a new SoleMazeClient
+func NewClient() pb.MazerClient {
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	// defer conn.Close()
+	return pb.NewMazerClient(conn)
+}
+
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -323,7 +401,7 @@ func main() {
 	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	exp.Exp(metrics.DefaultRegistry)
 
-	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
+	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:32772")
 	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
 
 	// run http server for expvars
@@ -352,27 +430,27 @@ func main() {
 
 	ctx := context.Background()
 
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewMazerClient(conn)
+	//// Set up a connection to the server.
+	//conn, err := grpc.Dial(address, grpc.WithInsecure())
+	//if err != nil {
+	//	log.Fatalf("did not connect: %v", err)
+	//}
+	//defer conn.Close()
+	//c := pb.NewMazerClient(conn)
 
-	config := newMazeConfig(*createAlgo, *currentLocationColor)
+	//config := newMazeConfig(*createAlgo, *currentLocationColor)
 
 	log.Printf("running: %v", *op)
 
 	switch *op {
 	case "create":
-		if r, err := opCreate(ctx, c, config); err != nil {
+		if r, err := opCreate(); err != nil {
 			log.Printf(err.Error())
 		} else {
 			log.Printf("%#v", r)
 		}
 	case "list":
-		if r, err := opList(ctx, c); err != nil {
+		if r, err := opList(); err != nil {
 			log.Fatalf(err.Error())
 		} else {
 			for _, m := range r.GetMazes() {
@@ -388,7 +466,7 @@ func main() {
 			*toCellStr = "random"
 		}
 
-		if err := addClient(ctx, c, *mazeID, &pb.ClientConfig{
+		if err := addClient(ctx, *mazeID, &pb.ClientConfig{
 			SolveAlgo:        *solveAlgo,
 			PathColor:        *pathColor,
 			FromCell:         *fromCellStr,
@@ -397,15 +475,16 @@ func main() {
 			ToCellColor:      *toCellColor,
 			ShowFromToColors: *showFromToColors,
 			VisitedCellColor: *visitedCellColor,
+			DrawPathLength:   *drawPathLength,
 		}); err != nil {
 			log.Fatalf(err.Error())
 		}
 	case "create_solve":
-		if err := opCreateSolve(ctx, c, config); err != nil {
+		if err := opCreateSolve(); err != nil {
 			log.Print(err.Error())
 		}
 	case "create_solve_multi":
-		if err := opCreateSolveMulti(ctx, c, config); err != nil {
+		if err := opCreateSolveMulti(); err != nil {
 			log.Print(err.Error())
 		}
 	}

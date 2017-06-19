@@ -14,12 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
-	"github.com/sasha-s/go-deadlock"
-	"github.com/veandco/go-sdl2/sdl"
 	"mazes/colors"
 	pb "mazes/proto"
 	"mazes/utils"
+
+	"github.com/rcrowley/go-metrics"
+	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 func init() {
@@ -237,21 +238,15 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 
 // AddClient adds a new client to the maze
 func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
-	m.clientsLock.Lock()
-	defer m.clientsLock.Unlock()
 
 	log.Printf("adding client: %v", id)
 
-	m.clients[id] = &client{
-		id: id,
-		// currentLocation: m.fromCell,
-		SolvePath:  NewPath(),
+	c := &client{
+		id:         id,
 		TravelPath: NewPath(),
 		config:     config,
 		number:     m.nextClient,
 	}
-
-	m.nextClient++
 
 	var fromCell, toCell *Cell
 	var err error
@@ -276,37 +271,43 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 		_, fromCell, toCell, _ = m.LongestPath()
 	}
 
-	m.SetFromCell(m.clients[id], fromCell)
-	m.SetToCell(m.clients[id], toCell)
+	m.SetFromCell(c, fromCell)
+	m.SetToCell(c, toCell)
 
 	log.Printf("Path: %v -> %v", fromCell, toCell)
 
 	// this will color the maze based on the last client to register
 	log.Printf("setting distance colors")
 	if m.Config().GetShowDistanceColors() {
-		m.SetDistanceInfo(m.clients[id], fromCell)
+		m.SetDistanceInfo(c, fromCell)
 	}
 
-	if m.clients[id].config.ShowFromToColors {
-		m.SetFromToColors(m.clients[id], fromCell, toCell)
+	if c.config.ShowFromToColors {
+		m.SetFromToColors(c, fromCell, toCell)
 	}
 
-	m.clients[id].fromCell = fromCell
-	m.clients[id].toCell = toCell
+	c.fromCell = fromCell
+	c.toCell = toCell
 
-	if m.Config().GetGui() {
-		mTexture, err := m.MakeBGTexture()
-		if err != nil {
-			log.Fatalf("failed to create background: %v", err)
-		}
-		m.SetBGTexture(mTexture)
-	}
+	//if m.Config().GetGui() {
+	//	mTexture, err := m.MakeBGTexture()
+	//	if err != nil {
+	//		log.Fatalf("failed to create background: %v", err)
+	//	}
+	//	m.SetBGTexture(mTexture)
+	//}
+
+	m.clientsLock.Lock()
+	defer m.clientsLock.Unlock()
+
+	m.clients[id] = c
+	m.nextClient++
 
 	log.Printf("added client: %v", id)
 	return nil
 }
 
-// Braid removes dead ends from the maze with a probability p (p = 1 means no dead ends)
+// Braid removes dead ends from the maze with a probability ps (ps = 1 means no dead ends)
 func (m *Maze) Braid(p float64) {
 	log.Printf("Removing dead ends with probability %v", p)
 
@@ -654,7 +655,6 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 			}
 
 			cell.Draw(r)
-
 		}
 	}
 
@@ -678,7 +678,7 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 	// Draw the path and location of solver
 	clients := m.ClientsSorted()
 	for _, client := range clients {
-		m.drawPath(r, client, m.config.MarkVisitedCells)
+		m.drawClientPath(r, client)
 
 		var fromColor colors.Color
 		var toColor colors.Color
@@ -761,62 +761,11 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawPath renders the gui maze path in memory, display by calling Present
-func (m *Maze) drawPath(r *sdl.Renderer, client *client, markVisited bool) *sdl.Renderer {
+func (m *Maze) drawClientPath(r *sdl.Renderer, client *client) {
 	t := metrics.GetOrRegisterTimer("maze.draw.path.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	travelPath := client.TravelPath
-	solvePath := client.SolvePath
-
-	alreadyDone := make(map[*PathSegment]bool)
-
-	var isSolution bool
-	var isLast bool
-
-	travelPathLength := travelPath.Length()
-	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(travelPathLength))
-	metrics.GetOrRegisterGauge("maze.path.solve.length", nil).Update(int64(solvePath.Length()))
-
-	//travelPath.RLock()
-	//defer travelPath.RUnlock()
-
-	for x, segment := range travelPath.segments {
-		cell := segment.Cell()
-
-		if x == travelPathLength-1 {
-			isLast = true // last segment is drawn slightly different
-		}
-
-		if _, ok := alreadyDone[segment]; ok {
-			if isLast {
-				segment.DrawCurrentLocation(r, client, m.getAvatar())
-			}
-			continue
-		}
-
-		// cache state of this cell
-		alreadyDone[segment] = true
-
-		if solvePath.SegmentInPath(segment) {
-			isSolution = true
-		} else {
-			isSolution = false
-		}
-
-		// TODO(dan): Change this to draw path between any two cells
-		segment.DrawPath(r, m, client, solvePath, isLast, isSolution) // solution is colored by a different color
-
-		if markVisited {
-			cell.DrawVisited(r, client)
-		}
-
-		if isLast {
-			segment.DrawCurrentLocation(r, client, m.getAvatar())
-		}
-
-	}
-
-	return r
+	client.TravelPath.Draw(r, client, m.getAvatar())
 }
 
 // Cell returns the cell at r,c
@@ -1070,19 +1019,20 @@ func (m *Maze) SetClientPath(client *client) {
 	t := metrics.GetOrRegisterTimer("maze.func.SetClientPath.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	path := client.TravelPath
+	segments := client.TravelPath.LastNSegments(client.config.GetDrawPathLength())
 
 	var prev, next *Cell
-	for x := 0; x < path.Length(); x++ {
+	for x, s := range segments {
+		// for x := 0; x < path.Length(); x++ {
 		if x > 0 {
-			prev = path.segments[x-1].Cell()
+			prev = segments[x-1].Cell()
 		}
 
-		if x < path.Length()-1 {
-			next = path.segments[x+1].Cell()
+		if x < len(segments)-1 {
+			next = segments[x+1].Cell()
 		}
 
-		path.segments[x].Cell().SetPaths(client, prev, next)
+		s.Cell().SetPaths(client, prev, next)
 	}
 }
 
@@ -1115,7 +1065,7 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 				next = link
 			}
 		}
-		segment := NewSegment(next, "north") // arbitrary facing
+		segment := NewSegment(next, "north", true) // arbitrary facing
 		path.AddSegement(segment)
 		if next == nil {
 			log.Fatalf("failed to find next cell from: %v", current)
@@ -1125,7 +1075,7 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 
 	// add toCell to path
 	path.ReverseCells()
-	segment := NewSegment(toCell, "north") // arbitrary facing
+	segment := NewSegment(toCell, "north", true) // arbitrary facing
 	path.AddSegement(segment)
 
 	// record path for caching

@@ -8,9 +8,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
 	"mazes/maze"
 	pb "mazes/proto"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 var (
@@ -47,6 +48,11 @@ func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 	return errors.New("Solve() not implemented")
 }
 
+// SetSolvePath sets the solvePath
+func (a *Common) SetSolvePath(p *maze.Path) {
+	a.solvePath = p
+}
+
 // TimeTrack tracks sets the time it took for the algorithm to run
 func TimeTrack(a Algorithmer, start time.Time) {
 	a.SetSolveTime(time.Since(start))
@@ -65,11 +71,6 @@ func (a *Common) SetSolveTime(t time.Duration) {
 // SolvePath returns the path for the solution
 func (a *Common) SolvePath() *maze.Path {
 	return a.solvePath
-}
-
-// SetSolvePath sets the solvePath
-func (a *Common) SetSolvePath(p *maze.Path) {
-	a.solvePath = p
 }
 
 // SolveSteps returns the number of steps (visits to cells) it took to solve the maze
@@ -113,16 +114,19 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 		Direction: d,
 	}
 	if err := stream.Send(r); err != nil {
+		log.Printf(">> %v", err)
 		return nil, err
 	}
 
 	reply, err := stream.Recv()
 	if err != nil {
+		log.Printf(">>> %v", err)
 		return nil, err
 	}
 
-	if reply.Error {
-		return nil, fmt.Errorf("%v", reply.ErrorMessage)
+	if reply.GetError() {
+		log.Printf(">>>> %v", reply.GetErrorMessage())
+		return nil, fmt.Errorf("%v", reply.GetErrorMessage())
 	}
 
 	return reply, nil
@@ -150,8 +154,8 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 		return nil, err
 	}
 
-	if reply.Error {
-		return nil, fmt.Errorf("%v", reply.ErrorMessage)
+	if reply.GetError() {
+		return nil, fmt.Errorf("%v", reply.GetErrorMessage())
 	}
 
 	return reply, nil

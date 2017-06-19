@@ -256,8 +256,9 @@ func (c *Cell) RemovePathTo(toCell *Cell, path *Path) {
 
 // Location returns the x,y location of the cell
 func (c *Cell) Location() *pb.MazeLocation {
-	c.RLock()
-	defer c.RUnlock()
+	//c.RLock()
+	//defer c.RUnlock()
+	// no lock needed, never changes after cell creation
 
 	return &pb.MazeLocation{c.x, c.y, c.z}
 }
@@ -593,14 +594,14 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 }
 
 // DrawVisited draws the visited marker.
-func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
-	c.RLock()
-	defer c.RUnlock()
+func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
+	//c.RLock()
+	//defer c.RUnlock()
 
 	PixelsPerCell := c.width
 
 	// don't mark cells under other cell
-	if c.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
+	if client.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
 		colors.SetDrawColor(colors.GetColor(client.config.VisitedCellColor), r)
 
 		times := c.VisitedTimes(client.id)
@@ -620,8 +621,6 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) *sdl.Renderer {
 		box := &sdl.Rect{int32(c.x*PixelsPerCell+c.wallWidth) + offset, int32(c.y*PixelsPerCell+c.wallWidth) + offset, h, w}
 		r.FillRect(box)
 	}
-
-	return r
 }
 
 func (c *Cell) linkOneWay(cell *Cell) {
