@@ -1019,18 +1019,17 @@ func (m *Maze) SetClientPath(client *client) {
 	t := metrics.GetOrRegisterTimer("maze.func.SetClientPath.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	path := client.TravelPath
-	segments := client.TravelPath.Segments()
+	segments := client.TravelPath.LastNSegments(client.config.GetDrawPathLength())
 
 	var prev, next *Cell
 	for x, s := range segments {
 		// for x := 0; x < path.Length(); x++ {
 		if x > 0 {
-			prev = path.segments[x-1].Cell()
+			prev = segments[x-1].Cell()
 		}
 
-		if x < path.Length()-1 {
-			next = path.segments[x+1].Cell()
+		if x < len(segments)-1 {
+			next = segments[x+1].Cell()
 		}
 
 		s.Cell().SetPaths(client, prev, next)

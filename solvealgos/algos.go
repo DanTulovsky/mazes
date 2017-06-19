@@ -8,9 +8,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/rcrowley/go-metrics"
 	"mazes/maze"
 	pb "mazes/proto"
+
+	"github.com/rcrowley/go-metrics"
 )
 
 var (
@@ -113,16 +114,19 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 		Direction: d,
 	}
 	if err := stream.Send(r); err != nil {
+		log.Printf(">> %v", err)
 		return nil, err
 	}
 
 	reply, err := stream.Recv()
 	if err != nil {
+		log.Printf(">>> %v", err)
 		return nil, err
 	}
 
-	if reply.Error {
-		return nil, fmt.Errorf("%v", reply.ErrorMessage)
+	if reply.GetError() {
+		log.Printf(">>>> %v", reply.GetErrorMessage())
+		return nil, fmt.Errorf("%v", reply.GetErrorMessage())
 	}
 
 	return reply, nil
@@ -150,8 +154,8 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 		return nil, err
 	}
 
-	if reply.Error {
-		return nil, fmt.Errorf("%v", reply.ErrorMessage)
+	if reply.GetError() {
+		return nil, fmt.Errorf("%v", reply.GetErrorMessage())
 	}
 
 	return reply, nil

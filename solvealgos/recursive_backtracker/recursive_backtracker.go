@@ -32,7 +32,7 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 			}
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
-			solved = reply.Solved
+			solved = reply.GetSolved()
 
 			if a.Step(mazeID, clientID, currentCell, directions, solved, delay) {
 				return true
