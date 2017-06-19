@@ -13,7 +13,13 @@ import (
 	"sync"
 	"time"
 
-	graphite "github.com/cyberdelia/go-metrics-graphite"
+	"mazes/algos"
+	"mazes/colors"
+	"mazes/maze"
+	pb "mazes/proto"
+	"safemap"
+
+	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
@@ -25,11 +31,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-	"safemap"
 )
 
 const (
@@ -672,7 +673,7 @@ func runServer() {
 	log.Printf("starting metrics...")
 	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	exp.Exp(metrics.DefaultRegistry)
-	addr, _ := net.ResolveTCPAddr("tcp", "127.0.0.1:2003")
+	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:32773")
 	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
 
 	if err := s.Serve(lis); err != nil {

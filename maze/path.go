@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"mazes/colors"
+	"mazes/utils"
+
 	"github.com/rcrowley/go-metrics"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
-	"mazes/colors"
-	"mazes/utils"
 )
 
 // Path is a path (ordered collection of cells) through the maze
@@ -81,6 +82,22 @@ func (p *Path) CellInPath(c *Cell) bool {
 		return true
 	}
 	return false
+}
+
+// LastNSegments returns the last N segment in the path, -1 means return all of them
+func (p *Path) LastNSegments(n int64) []*PathSegment {
+	p.RLock()
+	defer p.RUnlock()
+
+	if len(p.segments) == 0 {
+		return nil
+	}
+
+	if n == -1 || n > int64(len(p.segments)) {
+		return p.segments
+	}
+
+	return p.segments[int64(len(p.segments))-n : len(p.segments)]
 }
 
 // LastSegment returns the last segment in the path, this is the one the client is standing on
@@ -159,36 +176,32 @@ func (p *Path) ListCells() map[*Cell]bool {
 func (p *Path) Draw(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
 	alreadyDone := make(map[*PathSegment]bool)
 
-	var isLast bool
+	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(p.Length()))
 
-	travelPathLength := p.Length()
-	metrics.GetOrRegisterGauge("maze.path.tavel.length", nil).Update(int64(travelPathLength))
-
-	for x, segment := range p.Segments() {
-		if x == travelPathLength-1 {
-			isLast = true // last segment is drawn slightly different
-		}
+	for _, segment := range p.LastNSegments(client.config.GetDrawPathLength()) {
 
 		if _, ok := alreadyDone[segment]; ok {
-			if isLast {
-				segment.drawCurrentLocation(r, client, avatar)
-			}
 			continue
 		}
 
 		// cache state of this cell
 		alreadyDone[segment] = true
 
-		p.drawSegment(segment, r, client, isLast)
+		p.drawSegment(segment, r, client, false)
 
 		if client.config.MarkVisitedCells {
 			segment.Cell().DrawVisited(r, client)
 		}
-
-		if isLast {
-			segment.drawCurrentLocation(r, client, avatar)
-		}
 	}
+
+	// handle last segment
+	if segment := p.LastSegment(); segment != nil {
+		if client.config.GetDrawPathLength() != 0 {
+			p.drawSegment(segment, r, client, true)
+		}
+		segment.drawCurrentLocation(r, client, avatar)
+	}
+
 }
 
 // drawSegment draws one segment of the path
