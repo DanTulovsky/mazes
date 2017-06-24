@@ -62,12 +62,12 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 	}
 
 	currentCell := fromCell
-
 	facing := directions[0].GetName()
 	solved := false
 
 	// keep track of how many times each cell has been visited
 	visited := make(map[string]int)
+	steps := 0
 
 	for !solved {
 		// animation delay
@@ -93,7 +93,8 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 			currentCell = reply.GetCurrentLocation()
 
 			// set current location in local maze
-			a.SetCurrentLocation(clientID, m, currentCell)
+			steps++
+			a.SetCurrentLocation(clientID, m, currentCell, steps)
 
 			solved = reply.Solved
 		} else {

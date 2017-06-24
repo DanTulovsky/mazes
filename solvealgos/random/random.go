@@ -29,6 +29,7 @@ func (a *Random) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 
 	currentCell := fromCell
 	solved := false
+	steps := 0
 
 	for !solved {
 		// animation delay
@@ -43,7 +44,8 @@ func (a *Random) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 			currentCell = reply.GetCurrentLocation()
 
 			// set current location in local maze
-			a.SetCurrentLocation(clientID, m, currentCell)
+			steps++
+			a.SetCurrentLocation(clientID, m, currentCell, steps)
 
 			solved = reply.Solved
 		} else {

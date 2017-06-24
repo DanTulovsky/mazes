@@ -173,7 +173,8 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 }
 
 // SetCurrentLocation sets the current location of the client in the local maze
-func (a *Common) SetCurrentLocation(clientID string, m *maze.Maze, currentCell *pb.MazeLocation) error {
+// steps is the number of steps it took to get to this cell, overwritten by latest visit
+func (a *Common) SetCurrentLocation(clientID string, m *maze.Maze, currentCell *pb.MazeLocation, steps int) error {
 	if m == nil {
 		return fmt.Errorf("maze is nil")
 	}
@@ -187,6 +188,7 @@ func (a *Common) SetCurrentLocation(clientID string, m *maze.Maze, currentCell *
 	} else {
 		client.SetCurrentLocation(cell)
 		cell.SetVisited(clientID)
+		cell.SetDistance(steps)
 	}
 	return nil
 }

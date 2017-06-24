@@ -11,6 +11,10 @@ import (
 	"mazes/solvealgos"
 )
 
+var (
+	steps int
+)
+
 type RecursiveBacktracker struct {
 	solvealgos.Common
 }
@@ -36,7 +40,8 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 			currentCell = reply.GetCurrentLocation()
 
 			// set current location in local maze
-			a.SetCurrentLocation(clientID, m, currentCell)
+			steps++
+			a.SetCurrentLocation(clientID, m, currentCell, steps)
 
 			solved = reply.GetSolved()
 
@@ -55,7 +60,8 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 	}
 
 	// set current location in local maze
-	a.SetCurrentLocation(clientID, m, reply.GetCurrentLocation())
+	steps++
+	a.SetCurrentLocation(clientID, m, reply.GetCurrentLocation(), steps)
 
 	return false
 }
