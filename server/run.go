@@ -188,7 +188,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	}
 
 	if config.CellWidth == 2 && config.WallWidth == 2 {
-
 		config.WallWidth = 1
 		log.Printf("cell_width and wall_width both 2, adjusting wall_width to %v", config.WallWidth)
 	}
@@ -245,7 +244,6 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	// Background Music
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	if *bgMusic != "" {
-
 		if err := mix.Init(mix.INIT_MP3); err != nil {
 			log.Fatalf("error initialing mp3: %v", err)
 		}
@@ -501,11 +499,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
 			}
 
-			//log.Print("path: ")
-			//for _, s := range client.TravelPath.Segments() {
-			//	log.Printf(" > %v (want to move: back", s)
-			//}
-
 			// remove from solution if we are backtracking
 			client.TravelPath.LastSegment().RemoveFromSolution()
 
@@ -556,11 +549,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
 			}
-
-			//log.Print("path: ")
-			//for _, s := range client.TravelPath.Segments() {
-			//	log.Printf(" > %v (want to move: %v", s, direction)
-			//}
 
 			switch direction {
 			case "north":

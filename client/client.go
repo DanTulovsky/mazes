@@ -428,18 +428,6 @@ func main() {
 
 	setFlags()
 
-	ctx := context.Background()
-
-	//// Set up a connection to the server.
-	//conn, err := grpc.Dial(address, grpc.WithInsecure())
-	//if err != nil {
-	//	log.Fatalf("did not connect: %v", err)
-	//}
-	//defer conn.Close()
-	//c := pb.NewMazerClient(conn)
-
-	//config := newMazeConfig(*createAlgo, *currentLocationColor)
-
 	log.Printf("running: %v", *op)
 
 	switch *op {
@@ -466,7 +454,7 @@ func main() {
 			*toCellStr = "random"
 		}
 
-		if err := addClient(ctx, *mazeID, &pb.ClientConfig{
+		if err := addClient(context.Background(), *mazeID, &pb.ClientConfig{
 			SolveAlgo:        *solveAlgo,
 			PathColor:        *pathColor,
 			FromCell:         *fromCellStr,
