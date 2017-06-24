@@ -29,7 +29,7 @@ type Algorithmer interface {
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// m is the *local* maze for display only
-	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction, m *maze.Maze) error
+	Solve(mazeID, client string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction, m *maze.Maze) error
 	Stream() pb.Mazer_SolveMazeClient
 	SetStream(pb.Mazer_SolveMazeClient)
 	ShowStats()
@@ -170,6 +170,25 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 	}
 
 	return reply, nil
+}
+
+// SetCurrentLocation sets the current location of the client in the local maze
+func (a *Common) SetCurrentLocation(clientID string, m *maze.Maze, currentCell *pb.MazeLocation) error {
+	if m == nil {
+		return fmt.Errorf("maze is nil")
+	}
+	client, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+
+	if cell, err := a.CellForLocation(m, currentCell); err != nil {
+		return err
+	} else {
+		client.SetCurrentLocation(cell)
+		cell.SetVisited(clientID)
+	}
+	return nil
 }
 
 func (a *Common) ShowStats() {

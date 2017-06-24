@@ -622,8 +622,6 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	t := metrics.GetOrRegisterTimer("maze.draw.background.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	log.Printf("drawing background...")
-
 	// Each cell draws its background, half the wall as well as anything inside it
 	for x := int64(0); x < m.columns; x++ {
 		for y := int64(0); y < m.rows; y++ {
@@ -643,7 +641,16 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 				cell.Below().Draw(r)
 			}
 
-			cell.Draw(r)
+			// this is used on the client side which re-draws the background on every pass
+			// the server only call this function when generating maze
+			clients := m.ClientsSorted()
+			for _, client := range clients {
+				if cell.Visited(client.id) {
+					cell.Draw(r)
+					cell.DrawVisited(r, client)
+				}
+			}
+
 		}
 	}
 
@@ -659,6 +666,8 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 
 	if bg != nil {
 		tbg.Time(func() { r.Copy(bg, nil, nil) }) // copy the background texture
+	} else {
+		m.DrawMazeBackground(r) // draw it from scratch
 	}
 
 	// Draw location of the generator algorithm

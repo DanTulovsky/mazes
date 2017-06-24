@@ -39,11 +39,6 @@ func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.Ma
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	currentCell := fromCell
-	client, err := m.Client(clientID)
-	if err != nil {
-		return err
-	}
-
 	solved := false
 
 	for !solved {
@@ -58,11 +53,8 @@ func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.Ma
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
 
-			if cell, err := a.CellForLocation(m, currentCell); err != nil {
-				return err
-			} else {
-				client.SetCurrentLocation(cell)
-			}
+			// set current location in local maze
+			a.SetCurrentLocation(clientID, m, currentCell)
 
 			solved = reply.Solved
 		} else {

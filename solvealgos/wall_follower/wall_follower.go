@@ -62,10 +62,6 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 	}
 
 	currentCell := fromCell
-	client, err := m.Client(clientID)
-	if err != nil {
-		return err
-	}
 
 	facing := directions[0].GetName()
 	solved := false
@@ -96,11 +92,8 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
 
-			if cell, err := a.CellForLocation(m, currentCell); err != nil {
-				return err
-			} else {
-				client.SetCurrentLocation(cell)
-			}
+			// set current location in local maze
+			a.SetCurrentLocation(clientID, m, currentCell)
 
 			solved = reply.Solved
 		} else {

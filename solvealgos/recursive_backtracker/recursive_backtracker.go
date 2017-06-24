@@ -25,11 +25,6 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 		return true
 	}
 
-	client, err := m.Client(clientID)
-	if err != nil {
-		return false
-	}
-
 	for _, nextDir := range directions {
 		if !nextDir.GetVisited() {
 			reply, err := a.Move(mazeID, clientID, nextDir.GetName())
@@ -40,11 +35,8 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
 
-			if cell, err := a.CellForLocation(m, currentCell); err != nil {
-				return false
-			} else {
-				client.SetCurrentLocation(cell)
-			}
+			// set current location in local maze
+			a.SetCurrentLocation(clientID, m, currentCell)
 
 			solved = reply.GetSolved()
 
@@ -62,11 +54,8 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 		return false
 	}
 
-	if cell, err := a.CellForLocation(m, reply.GetCurrentLocation()); err != nil {
-		return false
-	} else {
-		client.SetCurrentLocation(cell)
-	}
+	// set current location in local maze
+	a.SetCurrentLocation(clientID, m, reply.GetCurrentLocation())
 
 	return false
 }

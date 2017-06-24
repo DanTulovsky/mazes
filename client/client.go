@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"mazes/algos"
+	"mazes/colors"
 	pb "mazes/proto"
 	lsdl "mazes/sdl"
 
@@ -143,6 +144,7 @@ func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *m
 
 	log.Printf("solving maze (client=%v)...", r.GetClientId())
 
+	// match from/to path on the server (if random, for example)
 	config.FromCell = fmt.Sprintf("%d,%d", r.GetFromCell().GetX(), r.GetFromCell().GetY())
 	config.ToCell = fmt.Sprintf("%d,%d", r.GetToCell().GetX(), r.GetToCell().GetY())
 
@@ -312,6 +314,7 @@ func opCreateSolve() error {
 		VisitedCellColor:     *visitedCellColor,
 		CurrentLocationColor: *currentLocationColor,
 		DrawPathLength:       *drawPathLength,
+		MarkVisitedCells:     *markVisitedCells,
 	}, m)
 }
 
@@ -509,8 +512,9 @@ func showMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 		lsdl.CheckQuit(running)
 
 		sdl.Do(func() {
+			colors.SetDrawColor(colors.GetColor("black"), r)
 			r.Clear()
-			m.DrawMaze(r, m.BGTexture())
+			m.DrawMaze(r, nil)
 
 			for _, c := range m.ClientsSorted() {
 				cell := c.CurrentLocation()
