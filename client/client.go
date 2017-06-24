@@ -217,7 +217,7 @@ func opCreateSolveMulti() error {
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "recursive-backtracker",
+		SolveAlgo:            "random",
 		PathColor:            "pink",
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
@@ -233,7 +233,7 @@ func opCreateSolveMulti() error {
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "recursive-backtracker",
+		SolveAlgo:            "random-unvisited",
 		PathColor:            "gold",
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
@@ -249,7 +249,7 @@ func opCreateSolveMulti() error {
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "recursive-backtracker",
+		SolveAlgo:            "wall-follower",
 		PathColor:            "teal",
 		FromCell:             *fromCellStr,
 		ToCell:               *toCellStr,
@@ -401,7 +401,7 @@ func main() {
 	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	exp.Exp(metrics.DefaultRegistry)
 
-	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:32772")
+	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:2003")
 	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
 
 	// run http server for expvars
