@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"mazes/maze"
 	pb "mazes/proto"
 	"mazes/solvealgos"
 	"mazes/utils"
@@ -33,10 +34,16 @@ func randomUnvisitedDirection(directions []*pb.Direction) string {
 	return directions[utils.Random(0, len(directions))].GetName()
 }
 
-func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
+func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation,
+	delay time.Duration, directions []*pb.Direction, m *maze.Maze) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	currentCell := fromCell
+	client, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+
 	solved := false
 
 	for !solved {
@@ -50,6 +57,13 @@ func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.Ma
 			}
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
+
+			if cell, err := a.CellForLocation(m, currentCell); err != nil {
+				return err
+			} else {
+				client.SetCurrentLocation(cell)
+			}
+
 			solved = reply.Solved
 		} else {
 			// nowhere to go?

@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/sasha-s/go-deadlock"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_gfx"
 	"mazes/colors"
 	pb "mazes/proto"
 	"mazes/utils"
+
+	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_gfx"
 )
 
 const (
@@ -591,6 +592,58 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	return r
+}
+
+// DrawCurrentLocation marks the current location of the user
+func (c *Cell) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture, facing string) {
+
+	PixelsPerCell := c.width
+
+	// rotateAngle returns the angle of rotation based on facing direction
+	// the texture used for the avatar is assumed to be "facing" "west"
+	rotateAngle := func(f string) (angle float64, flip sdl.RendererFlip) {
+
+		switch f {
+		case "north":
+			angle = 90
+			flip = sdl.FLIP_NONE
+
+		case "east":
+			angle = 180
+			flip = sdl.FLIP_VERTICAL
+
+		case "south":
+			angle = -90
+			flip = sdl.FLIP_NONE
+
+		case "west":
+			angle = 0
+			flip = sdl.FLIP_NONE
+		}
+
+		return angle, flip
+	}
+
+	if avatar == nil {
+		colors.SetDrawColor(colors.GetColor(client.config.CurrentLocationColor), r)
+		// draw a standard box
+		sq := &sdl.Rect{
+			int32(c.x*PixelsPerCell + PixelsPerCell/4),
+			int32(c.y*PixelsPerCell + PixelsPerCell/4),
+			int32(PixelsPerCell/2 - c.wallWidth/2),
+			int32(PixelsPerCell/2 - c.wallWidth/2)}
+		r.FillRect(sq)
+	} else {
+		angle, flip := rotateAngle(facing)
+
+		sq := &sdl.Rect{
+			int32(c.x*PixelsPerCell + PixelsPerCell/4),
+			int32(c.y*PixelsPerCell + PixelsPerCell/4),
+			int32(c.pathWidth * 15),
+			int32(c.pathWidth * 15)}
+
+		r.CopyEx(avatar, nil, sq, angle, nil, flip)
+	}
 }
 
 // DrawVisited draws the visited marker.

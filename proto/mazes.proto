@@ -26,6 +26,8 @@ message RegisterClientReply {
     bool success = 1;
     string message = 2;
     string client_id = 3;
+    MazeLocation from_cell = 4;
+    MazeLocation to_cell = 5;
 }
 
 // SolveMazeRequest is a message sent from the client trying to solve a maze

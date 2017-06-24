@@ -10,6 +10,7 @@ import (
 	"log"
 	"time"
 
+	"mazes/maze"
 	pb "mazes/proto"
 	"mazes/solvealgos"
 )
@@ -52,7 +53,8 @@ func pickNextDir(directions []*pb.Direction, facing string) string {
 	return ""
 }
 
-func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
+func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation,
+	delay time.Duration, directions []*pb.Direction, m *maze.Maze) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	if len(directions) < 1 {
@@ -60,6 +62,11 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 	}
 
 	currentCell := fromCell
+	client, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+
 	facing := directions[0].GetName()
 	solved := false
 
@@ -88,6 +95,13 @@ func (a *WallFollower) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeL
 			}
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
+
+			if cell, err := a.CellForLocation(m, currentCell); err != nil {
+				return err
+			} else {
+				client.SetCurrentLocation(cell)
+			}
+
 			solved = reply.Solved
 		} else {
 			// this can never happen unless the maze is broken

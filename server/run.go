@@ -122,7 +122,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	w, r = lsdl.SetupSDL(config, w, r, "Server View")
+	w, r = lsdl.SetupSDL(config, w, r, "Server View", 0, 0)
 
 	defer func() {
 		sdl.Do(func() {
@@ -356,11 +356,19 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.add-client.latency", nil)
 
-			m.AddClient(in.ClientID, in.ClientConfig)
+			fromCell, toCell, err := m.AddClient(in.ClientID, in.ClientConfig)
+			if err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to add client: %v", err)}
+			}
 			updateBG.Set()
 
+			l := &locationInfo{
+				From: fromCell.Location(),
+				To:   toCell.Location(),
+			}
+
 			// send reply via the reply channel
-			in.Reply <- commandReply{}
+			in.Reply <- commandReply{answer: l}
 			t.UpdateSince(start)
 		case maze.CommandGetDirections:
 			start := time.Now()
@@ -411,8 +419,8 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			} else {
 				info := &locationInfo{
 					current: client.CurrentLocation().Location(),
-					from:    m.FromCell(client).Location(),
-					to:      m.ToCell(client).Location(),
+					From:    m.FromCell(client).Location(),
+					To:      m.ToCell(client).Location(),
 				}
 				in.Reply <- commandReply{answer: info}
 			}
@@ -652,8 +660,8 @@ type commandData struct {
 
 type locationInfo struct {
 	current *pb.MazeLocation
-	from    *pb.MazeLocation
-	to      *pb.MazeLocation
+	From    *pb.MazeLocation
+	To      *pb.MazeLocation
 }
 
 type moveReply struct {
@@ -707,11 +715,14 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	comm <- data
 	// get response from maze
 	reply := <-data.Reply
+	locationInfo := reply.answer.(*locationInfo)
+	log.Printf(">>>>>>>>>>>>>>>>>.  %v", locationInfo)
 
 	if reply.error != nil {
 		return &pb.RegisterClientReply{Success: false, Message: reply.error.(error).Error()}, nil
 	}
-	return &pb.RegisterClientReply{Success: true, ClientId: clientID}, nil
+	return &pb.RegisterClientReply{Success: true, ClientId: clientID,
+		FromCell: locationInfo.From, ToCell: locationInfo.To}, nil
 
 }
 
@@ -809,8 +820,8 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		ClientId:            in.ClientId,
 		AvailableDirections: dirReply.answer.([]*pb.Direction),
 		CurrentLocation:     locationInfo.current,
-		FromCell:            locationInfo.from,
-		ToCell:              locationInfo.to,
+		FromCell:            locationInfo.From,
+		ToCell:              locationInfo.To,
 	}
 	if err := stream.Send(reply); err != nil {
 		return err

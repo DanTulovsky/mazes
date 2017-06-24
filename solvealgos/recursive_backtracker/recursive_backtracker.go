@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"mazes/maze"
 	pb "mazes/proto"
 	"mazes/solvealgos"
 )
@@ -15,12 +16,18 @@ type RecursiveBacktracker struct {
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.MazeLocation, directions []*pb.Direction, solved bool, delay time.Duration) bool {
+func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.MazeLocation,
+	directions []*pb.Direction, solved bool, delay time.Duration, m *maze.Maze) bool {
 	// animation delay
 	time.Sleep(delay)
 
 	if solved {
 		return true
+	}
+
+	client, err := m.Client(clientID)
+	if err != nil {
+		return false
 	}
 
 	for _, nextDir := range directions {
@@ -32,9 +39,16 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 			}
 			directions = reply.GetAvailableDirections()
 			currentCell = reply.GetCurrentLocation()
+
+			if cell, err := a.CellForLocation(m, currentCell); err != nil {
+				return false
+			} else {
+				client.SetCurrentLocation(cell)
+			}
+
 			solved = reply.GetSolved()
 
-			if a.Step(mazeID, clientID, currentCell, directions, solved, delay) {
+			if a.Step(mazeID, clientID, currentCell, directions, solved, delay, m) {
 				return true
 			}
 
@@ -42,15 +56,27 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 		}
 	}
 
-	a.MoveBack(mazeID, clientID)
+	reply, err := a.MoveBack(mazeID, clientID)
+	if err != nil {
+		log.Printf("error moving: %v", err)
+		return false
+	}
+
+	if cell, err := a.CellForLocation(m, reply.GetCurrentLocation()); err != nil {
+		return false
+	} else {
+		client.SetCurrentLocation(cell)
+	}
+
 	return false
 }
 
-func (a *RecursiveBacktracker) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
+func (a *RecursiveBacktracker) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation,
+	delay time.Duration, directions []*pb.Direction, m *maze.Maze) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	// DFS traversal of the grid
-	if r := a.Step(mazeID, clientID, fromCell, directions, false, delay); !r {
+	if r := a.Step(mazeID, clientID, fromCell, directions, false, delay, m); !r {
 		return fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 

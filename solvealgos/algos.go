@@ -28,11 +28,13 @@ type Algorithmer interface {
 	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
-	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error
+	// m is the *local* maze for display only
+	Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction, m *maze.Maze) error
 	Stream() pb.Mazer_SolveMazeClient
 	SetStream(pb.Mazer_SolveMazeClient)
 	ShowStats()
 	TravelPath() *maze.Path // all the cells traveled
+	CellForLocation(m *maze.Maze, l *pb.MazeLocation) (*maze.Cell, error)
 }
 
 type Common struct {
@@ -43,8 +45,17 @@ type Common struct {
 	travelPath *maze.Path // all the cells visited in order
 }
 
+func (a *Common) CellForLocation(m *maze.Maze, l *pb.MazeLocation) (*maze.Cell, error) {
+	cell, err := m.Cell(l.GetX(), l.GetY(), l.GetZ())
+	if err != nil {
+		return nil, err
+	}
+	return cell, nil
+}
+
 // Solve should write the path of the solution to the grid
-func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction) error {
+func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
+	directions []*pb.Direction, m *maze.Maze) error {
 	return errors.New("Solve() not implemented")
 }
 

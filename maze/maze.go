@@ -237,7 +237,7 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 }
 
 // AddClient adds a new client to the maze
-func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
+func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, toCell *Cell, err error) {
 
 	log.Printf("adding client: %v", id)
 
@@ -248,20 +248,17 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 		number:     m.nextClient,
 	}
 
-	var fromCell, toCell *Cell
-	var err error
-
 	if config.GetFromCell() != "" {
 		fromCell, err = m.configToCell(config, config.FromCell)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 	}
 
 	if config.GetToCell() != "" {
 		toCell, err = m.configToCell(config, config.ToCell)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 	}
 
@@ -289,14 +286,6 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 	c.fromCell = fromCell
 	c.toCell = toCell
 
-	//if m.Config().GetGui() {
-	//	mTexture, err := m.MakeBGTexture()
-	//	if err != nil {
-	//		log.Fatalf("failed to create background: %v", err)
-	//	}
-	//	m.SetBGTexture(mTexture)
-	//}
-
 	m.clientsLock.Lock()
 	defer m.clientsLock.Unlock()
 
@@ -304,7 +293,7 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) error {
 	m.nextClient++
 
 	log.Printf("added client: %v", id)
-	return nil
+	return c.fromCell, c.toCell, nil
 }
 
 // Braid removes dead ends from the maze with a probability ps (ps = 1 means no dead ends)

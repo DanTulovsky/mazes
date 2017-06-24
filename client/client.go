@@ -123,7 +123,8 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 	return config
 }
 
-func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig) error {
+// addClient creates a new client in the maze and runs the solver, the m value is the *local* maze for display
+func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze) error {
 	log.Printf("registering and running new client in maze %v...", mazeID)
 	c := NewClient()
 
@@ -141,14 +142,22 @@ func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig) erro
 	}
 
 	log.Printf("solving maze (client=%v)...", r.GetClientId())
-	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo())
+
+	config.FromCell = fmt.Sprintf("%d,%d", r.GetFromCell().GetX(), r.GetFromCell().GetY())
+	config.ToCell = fmt.Sprintf("%d,%d", r.GetToCell().GetX(), r.GetToCell().GetY())
+
+	log.Printf("path: %s -> %s", config.GetFromCell(), config.GetToCell())
+
+	m.AddClient(r.GetClientId(), config)
+
+	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo(), m)
 }
 
 // opCreateSolveMulti creates and solves the maze
 func opCreateSolveMulti() error {
 	log.Print("creating maze...")
 
-	r, err := opCreate()
+	r, _, err := opCreate()
 	if err != nil {
 		return err
 	}
@@ -174,7 +183,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 
 	// register more clients
 	wd.Add(1)
@@ -191,7 +200,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -207,7 +216,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -223,7 +232,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -239,7 +248,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -255,7 +264,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -271,7 +280,7 @@ func opCreateSolveMulti() error {
 		DisableDrawOffset:    *disableOffset,
 		MarkVisitedCells:     *markVisitedCells,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, nil)
 	log.Printf("waiting for clients...")
 	wd.Wait()
 
@@ -282,7 +291,7 @@ func opCreateSolveMulti() error {
 func opCreateSolve() error {
 	log.Print("creating maze...")
 
-	r, err := opCreate()
+	r, m, err := opCreate()
 	if err != nil {
 		return err
 	}
@@ -303,11 +312,11 @@ func opCreateSolve() error {
 		VisitedCellColor:     *visitedCellColor,
 		CurrentLocationColor: *currentLocationColor,
 		DrawPathLength:       *drawPathLength,
-	})
+	}, m)
 }
 
 // opCreate creates a new maze
-func opCreate() (*pb.CreateMazeReply, error) {
+func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
 	c := NewClient()
 
@@ -316,16 +325,19 @@ func opCreate() (*pb.CreateMazeReply, error) {
 		log.Fatalf("could not create maze: %v", err)
 	}
 
+	var m *maze.Maze
+	var r *sdl.Renderer
+	var w *sdl.Window
 	// show local maze if asked
 	if *showLocalGUI {
-		if m, r, w, err := createMaze(config); err != nil {
+		if m, r, w, err = createMaze(config); err != nil {
 			log.Fatalf("could not create local client view of maze: %v", err)
 		} else {
 			wd.Add(1)
 			go showMaze(m, r, w)
 		}
 	}
-	return resp, nil
+	return resp, m, nil
 }
 
 // opList lists available mazes by their id
@@ -339,7 +351,8 @@ func opList() (*pb.ListMazeReply, error) {
 	return r, nil
 }
 
-func opSolve(mazeID, clientID, solveAlgo string) error {
+// opSolve solves the maze with mazeID, m is the *local* maze for display only
+func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze) error {
 	log.Printf("in opSolve, client: %v", clientID)
 	c := NewClient()
 
@@ -380,7 +393,7 @@ func opSolve(mazeID, clientID, solveAlgo string) error {
 
 	log.Printf("running solver %v", solveAlgo)
 
-	if err := solver.Solve(mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections()); err != nil {
+	if err := solver.Solve(mazeID, clientID, in.GetFromCell(), in.GetToCell(), delay, in.GetAvailableDirections(), m); err != nil {
 		return fmt.Errorf("error running solver: %v", err)
 	}
 
@@ -463,7 +476,8 @@ func createMaze(config *pb.MazeConfig) (*maze.Maze, *sdl.Renderer, *sdl.Window, 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	w, r = lsdl.SetupSDL(config, w, r, "Client View")
+	// offset this window one to the right so it shows up next to the server one
+	w, r = lsdl.SetupSDL(config, w, r, "Client View", 1, 0)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
@@ -497,11 +511,19 @@ func showMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 		sdl.Do(func() {
 			r.Clear()
 			m.DrawMaze(r, m.BGTexture())
+
+			for _, c := range m.ClientsSorted() {
+				cell := c.CurrentLocation()
+				if cell == nil {
+					continue
+				}
+				cell.DrawCurrentLocation(r, c, nil, "")
+			}
+
 			r.Present()
 			sdl.Delay(uint32(1000 / *frameRate))
 		})
 	}
-	log.Print("showMaze done...")
 }
 
 func run() {
@@ -511,7 +533,7 @@ func run() {
 
 	switch *op {
 	case "create":
-		if r, err := opCreate(); err != nil {
+		if r, _, err := opCreate(); err != nil {
 			log.Printf(err.Error())
 		} else {
 			log.Printf("%#v", r)
@@ -543,7 +565,7 @@ func run() {
 			ShowFromToColors: *showFromToColors,
 			VisitedCellColor: *visitedCellColor,
 			DrawPathLength:   *drawPathLength,
-		}); err != nil {
+		}, nil); err != nil {
 			log.Fatalf(err.Error())
 		}
 	case "create_solve":

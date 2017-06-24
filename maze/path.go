@@ -199,7 +199,7 @@ func (p *Path) Draw(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
 		if client.config.GetDrawPathLength() != 0 {
 			p.drawSegment(segment, r, client, true)
 		}
-		segment.drawCurrentLocation(r, client, avatar)
+		segment.DrawCurrentLocation(r, client, avatar)
 	}
 
 }
@@ -418,55 +418,7 @@ func (ps *PathSegment) UpdateFacingDirection(f string) {
 	ps.facing = f
 }
 
-// drawCurrentLocation marks the current location of the user
-func (ps *PathSegment) drawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
-	c := ps.Cell()
-
-	PixelsPerCell := c.width
-
-	// rotateAngle returns the angle of rotation based on facing direction
-	// the texture used for the avatar is assumed to be "facing" "west"
-	rotateAngle := func(f string) (angle float64, flip sdl.RendererFlip) {
-
-		switch f {
-		case "north":
-			angle = 90
-			flip = sdl.FLIP_NONE
-
-		case "east":
-			angle = 180
-			flip = sdl.FLIP_VERTICAL
-
-		case "south":
-			angle = -90
-			flip = sdl.FLIP_NONE
-
-		case "west":
-			angle = 0
-			flip = sdl.FLIP_NONE
-		}
-
-		return angle, flip
-	}
-
-	if avatar == nil {
-		colors.SetDrawColor(colors.GetColor(client.config.CurrentLocationColor), r)
-		// draw a standard box
-		sq := &sdl.Rect{
-			int32(c.x*PixelsPerCell + PixelsPerCell/4),
-			int32(c.y*PixelsPerCell + PixelsPerCell/4),
-			int32(PixelsPerCell/2 - c.wallWidth/2),
-			int32(PixelsPerCell/2 - c.wallWidth/2)}
-		r.FillRect(sq)
-	} else {
-		angle, flip := rotateAngle(ps.Facing())
-
-		sq := &sdl.Rect{
-			int32(c.x*PixelsPerCell + PixelsPerCell/4),
-			int32(c.y*PixelsPerCell + PixelsPerCell/4),
-			int32(c.pathWidth * 15),
-			int32(c.pathWidth * 15)}
-
-		r.CopyEx(avatar, nil, sq, angle, nil, flip)
-	}
+// DrawCurrentLocation marks the current location of the user
+func (ps *PathSegment) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
+	ps.Cell().DrawCurrentLocation(r, client, avatar, ps.Facing())
 }
