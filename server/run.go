@@ -17,6 +17,7 @@ import (
 	"mazes/colors"
 	"mazes/maze"
 	pb "mazes/proto"
+	lsdl "mazes/sdl"
 	"safemap"
 
 	"github.com/cyberdelia/go-metrics-graphite"
@@ -49,10 +50,6 @@ const (
 // protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
 
 var (
-	winTitle string = "Maze"
-
-	sdlErr error
-
 	// maze
 	maskImage = flag.String("mask_image", "", "file name of mask image")
 
@@ -69,8 +66,6 @@ var (
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
-	winWidth, winHeight int
-
 	// keep track of mazes
 	mazeMap = *safemap.NewSafeMap()
 )
@@ -84,79 +79,11 @@ var (
 //	return true
 //}
 
-func setupSDL(config *pb.MazeConfig, w *sdl.Window, r *sdl.Renderer) (*sdl.Window, *sdl.Renderer) {
-	if !config.GetGui() {
-		return nil, nil
-	}
-	sdl.Do(func() {
-		sdl.Init(sdl.INIT_EVERYTHING)
-		sdl.EnableScreenSaver()
-	})
-
-	// window
-	winWidth = int((config.Columns)*config.CellWidth + config.WallWidth*2)
-	winHeight = int((config.Rows)*config.CellWidth + config.WallWidth*2)
-
-	sdl.Do(func() {
-		w, sdlErr = sdl.CreateWindow(winTitle, 0, 0,
-			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_OPENGL)
-	})
-	if sdlErr != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create window: %s\n", sdlErr)
-		os.Exit(1)
-	}
-
-	// renderer
-	sdl.Do(func() {
-		r, sdlErr = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
-	})
-	if sdlErr != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create renderer: %s\n", sdlErr)
-		os.Exit(1)
-	}
-
-	// Set options
-	// https://wiki.libsdl.org/SDL_SetRenderDrawBlendMode#blendMode
-	sdl.Do(func() {
-		r.SetDrawBlendMode(sdl.BLENDMODE_BLEND)
-	})
-
-	sdl.Do(func() {
-		r.Clear()
-	})
-
-	return w, r
-}
-
-// checkCreateAlgo makes sure the passed in algorithm is valid
-func checkCreateAlgo(a string) bool {
-	for k := range algos.Algorithms {
-		if k == a {
-			return true
-		}
-	}
-	return false
-}
-
 // showMazeStats shows some states about the maze
 func showMazeStats(m *maze.Maze) {
 	x, y := m.Dimensions()
 	log.Printf(">> Dimensions: [%v, %v]", x, y)
 	log.Printf(">> Dead Ends: %v", len(m.DeadEnds()))
-}
-
-func checkQuit(running *abool.AtomicBool) {
-	sdl.Do(func() {
-		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
-			case *sdl.QuitEvent:
-				log.Print("received quit request, exiting...")
-				running.UnSet()
-			}
-		}
-
-	})
 }
 
 func createMaze(config *pb.MazeConfig, comm chan commandData) {
@@ -195,7 +122,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	w, r = setupSDL(config, w, r)
+	w, r = lsdl.SetupSDL(config, w, r, "Server View")
 
 	defer func() {
 		sdl.Do(func() {
@@ -236,7 +163,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 	// End Configure new grid
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
-	if !checkCreateAlgo(config.CreateAlgo) {
+	if !algos.CheckCreateAlgo(config.CreateAlgo) {
 		log.Fatalf("invalid create algorithm: %v", config.CreateAlgo)
 	}
 
@@ -318,7 +245,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 
 	if m.Config().GetGui() {
 		for generating.IsSet() {
-			checkQuit(generating)
+			lsdl.CheckQuit(generating)
 			// Displays the main maze while generating it
 			sdl.Do(func() {
 				// reset the clear color back to white
@@ -370,7 +297,7 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		start := time.Now()
 		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
 
-		checkQuit(running)
+		lsdl.CheckQuit(running)
 
 		if updateBG.IsSet() {
 			if m.Config().GetGui() {
@@ -504,11 +431,12 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			// previous cell
 			currentCell := client.CurrentLocation()
-			last := client.TravelPath.PreviousSegmentinSolution().Cell()
-			if last == nil {
+			lastSegment := client.TravelPath.PreviousSegmentinSolution()
+			if lastSegment == nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find previous unvisited cell, path is: %v", client.TravelPath)}
 
 			}
+			last := lastSegment.Cell()
 			client.SetCurrentLocation(last)
 
 			var facing string

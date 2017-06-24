@@ -97,3 +97,13 @@ func NewGenerator(n string) genalgos.Algorithmer {
 	a := Algorithms[n]
 	return a
 }
+
+// checkCreateAlgo makes sure the passed in algorithm is valid
+func CheckCreateAlgo(a string) bool {
+	for k := range Algorithms {
+		if k == a {
+			return true
+		}
+	}
+	return false
+}

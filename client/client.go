@@ -12,12 +12,18 @@ import (
 
 	"mazes/algos"
 	pb "mazes/proto"
+	lsdl "mazes/sdl"
+
+	"mazes/maze"
+	"os"
 
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	"github.com/sasha-s/go-deadlock"
+	"github.com/tevino/abool"
+	"github.com/veandco/go-sdl2/sdl"
 	"google.golang.org/grpc"
 )
 
@@ -36,6 +42,7 @@ var (
 	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
 	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
 	showGUI            = flag.Bool("gui", true, "show gui maze")
+	showLocalGUI       = flag.Bool("local_gui", true, "show client's view of the maze")
 
 	// dimensions
 	rows    = flag.Int64("r", 30, "number of rows in the maze")
@@ -66,6 +73,7 @@ var (
 	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
 	drawPathLength     = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
 	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
@@ -86,6 +94,8 @@ var (
 
 	fromCellStr = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
 	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
+
+	wd sync.WaitGroup
 )
 
 func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
@@ -301,11 +311,21 @@ func opCreate() (*pb.CreateMazeReply, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
 	c := NewClient()
 
-	r, err := c.CreateMaze(context.Background(), &pb.CreateMazeRequest{Config: config})
+	resp, err := c.CreateMaze(context.Background(), &pb.CreateMazeRequest{Config: config})
 	if err != nil {
-		log.Fatalf("could not show maze: %v", err)
+		log.Fatalf("could not create maze: %v", err)
 	}
-	return r, nil
+
+	// show local maze if asked
+	if *showLocalGUI {
+		if m, r, w, err := createMaze(config); err != nil {
+			log.Fatalf("could not create local client view of maze: %v", err)
+		} else {
+			wd.Add(1)
+			go showMaze(m, r, w)
+		}
+	}
+	return resp, nil
 }
 
 // opList lists available mazes by their id
@@ -394,38 +414,97 @@ func NewClient() pb.MazerClient {
 	return pb.NewMazerClient(conn)
 }
 
-func main() {
-	flag.Parse()
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
-	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
-	exp.Exp(metrics.DefaultRegistry)
-
-	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:2003")
-	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
-
-	// run http server for expvars
-	sock, err := net.Listen("tcp", "localhost:8124")
+func newMaze(config *pb.MazeConfig, r *sdl.Renderer) (*maze.Maze, error) {
+	m, err := maze.NewMaze(config, r)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Printf("invalid maze config: %v", err)
+		os.Exit(1)
 	}
-	go func() {
-		fmt.Println("metrics now available at http://localhost:8124/debug/metrics")
-		http.Serve(sock, nil)
+
+	// create empty maze
+	algo := algos.Algorithms[config.CreateAlgo]
+	delay, err := time.ParseDuration(config.GenDrawDelay)
+	if err != nil {
+		return nil, err
+	}
+
+	running := abool.New() // no used
+	running.Set()
+	if err := algo.Apply(m, delay, running); err != nil {
+		return nil, err
+	}
+
+	// create background texture, it is saved and re-rendered as a picture
+	mTexture, err := m.MakeBGTexture()
+	if err != nil {
+		return nil, err
+	}
+	m.SetBGTexture(mTexture)
+
+	return m, nil
+}
+
+// createMaze sets up the new maze
+func createMaze(config *pb.MazeConfig) (*maze.Maze, *sdl.Renderer, *sdl.Window, error) {
+	log.Print("showing client's view of the maze...")
+
+	var (
+		w *sdl.Window
+		r *sdl.Renderer
+	)
+
+	// client alays starts with an empty view
+	config.CreateAlgo = "empty"
+
+	if !algos.CheckCreateAlgo(config.CreateAlgo) {
+		log.Fatalf("invalid create algorithm: %v", config.CreateAlgo)
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	w, r = lsdl.SetupSDL(config, w, r, "Client View")
+
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	var m *maze.Maze
+	var err error
+	if m, err = newMaze(config, r); err != nil {
+		return nil, nil, nil, err
+	}
+	return m, r, w, nil
+}
+
+func showMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
+	defer func() {
+		sdl.Do(func() {
+			w.Destroy()
+		})
+	}()
+	defer func() {
+		sdl.Do(func() {
+			r.Destroy()
+		})
 	}()
 
-	if *enableDeadlockDetection {
-		log.Println("enabling deadlock detection, this slows things down considerably!")
-		deadlock.Opts.Disable = false
-	} else {
-		deadlock.Opts.Disable = true
-	}
+	running := abool.New()
+	running.Set()
 
-	if *enableProfile {
-		log.Println("enabling profiling...")
-		defer profile.Start().Stop()
-	}
+	for running.IsSet() {
+		lsdl.CheckQuit(running)
 
+		sdl.Do(func() {
+			r.Clear()
+			m.DrawMaze(r, m.BGTexture())
+			r.Present()
+			sdl.Delay(uint32(1000 / *frameRate))
+		})
+	}
+	log.Print("showMaze done...")
+}
+
+func run() {
 	setFlags()
 
 	log.Printf("running: %v", *op)
@@ -477,4 +556,42 @@ func main() {
 		}
 	}
 
+	log.Print("waiting for background draw thread...")
+	wd.Wait()
+}
+
+func main() {
+	flag.Parse()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+	exp.Exp(metrics.DefaultRegistry)
+
+	addr, _ := net.ResolveTCPAddr("tcp", "192.168.99.100:2003")
+	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+
+	// run http server for expvars
+	sock, err := net.Listen("tcp", "localhost:8124")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	go func() {
+		fmt.Println("metrics now available at http://localhost:8124/debug/metrics")
+		http.Serve(sock, nil)
+	}()
+
+	if *enableDeadlockDetection {
+		log.Println("enabling deadlock detection, this slows things down considerably!")
+		deadlock.Opts.Disable = false
+	} else {
+		deadlock.Opts.Disable = true
+	}
+
+	if *enableProfile {
+		log.Println("enabling profiling...")
+		defer profile.Start().Stop()
+	}
+
+	// must be like this to keep drawing functions in main thread]
+	sdl.Main(run)
 }
