@@ -512,7 +512,7 @@ func showMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 		lsdl.CheckQuit(running)
 
 		sdl.Do(func() {
-			colors.SetDrawColor(colors.GetColor("black"), r)
+			colors.SetDrawColor(colors.GetColor("gray"), r)
 			r.Clear()
 			m.DrawMaze(r, nil)
 

@@ -176,7 +176,7 @@ func (a *Common) MoveBack(mazeID, clientID string) (*pb.SolveMazeResponse, error
 // steps is the number of steps it took to get to this cell, overwritten by latest visit
 func (a *Common) UpdateClientViewAndLocation(clientID string, m *maze.Maze, currentCell, previousCell *pb.MazeLocation, steps int) error {
 	if m == nil {
-		return fmt.Errorf("maze is nil")
+		return nil // no client maze requested
 	}
 
 	client, err := m.Client(clientID)
@@ -196,12 +196,9 @@ func (a *Common) UpdateClientViewAndLocation(clientID string, m *maze.Maze, curr
 
 	if previousCell != nil {
 		if pcell, err = a.CellForLocation(m, previousCell); err != nil {
-			log.Printf("unable to find %v", previousCell)
 			return err
 		}
 		m.Link(pcell, cell)
-	} else {
-		log.Printf("nil, current: %v", currentCell)
 	}
 
 	return nil
