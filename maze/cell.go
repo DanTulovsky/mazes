@@ -648,31 +648,38 @@ func (c *Cell) DrawCurrentLocation(r *sdl.Renderer, client *client, avatar *sdl.
 
 // DrawVisited draws the visited marker.
 func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
-	//c.RLock()
-	//defer c.RUnlock()
-
-	PixelsPerCell := c.width
-
-	// don't mark cells under other cell
-	if client.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
-		colors.SetDrawColor(colors.GetColor(client.config.VisitedCellColor), r)
-
-		times := c.VisitedTimes(client.id)
-		factor := times * 3
-
+	if client.config.NumberMarkVisitedCells {
 		wallSpace := c.config.WallSpace / 2
+		x := c.x*c.width + c.wallWidth + 1 + wallSpace
+		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		offset := int32(c.wallWidth/4 + c.wallWidth + wallSpace)
-		h, w := int32(c.width/10+factor), int32(c.width/10+factor)
+		gfx.StringRGBA(r, int(x), int(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255)
+	}
 
-		if h > int32(PixelsPerCell-c.wallWidth)-offset {
-			h = int32(PixelsPerCell-c.wallWidth) - offset
-			w = int32(PixelsPerCell-c.wallWidth) - offset
+	if client.config.MarkVisitedCells {
+		PixelsPerCell := c.width
+
+		// don't mark cells under other cell
+		if client.config.MarkVisitedCells && c.Visited(client.id) && c.z >= 0 {
+			colors.SetDrawColor(colors.GetColor(client.config.VisitedCellColor), r)
+
+			times := c.VisitedTimes(client.id)
+			factor := times * 3
+
+			wallSpace := c.config.WallSpace / 2
+
+			offset := int32(c.wallWidth/4 + c.wallWidth + wallSpace)
+			h, w := int32(c.width/10+factor), int32(c.width/10+factor)
+
+			if h > int32(PixelsPerCell-c.wallWidth)-offset {
+				h = int32(PixelsPerCell-c.wallWidth) - offset
+				w = int32(PixelsPerCell-c.wallWidth) - offset
+			}
+
+			// draw a small box to mark visited cells
+			box := &sdl.Rect{int32(c.x*PixelsPerCell+c.wallWidth) + offset, int32(c.y*PixelsPerCell+c.wallWidth) + offset, h, w}
+			r.FillRect(box)
 		}
-
-		// draw a small box to mark visited cells
-		box := &sdl.Rect{int32(c.x*PixelsPerCell+c.wallWidth) + offset, int32(c.y*PixelsPerCell+c.wallWidth) + offset, h, w}
-		r.FillRect(box)
 	}
 }
 

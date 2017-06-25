@@ -42,7 +42,7 @@ const (
 // brew install sdl2{_image,_ttf,_gfx}
 // brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
-// if slow compile, createMaze: go install -a mazes/generate
+// if slow compile, runMaze: go install -a mazes/generate
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
@@ -86,7 +86,7 @@ func showMazeStats(m *maze.Maze) {
 	log.Printf(">> Dead Ends: %v", len(m.DeadEnds()))
 }
 
-func createMaze(config *pb.MazeConfig, comm chan commandData) {
+func runMaze(config *pb.MazeConfig, comm chan commandData) {
 	var (
 		w *sdl.Window
 		r *sdl.Renderer
@@ -126,12 +126,13 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 
 	defer func() {
 		sdl.Do(func() {
-			w.Destroy()
+			r.Destroy()
 		})
 	}()
+
 	defer func() {
 		sdl.Do(func() {
-			r.Destroy()
+			w.Destroy()
 		})
 	}()
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -314,12 +315,10 @@ func createMaze(config *pb.MazeConfig, comm chan commandData) {
 		if m.Config().GetGui() {
 			// Displays the maze
 			sdl.Do(func() {
-				// reset the clear color back to black
-				// but it doesn't matter, as background texture takes up the entire view
-				colors.SetDrawColor(colors.GetColor("black"), r)
-
 				r.Clear()
 				m.DrawMaze(r, m.BGTexture())
+				// TODO(dan): This doesn't display on anything but the first maze run, And neither do the numbers
+				// gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("fdsfsfds"), 0, 0, 0, 255)
 
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
@@ -447,6 +446,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			}
 			last := lastSegment.Cell()
+			last.SetVisited(in.ClientID)
 			client.SetCurrentLocation(last)
 
 			var facing string
@@ -688,7 +688,7 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	comm := make(chan commandData)
 	mazeMap.Insert(mazeID, comm)
 
-	go createMaze(in.Config, comm)
+	go runMaze(in.Config, comm)
 
 	return &pb.CreateMazeReply{MazeId: mazeID}, nil
 }

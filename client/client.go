@@ -66,15 +66,16 @@ var (
 	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")
 
 	// display
-	avatarImage        = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
-	genDrawDelay       = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
-	markVisitedCells   = flag.Bool("mark_visited", false, "mark visited cells (by solver)")
-	showFromToColors   = flag.Bool("show_from_to_colors", false, "show from/to colors")
-	showDistanceColors = flag.Bool("show_distance_colors", false, "show distance colors")
-	showDistanceValues = flag.Bool("show_distance_values", false, "show distance values")
-	drawPathLength     = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
-	solveDrawDelay     = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
-	frameRate          = flag.Uint("frame_rate", 120, "frame rate for animation")
+	avatarImage            = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
+	genDrawDelay           = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
+	markVisitedCells       = flag.Bool("mark_visited", false, "mark visited cells (by solver) with a properly sized square")
+	numberMarkVisitedCells = flag.Bool("mark_visited_number", false, "mark visited cells (by solver) with a number")
+	showFromToColors       = flag.Bool("show_from_to_colors", false, "show from/to colors")
+	showDistanceColors     = flag.Bool("show_distance_colors", false, "show distance colors")
+	showDistanceValues     = flag.Bool("show_distance_values", false, "show distance values")
+	drawPathLength         = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
+	solveDrawDelay         = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+	frameRate              = flag.Uint("frame_rate", 120, "frame rate for animation")
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
@@ -175,115 +176,122 @@ func opCreateSolveMulti() error {
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            *solveAlgo,
-		PathColor:            *pathColor,
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     *visitedCellColor,
-		CurrentLocationColor: *currentLocationColor,
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 
 	// register more clients
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "recursive-backtracker",
-		PathColor:            "blue",
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     "blue",
-		CurrentLocationColor: "blue",
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              "recursive-backtracker",
+		PathColor:              "blue",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "blue",
+		CurrentLocationColor:   "blue",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "recursive-backtracker",
-		PathColor:            "green",
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     "green",
-		CurrentLocationColor: "green",
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              "recursive-backtracker",
+		PathColor:              "green",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "green",
+		CurrentLocationColor:   "green",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "recursive-backtracker",
-		PathColor:            "purple",
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     "purple",
-		CurrentLocationColor: "purple",
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              "recursive-backtracker",
+		PathColor:              "purple",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "purple",
+		CurrentLocationColor:   "purple",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "random",
-		PathColor:            "pink",
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     "pink",
-		CurrentLocationColor: "pink",
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              "random",
+		PathColor:              "pink",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "pink",
+		CurrentLocationColor:   "pink",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "random-unvisited",
-		PathColor:            "gold",
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     "gold",
-		CurrentLocationColor: "gold",
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              "random-unvisited",
+		PathColor:              "gold",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "gold",
+		CurrentLocationColor:   "gold",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:            "wall-follower",
-		PathColor:            "teal",
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     "teal",
-		CurrentLocationColor: "teal",
-		DisableDrawOffset:    *disableOffset,
-		MarkVisitedCells:     *markVisitedCells,
-		DrawPathLength:       *drawPathLength,
+		SolveAlgo:              "wall-follower",
+		PathColor:              "teal",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "teal",
+		CurrentLocationColor:   "teal",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, nil)
 	log.Printf("waiting for clients...")
 	wd.Wait()
@@ -306,17 +314,18 @@ func opCreateSolve() error {
 		*toCellStr = "random"
 	}
 	return addClient(context.Background(), r.GetMazeId(), &pb.ClientConfig{
-		SolveAlgo:            *solveAlgo,
-		PathColor:            *pathColor,
-		FromCell:             *fromCellStr,
-		ToCell:               *toCellStr,
-		FromCellColor:        *fromCellColor,
-		ToCellColor:          *toCellColor,
-		ShowFromToColors:     *showFromToColors,
-		VisitedCellColor:     *visitedCellColor,
-		CurrentLocationColor: *currentLocationColor,
-		DrawPathLength:       *drawPathLength,
-		MarkVisitedCells:     *markVisitedCells,
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         *drawPathLength,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}, m)
 }
 
@@ -335,6 +344,8 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	var w *sdl.Window
 	// show local maze if asked
 	if *showLocalGUI {
+		// if server gui is off, enable this so the client gui works
+		config.Gui = true
 		if m, r, w, err = createMaze(config); err != nil {
 			log.Fatalf("could not create local client view of maze: %v", err)
 		} else {
@@ -563,15 +574,18 @@ func run() {
 		}
 
 		if err := addClient(context.Background(), *mazeID, &pb.ClientConfig{
-			SolveAlgo:        *solveAlgo,
-			PathColor:        *pathColor,
-			FromCell:         *fromCellStr,
-			ToCell:           *toCellStr,
-			FromCellColor:    *fromCellColor,
-			ToCellColor:      *toCellColor,
-			ShowFromToColors: *showFromToColors,
-			VisitedCellColor: *visitedCellColor,
-			DrawPathLength:   *drawPathLength,
+			SolveAlgo:              *solveAlgo,
+			PathColor:              *pathColor,
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       *visitedCellColor,
+			CurrentLocationColor:   *currentLocationColor,
+			DrawPathLength:         *drawPathLength,
+			MarkVisitedCells:       *markVisitedCells,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
 		}, nil); err != nil {
 			log.Fatalf(err.Error())
 		}

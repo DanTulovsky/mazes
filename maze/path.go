@@ -189,7 +189,7 @@ func (p *Path) Draw(r *sdl.Renderer, client *client, avatar *sdl.Texture) {
 
 		p.drawSegment(segment, r, client, false)
 
-		if client.config.GetMarkVisitedCells() {
+		if client.config.GetMarkVisitedCells() || client.config.GetNumberMarkVisitedCells() {
 			segment.Cell().DrawVisited(r, client)
 		}
 	}

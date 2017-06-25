@@ -202,6 +202,7 @@ func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {
 }
 
 func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
+	r := m.r
 	winWidth := m.winWidth
 	winHeight := m.winHeight
 	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
@@ -211,21 +212,21 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 
 	// draw on the texture
 	sdl.Do(func() {
-		m.r.SetRenderTarget(mTexture)
+		r.SetRenderTarget(mTexture)
 		// background is black so that transparency works
-		colors.SetDrawColor(colors.GetColor("white"), m.r)
-		m.r.Clear()
+		colors.SetDrawColor(colors.GetColor("white"), r)
+		r.Clear()
 	})
-	m.DrawMazeBackground(m.r)
+	m.DrawMazeBackground(r)
 	sdl.Do(func() {
-		m.r.Present()
+		r.Present()
 	})
 
 	// Reset to drawing on the screen
 	sdl.Do(func() {
-		m.r.SetRenderTarget(nil)
-		m.r.Copy(mTexture, nil, nil)
-		m.r.Present()
+		r.SetRenderTarget(nil)
+		r.Copy(mTexture, nil, nil)
+		r.Present()
 	})
 
 	return mTexture, nil
@@ -615,8 +616,6 @@ func (m *Maze) SetToCell(client *client, c *Cell) {
 func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	t := metrics.GetOrRegisterTimer("maze.draw.background.latency", nil)
 	defer t.UpdateSince(time.Now())
-
-	log.Printf("drawing background")
 
 	// Each cell draws its background, half the wall as well as anything inside it
 	for x := int64(0); x < m.columns; x++ {
