@@ -356,6 +356,9 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.add-client.latency", nil)
 
+			// TODO(dan): Is this needed?
+			m.Reset()
+
 			fromCell, toCell, err := m.AddClient(in.ClientID, in.ClientConfig)
 			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to add client: %v", err)}
@@ -384,9 +387,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 		case maze.CommandSetInitialClientLocation:
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.set-initial-client-location.latency", nil)
-
-			// TODO(dan): Is this needed? This breaks distanceValues
-			// m.Reset()
 
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
@@ -794,7 +794,6 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		Request:  commandRequest{},
 	}
 	comm <- data
-	log.Print("waiting for reply")
 	initialLocationReply := <-data.Reply
 	if initialLocationReply.error != nil {
 		return initialLocationReply.error.(error)

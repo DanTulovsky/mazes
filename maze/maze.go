@@ -616,6 +616,8 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 	t := metrics.GetOrRegisterTimer("maze.draw.background.latency", nil)
 	defer t.UpdateSince(time.Now())
 
+	log.Printf("drawing background")
+
 	// Each cell draws its background, half the wall as well as anything inside it
 	for x := int64(0); x < m.columns; x++ {
 		for y := int64(0); y < m.rows; y++ {
@@ -1096,7 +1098,6 @@ func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 		}
 		// dColor := d - int(cell.Weight()) // ignore weights when coloring distance
 
-		// TODO: this must redo the background picture to work
 		if m.config.ShowDistanceColors {
 			// decrease bridghtnessAdjustto make the longest cells brighter. max = 255 (good = 228)
 			bridghtnessAdjust := 228
@@ -1104,14 +1105,6 @@ func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 		}
 
-		//if m.config.GetShowDistanceValues() || m.config.ShowDistanceColors {
-		//	mTexture, err := m.MakeBGTexture()
-		//	if err != nil {
-		//		log.Fatalf("failed to create background: %v", err)
-		//	}
-		//	m.SetBGTexture(mTexture)
-		//}
-		log.Printf("setting d on %v: %v", cell, d)
 		cell.SetDistance(d)
 	}
 
