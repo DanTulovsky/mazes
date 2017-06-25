@@ -37,11 +37,12 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 				return false
 			}
 			directions = reply.GetAvailableDirections()
+			previousCell := currentCell
 			currentCell = reply.GetCurrentLocation()
 
 			// set current location in local maze
 			steps++
-			a.SetCurrentLocation(clientID, m, currentCell, steps)
+			a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps)
 
 			solved = reply.GetSolved()
 
@@ -61,7 +62,7 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 
 	// set current location in local maze
 	steps++
-	a.SetCurrentLocation(clientID, m, reply.GetCurrentLocation(), steps)
+	a.UpdateClientViewAndLocation(clientID, m, reply.GetCurrentLocation(), nil, steps)
 
 	return false
 }

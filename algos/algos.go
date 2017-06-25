@@ -9,6 +9,7 @@ import (
 	"mazes/genalgos/bintree"
 	"mazes/genalgos/ellers"
 	gen_empty "mazes/genalgos/empty"
+	"mazes/genalgos/full"
 	"mazes/genalgos/hunt_and_kill"
 	"mazes/genalgos/kruskal"
 	"mazes/genalgos/prim"
@@ -30,6 +31,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"bintree":               &bintree.Bintree{},
 	"ellers":                &ellers.Ellers{},
 	"empty":                 &gen_empty.Empty{},
+	"full":                  &full.Full{},
 	"hunt-and-kill":         &hunt_and_kill.HuntAndKill{},
 	"kruskal":               &kruskal.Kruskal{},
 	"prim":                  &prim.Prim{},

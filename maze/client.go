@@ -14,7 +14,7 @@ type client struct {
 	toCell          *Cell
 }
 
-// SetCurrentLocation sets the client's current location
+// UpdateClientViewAndLocation sets the client's current location
 func (c *client) SetCurrentLocation(cell *Cell) {
 	c.currentLocation = cell
 }

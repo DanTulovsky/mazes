@@ -494,7 +494,7 @@ func (m *Maze) configureCells() {
 
 }
 
-// SetCurrentLocation sets the current cell location of the generator algorithm
+// UpdateClientViewAndLocation sets the current cell location of the generator algorithm
 func (m *Maze) SetGenCurrentLocation(cell *Cell) {
 	m.Lock()
 	defer m.Unlock()

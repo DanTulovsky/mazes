@@ -469,8 +469,8 @@ func createMaze(config *pb.MazeConfig) (*maze.Maze, *sdl.Renderer, *sdl.Window, 
 		r *sdl.Renderer
 	)
 
-	// client alays starts with an empty view
-	config.CreateAlgo = "empty"
+	// client alays starts with an full view
+	config.CreateAlgo = "full"
 
 	if !algos.CheckCreateAlgo(config.CreateAlgo) {
 		log.Fatalf("invalid create algorithm: %v", config.CreateAlgo)
@@ -528,6 +528,7 @@ func showMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 			sdl.Delay(uint32(1000 / *frameRate))
 		})
 	}
+	wd.Done()
 }
 
 func run() {

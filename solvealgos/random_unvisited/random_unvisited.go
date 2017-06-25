@@ -52,11 +52,12 @@ func (a *RandomUnvisited) Solve(mazeID, clientID string, fromCell, toCell *pb.Ma
 				return err
 			}
 			directions = reply.GetAvailableDirections()
+			previousCell := currentCell
 			currentCell = reply.GetCurrentLocation()
 
 			// set current location in local maze
 			steps++
-			a.SetCurrentLocation(clientID, m, currentCell, steps)
+			a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps)
 
 			solved = reply.Solved
 		} else {
