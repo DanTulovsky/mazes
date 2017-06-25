@@ -178,6 +178,7 @@ func (a *Common) UpdateClientViewAndLocation(clientID string, m *maze.Maze, curr
 	if m == nil {
 		return fmt.Errorf("maze is nil")
 	}
+
 	client, err := m.Client(clientID)
 	if err != nil {
 		return err
@@ -195,9 +196,12 @@ func (a *Common) UpdateClientViewAndLocation(clientID string, m *maze.Maze, curr
 
 	if previousCell != nil {
 		if pcell, err = a.CellForLocation(m, previousCell); err != nil {
+			log.Printf("unable to find %v", previousCell)
 			return err
 		}
 		m.Link(pcell, cell)
+	} else {
+		log.Printf("nil, current: %v", currentCell)
 	}
 
 	return nil

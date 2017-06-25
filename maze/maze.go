@@ -361,7 +361,6 @@ func (m *Maze) Link(c1, c2 *Cell) {
 	var linkCell *Cell
 	// if weaving, check if we need to link through a hidden cell
 	if m.config.AllowWeaving {
-
 		// is there a cell between this one and the link to cell?
 		if c1.North() != nil && c2.South() != nil && c1.North() == c2.South() {
 			linkCell = NewCell(c1.North().x, c1.North().y, c1.North().z-1, m.config) // under

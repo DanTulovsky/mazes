@@ -20,10 +20,14 @@ type RecursiveBacktracker struct {
 }
 
 // Step steps into the next cell and returns true if it reach toCell.
-func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.MazeLocation,
+func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell, previousCell *pb.MazeLocation,
 	directions []*pb.Direction, solved bool, delay time.Duration, m *maze.Maze) bool {
 	// animation delay
 	time.Sleep(delay)
+
+	// set current location in local maze
+	steps++
+	a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps)
 
 	if solved {
 		return true
@@ -37,16 +41,11 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 				return false
 			}
 			directions = reply.GetAvailableDirections()
-			previousCell := currentCell
-			currentCell = reply.GetCurrentLocation()
-
-			// set current location in local maze
-			steps++
-			a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps)
+			previousCell = currentCell
 
 			solved = reply.GetSolved()
 
-			if a.Step(mazeID, clientID, currentCell, directions, solved, delay, m) {
+			if a.Step(mazeID, clientID, reply.GetCurrentLocation(), previousCell, directions, solved, delay, m) {
 				return true
 			}
 
@@ -60,9 +59,11 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell *pb.Maz
 		return false
 	}
 
+	previousCell = currentCell
+	currentCell = reply.GetCurrentLocation()
 	// set current location in local maze
 	steps++
-	a.UpdateClientViewAndLocation(clientID, m, reply.GetCurrentLocation(), nil, steps)
+	a.UpdateClientViewAndLocation(clientID, m, reply.GetCurrentLocation(), previousCell, steps)
 
 	return false
 }
@@ -72,7 +73,7 @@ func (a *RecursiveBacktracker) Solve(mazeID, clientID string, fromCell, toCell *
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	// DFS traversal of the grid
-	if r := a.Step(mazeID, clientID, fromCell, directions, false, delay, m); !r {
+	if r := a.Step(mazeID, clientID, fromCell, nil, directions, false, delay, m); !r {
 		return fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 

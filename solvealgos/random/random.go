@@ -46,7 +46,7 @@ func (a *Random) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 
 			// set current location in local maze
 			steps++
-			a.UpdateClientViewAndLocation(clientID, m, currentCell,previousCell,  steps)
+			a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps)
 
 			solved = reply.Solved
 		} else {
