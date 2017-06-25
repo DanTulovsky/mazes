@@ -145,10 +145,6 @@ func NewMazeFromImage(c *pb.MazeConfig, f string, r *sdl.Renderer) (*Maze, error
 
 // NewGrid returns a new grid.
 func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
-	//if err := c.CheckConfig(); err != nil {
-	//	return nil, err
-	//}
-
 	m := &Maze{
 		id:          c.GetId(),
 		rows:        c.GetRows(),
@@ -206,31 +202,30 @@ func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {
 }
 
 func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
-	r := m.r
 	winWidth := m.winWidth
 	winHeight := m.winHeight
-	mTexture, err := r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
+	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
 	if err != nil {
 		return nil, err
 	}
 
 	// draw on the texture
 	sdl.Do(func() {
-		r.SetRenderTarget(mTexture)
+		m.r.SetRenderTarget(mTexture)
 		// background is black so that transparency works
-		colors.SetDrawColor(colors.GetColor("white"), r)
-		r.Clear()
+		colors.SetDrawColor(colors.GetColor("white"), m.r)
+		m.r.Clear()
 	})
-	m.DrawMazeBackground(r)
+	m.DrawMazeBackground(m.r)
 	sdl.Do(func() {
-		r.Present()
+		m.r.Present()
 	})
 
 	// Reset to drawing on the screen
 	sdl.Do(func() {
-		r.SetRenderTarget(nil)
-		r.Copy(mTexture, nil, nil)
-		r.Present()
+		m.r.SetRenderTarget(nil)
+		m.r.Copy(mTexture, nil, nil)
+		m.r.Present()
 	})
 
 	return mTexture, nil
@@ -275,7 +270,7 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, to
 
 	// this will color the maze based on the last client to register
 	log.Printf("setting distance colors")
-	if m.Config().GetShowDistanceColors() {
+	if m.Config().GetShowDistanceColors() || m.Config().GetShowDistanceValues() {
 		m.SetDistanceInfo(c, fromCell)
 	}
 
@@ -640,13 +635,15 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 				cell.Below().Draw(r)
 			}
 
+			cell.Draw(r)
 			// this is used on the client side which re-draws the background on every pass
 			// the server only call this function when generating maze
 			clients := m.ClientsSorted()
-			for _, client := range clients {
-				if cell.Visited(client.id) {
-					cell.Draw(r)
-					cell.DrawVisited(r, client)
+			if len(clients) > 0 {
+				for _, client := range clients {
+					if cell.Visited(client.id) {
+						cell.DrawVisited(r, client)
+					}
 				}
 			}
 
@@ -1107,6 +1104,14 @@ func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 			cell.SetBGColor(colors.OpacityAdjust(m.bgColor, adjustedColor))
 		}
 
+		//if m.config.GetShowDistanceValues() || m.config.ShowDistanceColors {
+		//	mTexture, err := m.MakeBGTexture()
+		//	if err != nil {
+		//		log.Fatalf("failed to create background: %v", err)
+		//	}
+		//	m.SetBGTexture(mTexture)
+		//}
+		log.Printf("setting d on %v: %v", cell, d)
 		cell.SetDistance(d)
 	}
 

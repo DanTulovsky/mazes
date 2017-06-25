@@ -43,7 +43,7 @@ var (
 	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
 	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
 	showGUI            = flag.Bool("gui", true, "show gui maze")
-	showLocalGUI       = flag.Bool("local_gui", true, "show client's view of the maze")
+	showLocalGUI       = flag.Bool("local_gui", false, "show client's view of the maze")
 
 	// dimensions
 	rows    = flag.Int64("r", 30, "number of rows in the maze")
@@ -150,7 +150,9 @@ func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *m
 
 	log.Printf("path: %s -> %s", config.GetFromCell(), config.GetToCell())
 
-	m.AddClient(r.GetClientId(), config)
+	if m != nil {
+		m.AddClient(r.GetClientId(), config)
+	}
 
 	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo(), m)
 }

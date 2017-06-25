@@ -385,11 +385,12 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.set-initial-client-location.latency", nil)
 
+			// TODO(dan): Is this needed? This breaks distanceValues
+			// m.Reset()
+
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 			} else {
-				m.Reset()
-
 				client.SetCurrentLocation(m.FromCell(client))
 				cell := client.CurrentLocation()
 
@@ -397,6 +398,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				s := maze.NewSegment(cell, "north", true)
 				cell.SetVisited(in.ClientID)
 				client.TravelPath.AddSegement(s)
+				in.Reply <- commandReply{error: nil}
 			}
 			t.UpdateSince(start)
 		case maze.CommandCurrentLocation:
@@ -404,7 +406,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			t := metrics.GetOrRegisterTimer("maze.command.current-location.latency", nil)
 
 			if client, err := m.Client(in.ClientID); err != nil {
-				log.Printf("failed to get client location: %v", err)
+				in.Reply <- commandReply{error: fmt.Errorf("failed to get client location: %v", err)}
 			} else {
 				cell := client.CurrentLocation()
 				in.Reply <- commandReply{answer: cell.Location()}
@@ -415,7 +417,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			t := metrics.GetOrRegisterTimer("maze.command.location-info.latency", nil)
 
 			if client, err := m.Client(in.ClientID); err != nil {
-				log.Printf("failed to get client location: %v", err)
+				in.Reply <- commandReply{error: fmt.Errorf("failed to get client location: %v", err)}
 			} else {
 				info := &locationInfo{
 					current: client.CurrentLocation().Location(),
@@ -716,7 +718,6 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	// get response from maze
 	reply := <-data.Reply
 	locationInfo := reply.answer.(*locationInfo)
-	log.Printf(">>>>>>>>>>>>>>>>>.  %v", locationInfo)
 
 	if reply.error != nil {
 		return &pb.RegisterClientReply{Success: false, Message: reply.error.(error).Error()}, nil
@@ -789,9 +790,16 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 	data := commandData{
 		Action:   maze.CommandSetInitialClientLocation,
 		ClientID: in.ClientId,
+		Reply:    make(chan commandReply),
 		Request:  commandRequest{},
 	}
 	comm <- data
+	log.Print("waiting for reply")
+	initialLocationReply := <-data.Reply
+	if initialLocationReply.error != nil {
+		return initialLocationReply.error.(error)
+	}
+
 	// send request into m for available directions, include client id
 	data = commandData{
 		Action:   maze.CommandGetDirections,
@@ -801,6 +809,9 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 	comm <- data
 	// get response from maze
 	dirReply := <-data.Reply
+	if dirReply.error != nil {
+		return dirReply.error.(error)
+	}
 
 	// send request into m for current location
 	data = commandData{
@@ -811,6 +822,9 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 	comm <- data
 	// get currentlocation from maze
 	locationInfoReply := <-data.Reply
+	if locationInfoReply.error != nil {
+		return locationInfoReply.error.(error)
+	}
 	locationInfo := locationInfoReply.answer.(*locationInfo)
 
 	// return available directions and current location

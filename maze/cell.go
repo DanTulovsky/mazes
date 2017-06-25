@@ -585,7 +585,8 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	}
 
 	// Display distance value
-	if c.config.ShowDistanceValues {
+	if c.config.GetShowDistanceValues() {
+		log.Printf("showing distance on %v: %v", c, c.Distance())
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 		gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255)
