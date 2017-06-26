@@ -23,7 +23,6 @@ func setupSDL(n int) (*sdl.Window, *sdl.Renderer) {
 				fmt.Fprintf(os.Stderr, "init error: %v", err)
 				os.Exit(1)
 			}
-			sdl.EnableScreenSaver()
 		}
 
 		winWidth := 300
@@ -67,14 +66,14 @@ func win(n int) {
 	log.Printf("window renderer pointer (%d): %p", n, x)
 
 	for {
-
 		sdl.Do(func() {
 			if err := r.Clear(); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to clear: %s\n", err)
 				os.Exit(1)
 			}
 
-			if e := gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("testing"), 255, 255, 255, 255); e != true {
+			e := gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("testing"), 255, 255, 255, 255)
+			if e != true {
 				log.Printf("error (%d): %v", n, sdl.GetError())
 			}
 
