@@ -28,6 +28,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_gfx"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -87,10 +88,10 @@ func showMazeStats(m *maze.Maze) {
 }
 
 func runMaze(config *pb.MazeConfig, comm chan commandData) {
-	var (
-		w *sdl.Window
-		r *sdl.Renderer
-	)
+	//var (
+	//	w *sdl.Window
+	//	r *sdl.Renderer
+	//)
 
 	if config.AllowWeaving && config.WallSpace == 0 {
 		// weaving requires some wall space to look nice
@@ -122,16 +123,12 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	w, r = lsdl.SetupSDL(config, w, r, "Server View", 0, 0)
+	title := fmt.Sprintf("Server View")
+	w, r := lsdl.SetupSDL(config, title, 0, 0)
 
 	defer func() {
 		sdl.Do(func() {
 			r.Destroy()
-		})
-	}()
-
-	defer func() {
-		sdl.Do(func() {
 			w.Destroy()
 		})
 	}()
@@ -315,10 +312,26 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 		if m.Config().GetGui() {
 			// Displays the maze
 			sdl.Do(func() {
-				r.Clear()
+				if err := r.Clear(); err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to clear: %s\n", err)
+					os.Exit(1)
+				}
+
 				m.DrawMaze(r, m.BGTexture())
+
+				//if err := r.SetRenderTarget(nil); err != nil {
+				//	log.Printf("error setting default target: %v", err)
+				//}
+				log.Printf("render target: %v", r.GetRenderTarget())
+				info := &sdl.RendererInfo{}
+				if err := r.GetRendererInfo(info); err != nil {
+					log.Printf("error getting renderer info: %v", err)
+				}
+				log.Printf("info: %#v", info)
 				// TODO(dan): This doesn't display on anything but the first maze run, And neither do the numbers
-				// gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("fdsfsfds"), 0, 0, 0, 255)
+				if e := gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("fdsfsfds"), 0, 0, 0, 255); e != true {
+					log.Printf("error: %v", sdl.GetError())
+				}
 
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))

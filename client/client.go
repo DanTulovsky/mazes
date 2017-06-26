@@ -477,11 +477,6 @@ func newMaze(config *pb.MazeConfig, r *sdl.Renderer) (*maze.Maze, error) {
 func createMaze(config *pb.MazeConfig) (*maze.Maze, *sdl.Renderer, *sdl.Window, error) {
 	log.Print("showing client's view of the maze...")
 
-	var (
-		w *sdl.Window
-		r *sdl.Renderer
-	)
-
 	// client alays starts with an full view
 	config.CreateAlgo = "full"
 
@@ -493,7 +488,7 @@ func createMaze(config *pb.MazeConfig) (*maze.Maze, *sdl.Renderer, *sdl.Window, 
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// offset this window one to the right so it shows up next to the server one
-	w, r = lsdl.SetupSDL(config, w, r, "Client View", 1, 0)
+	w, r := lsdl.SetupSDL(config, "Client View", 1, 0)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL

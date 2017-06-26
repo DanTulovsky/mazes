@@ -212,10 +212,14 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 
 	// draw on the texture
 	sdl.Do(func() {
-		r.SetRenderTarget(mTexture)
+		if err := r.SetRenderTarget(mTexture); err != nil {
+			log.Fatalf("error setting texture as render targer: %v", err)
+		}
 		// background is black so that transparency works
 		colors.SetDrawColor(colors.GetColor("white"), r)
-		r.Clear()
+		if err := r.Clear(); err != nil {
+			log.Fatalf("error clearing: %v", err)
+		}
 	})
 	m.DrawMazeBackground(r)
 	sdl.Do(func() {
@@ -224,8 +228,12 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 
 	// Reset to drawing on the screen
 	sdl.Do(func() {
-		r.SetRenderTarget(nil)
-		r.Copy(mTexture, nil, nil)
+		if err := r.SetRenderTarget(nil); err != nil {
+			log.Fatalf("error resetting render target: %v", err)
+		}
+		if err := r.Copy(mTexture, nil, nil); err != nil {
+			log.Fatalf("error copying texture to renderer: %v", err)
+		}
 		r.Present()
 	})
 
@@ -613,7 +621,7 @@ func (m *Maze) SetToCell(client *client, c *Cell) {
 }
 
 // DrawMazeBackground renders the gui maze background in memory
-func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
+func (m *Maze) DrawMazeBackground(r *sdl.Renderer) {
 	t := metrics.GetOrRegisterTimer("maze.draw.background.latency", nil)
 	defer t.UpdateSince(time.Now())
 
@@ -650,12 +658,10 @@ func (m *Maze) DrawMazeBackground(r *sdl.Renderer) *sdl.Renderer {
 
 		}
 	}
-
-	return r
 }
 
 // Draw renders the gui maze in memory, display by calling Present
-func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
+func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) {
 	t := metrics.GetOrRegisterTimer("maze.draw.all.latency", nil)
 	defer t.UpdateSince(time.Now())
 
@@ -697,8 +703,6 @@ func (m *Maze) DrawMaze(r *sdl.Renderer, bg *sdl.Texture) *sdl.Renderer {
 		client.fromCell.Draw(r)
 		client.toCell.Draw(r)
 	}
-
-	return r
 }
 
 // DrawBorder renders the maze border in memory, display by calling Present
