@@ -28,7 +28,6 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_gfx"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -48,7 +47,10 @@ const (
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
 // for proto: protoc -I ./mazes/proto/ ./mazes/proto/mazes.proto --go_out=plugins=grpc:mazes/proto/
-// protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
+//   protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
+// python:
+//   cd ~/python/src
+//   python -m grpc_tools.protoc -I../../go/src/mazes/proto --python_out=mazes/protos/ --grpc_python_out=mazes/protos/ ../../go/src/mazes/proto/mazes.proto
 
 var (
 	// maze
@@ -87,12 +89,19 @@ func showMazeStats(m *maze.Maze) {
 	log.Printf(">> Dead Ends: %v", len(m.DeadEnds()))
 }
 
-func runMaze(config *pb.MazeConfig, comm chan commandData) {
-	//var (
-	//	w *sdl.Window
-	//	r *sdl.Renderer
-	//)
+func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Window, err error) {
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	title := fmt.Sprintf("Server View")
+	w, r = lsdl.SetupSDL(config, title, 0, 0)
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Setup SDL
+	//////////////////////////////////////////////////////////////////////////////////////////////
 
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Configure new grid
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	if config.AllowWeaving && config.WallSpace == 0 {
 		// weaving requires some wall space to look nice
 		config.WallSpace = 4
@@ -120,25 +129,6 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 		log.Printf("cell_width and wall_width both 2, adjusting wall_width to %v", config.WallWidth)
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Setup SDL
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	title := fmt.Sprintf("Server View")
-	w, r := lsdl.SetupSDL(config, title, 0, 0)
-
-	defer func() {
-		sdl.Do(func() {
-			r.Destroy()
-			w.Destroy()
-		})
-	}()
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// End Setup SDL
-	//////////////////////////////////////////////////////////////////////////////////////////////
-
-	var m *maze.Maze
-	var err error
-
 	// Mask image if provided.
 	// If the mask image is provided, use that as the dimensions of the grid
 	if *maskImage != "" {
@@ -162,7 +152,7 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	if !algos.CheckCreateAlgo(config.CreateAlgo) {
-		log.Fatalf("invalid create algorithm: %v", config.CreateAlgo)
+		return nil, nil, nil, fmt.Errorf("invalid create algorithm: %v", config.CreateAlgo)
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,20 +160,23 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	if *bgMusic != "" {
 		if err := mix.Init(mix.INIT_MP3); err != nil {
-			log.Fatalf("error initialing mp3: %v", err)
+			return nil, nil, nil, fmt.Errorf("error initialing mp3: %v", err)
 		}
 
 		if err := mix.OpenAudio(44100, mix.DEFAULT_FORMAT, 2, 2048); err != nil {
-			log.Fatalf("cannot initialize audio: %v", err)
+			return nil, nil, nil, fmt.Errorf("cannot initialize audio: %v", err)
 		}
 
 		music, err := mix.LoadMUS(*bgMusic)
 		if err != nil {
-			log.Fatalf("cannot load music file %v: %v", *bgMusic, err)
+			return nil, nil, nil, fmt.Errorf("cannot load music file %v: %v", *bgMusic, err)
 		}
 
 		music.Play(-1) // loop forever
 	}
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// End Background Music
+	//////////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////
 	// Generator
@@ -202,19 +195,19 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 	var wd sync.WaitGroup
 
 	wd.Add(1)
-	go func() {
+	// TODO(dan): redo error return as a channel to catch problems here
+	generate := func() error {
 		defer wd.Done()
 		log.Printf("running generator %v", config.CreateAlgo)
 
 		if err := algo.Apply(m, delay, generating); err != nil {
 			log.Printf(err.Error())
 			generating.UnSet()
-			return
+			return fmt.Errorf("error applying algorithm: %v", err)
 		}
 		if err := algo.CheckGrid(m); err != nil {
-			log.Printf("maze is not valid: %v", err)
 			generating.UnSet()
-			return
+			return fmt.Errorf("maze is not valid: %v", err)
 		}
 
 		if *showStats {
@@ -239,7 +232,9 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 		//}
 
 		generating.UnSet()
-	}()
+		return nil
+	}
+	go generate()
 
 	if m.Config().GetGui() {
 		for generating.IsSet() {
@@ -260,6 +255,18 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 	///////////////////////////////////////////////////////////////////////////
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
+	log.Printf("finished creating maze...")
+	return m, r, w, nil
+}
+
+func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData) {
+	defer func() {
+		sdl.Do(func() {
+			r.Destroy()
+			w.Destroy()
+		})
+	}()
+	var wd sync.WaitGroup
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
@@ -322,16 +329,16 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 				//if err := r.SetRenderTarget(nil); err != nil {
 				//	log.Printf("error setting default target: %v", err)
 				//}
-				log.Printf("render target: %v", r.GetRenderTarget())
-				info := &sdl.RendererInfo{}
-				if err := r.GetRendererInfo(info); err != nil {
-					log.Printf("error getting renderer info: %v", err)
-				}
-				log.Printf("info: %#v", info)
+				//log.Printf("render target: %v", r.GetRenderTarget())
+				//info := &sdl.RendererInfo{}
+				//if err := r.GetRendererInfo(info); err != nil {
+				//	log.Printf("error getting renderer info: %v", err)
+				//}
+				//log.Printf("info: %#v", info)
 				// TODO(dan): This doesn't display on anything but the first maze run, And neither do the numbers
-				if e := gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("fdsfsfds"), 0, 0, 0, 255); e != true {
-					log.Printf("error: %v", sdl.GetError())
-				}
+				//if e := gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("fdsfsfds"), 0, 0, 0, 255); e != true {
+				//	log.Printf("error: %v", sdl.GetError())
+				//}
 
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
@@ -345,6 +352,7 @@ func runMaze(config *pb.MazeConfig, comm chan commandData) {
 
 	showMazeStats(m)
 	wd.Wait()
+
 }
 
 func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
@@ -592,7 +600,9 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			log.Printf("unknown command: %#v", in)
 			in.Reply <- commandReply{error: fmt.Errorf("unknown command: %v", in)}
 		}
-	default:
+		// when the client disconnects, this will block until the timer fires
+		// if this is just a 'default' fall through, much cpu is used as multiple mazes are run
+	case <-time.After(5 * time.Second):
 
 	}
 }
@@ -691,6 +701,9 @@ type server struct{}
 // CreateMaze creates and displays the maze specified by the config
 func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {
 	log.Printf("creating maze with config: %#v", in.Config)
+	if in.Config == nil {
+		return nil, fmt.Errorf("maze config cannot be nil")
+	}
 
 	t := metrics.GetOrRegisterTimer("maze.rpc.create-maze.latency", nil)
 	defer t.UpdateSince(time.Now())
@@ -701,7 +714,11 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	comm := make(chan commandData)
 	mazeMap.Insert(mazeID, comm)
 
-	go runMaze(in.Config, comm)
+	m, r, w, err := createMaze(in.Config)
+	if err != nil {
+		return nil, err
+	}
+	go runMaze(m, r, w, comm)
 
 	return &pb.CreateMazeReply{MazeId: mazeID}, nil
 }
