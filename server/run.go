@@ -326,22 +326,10 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 				m.DrawMaze(r, m.BGTexture())
 
-				//if err := r.SetRenderTarget(nil); err != nil {
-				//	log.Printf("error setting default target: %v", err)
-				//}
-				//log.Printf("render target: %v", r.GetRenderTarget())
-				//info := &sdl.RendererInfo{}
-				//if err := r.GetRendererInfo(info); err != nil {
-				//	log.Printf("error getting renderer info: %v", err)
-				//}
-				//log.Printf("info: %#v", info)
-				// TODO(dan): This doesn't display on anything but the first maze run, And neither do the numbers
-				//if e := gfx.StringRGBA(r, int(0), int(0), fmt.Sprint("fdsfsfds"), 0, 0, 0, 255); e != true {
-				//	log.Printf("error: %v", sdl.GetError())
-				//}
-
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
+				maze.ResetFontCache()
+
 			})
 		}
 		t.UpdateSince(start)
@@ -382,6 +370,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			fromCell, toCell, err := m.AddClient(in.ClientID, in.ClientConfig)
 			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to add client: %v", err)}
+				return
 			}
 			updateBG.Set()
 
@@ -399,6 +388,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client links: %v", err)}
+				return
 
 			} else {
 				in.Reply <- commandReply{answer: client.CurrentLocation().DirectionLinks(in.ClientID)}
@@ -410,6 +400,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
+				return
 			} else {
 				client.SetCurrentLocation(m.FromCell(client))
 				cell := client.CurrentLocation()
@@ -427,6 +418,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client location: %v", err)}
+				return
 			} else {
 				cell := client.CurrentLocation()
 				in.Reply <- commandReply{answer: cell.Location()}
@@ -438,6 +430,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			if client, err := m.Client(in.ClientID); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client location: %v", err)}
+				return
 			} else {
 				info := &locationInfo{
 					current: client.CurrentLocation().Location(),
@@ -454,6 +447,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			client, err := m.Client(in.ClientID)
 			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
+				return
 			}
 
 			// remove from solution if we are backtracking
@@ -464,6 +458,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			lastSegment := client.TravelPath.PreviousSegmentinSolution()
 			if lastSegment == nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to find previous unvisited cell, path is: %v", client.TravelPath)}
+				return
 
 			}
 			last := lastSegment.Cell()
@@ -747,11 +742,11 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	comm <- data
 	// get response from maze
 	reply := <-data.Reply
-	locationInfo := reply.answer.(*locationInfo)
-
 	if reply.error != nil {
 		return &pb.RegisterClientReply{Success: false, Message: reply.error.(error).Error()}, nil
 	}
+
+	locationInfo := reply.answer.(*locationInfo)
 	return &pb.RegisterClientReply{Success: true, ClientId: clientID,
 		FromCell: locationInfo.From, ToCell: locationInfo.To}, nil
 

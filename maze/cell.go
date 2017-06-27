@@ -63,6 +63,11 @@ type Cell struct {
 	deadlock.RWMutex
 }
 
+// required to be able to call gfx.* functions on multiple windows.
+func ResetFontCache() {
+	gfx.GFXPrimitiveSetFont(nil, 0, 0)
+}
+
 // CellInCellMap returns true if cell is in cellMap
 func CellInCellMap(cell *Cell, cellMap map[*Cell]bool) bool {
 	if _, ok := cellMap[cell]; ok {
@@ -655,10 +660,8 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		// log.Printf("%v -> %v", c, c.VisitedTimes(client.id))
-
 		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
-			// log.Printf("error: %v", sdl.GetError())
+			log.Printf("error: %v", sdl.GetError())
 		}
 	}
 

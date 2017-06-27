@@ -283,6 +283,9 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, to
 		m.SetDistanceInfo(c, fromCell)
 	}
 
+	if c.config == nil {
+		return nil, nil, fmt.Errorf("client config was nil!")
+	}
 	if c.config.ShowFromToColors {
 		m.SetFromToColors(c, fromCell, toCell)
 	}

@@ -76,6 +76,7 @@ func win(n int) {
 			if e != true {
 				log.Printf("error (%d): %v", n, sdl.GetError())
 			}
+			gfx.GFXPrimitiveSetFont(nil, 0, 0)
 
 			r.Present()
 			sdl.Delay(uint32(1000 / 120))
