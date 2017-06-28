@@ -10,8 +10,8 @@ import (
 	"mazes/utils"
 
 	"github.com/sasha-s/go-deadlock"
+	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_gfx"
 )
 
 const (
@@ -61,11 +61,6 @@ type Cell struct {
 	distance int
 
 	deadlock.RWMutex
-}
-
-// required to be able to call gfx.* functions on multiple windows.
-func ResetFontCache() {
-	gfx.GFXPrimitiveSetFont(nil, 0, 0)
 }
 
 // CellInCellMap returns true if cell is in cellMap
