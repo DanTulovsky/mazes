@@ -4,7 +4,7 @@ package proto;
 
 // The greeting service definition.
 service Mazer {
-    // Display maze
+    // Create maze
     rpc CreateMaze(CreateMazeRequest) returns (CreateMazeReply) {}
 
     // List available mazes
@@ -15,6 +15,18 @@ service Mazer {
 
     // Register new client with an existing maze
     rpc RegisterClient(RegisterClientRequest) returns (RegisterClientReply) {}
+
+    // Export a maze,
+    rpc ExportMaze(ExportMazeRequest) returns (ExportMazeReply) {}
+}
+
+message ExportMazeRequest {
+    string mazeId = 1;
+}
+
+message ExportMazeReply {
+    bool success = 1;
+    string message = 2;
 }
 
 message RegisterClientRequest {
@@ -65,7 +77,12 @@ message Direction {
 // Maze defines a maze and its clients
 message Maze {
     string mazeId = 1;
-    repeated string clientIds = 2;
+    repeated Cell cells = 2;
+    repeated string clientIds = 3;
+}
+
+message Cell {
+    MazeLocation location = 1;
 }
 
 message ListMazeRequest {}
@@ -124,10 +141,6 @@ message ClientConfig {
     string FromCell = 23; // "min", "max", "random" or "x,y"
     string ToCell = 24;  // "min", "max", "random" or "x,y"
     bool ShowFromToColors = 27;
-}
-
-message Cell {
-    // Oneof?
 }
 
 // MazeLocation is a location in the maze

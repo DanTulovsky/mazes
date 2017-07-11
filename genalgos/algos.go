@@ -7,10 +7,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/tevino/abool"
 	"mazes/maze"
 	"mazes/tree"
 	"mazes/utils"
+
+	"github.com/tevino/abool"
 )
 
 type Algorithmer interface {
@@ -86,7 +87,7 @@ func (a *Common) CheckGrid(m *maze.Maze) error {
 	rootNode := tree.NewNode(start.String())
 	t, err := tree.NewTree(rootNode)
 	if err != nil {
-		return fmt.Errorf(err.Error())
+		return err
 	}
 
 	Step(m, t, start, start)

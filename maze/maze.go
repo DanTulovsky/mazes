@@ -18,6 +18,8 @@ import (
 	pb "mazes/proto"
 	"mazes/utils"
 
+	"mazes/tree"
+
 	"github.com/rcrowley/go-metrics"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
@@ -174,6 +176,67 @@ func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 	m.configureCells()
 
 	return m, nil
+}
+
+func (m *Maze) ToTree() (*tree.Tree, error) {
+
+	var step func(m *Maze, t *tree.Tree, currentCell, parentCell *Cell) bool
+
+	step = func(m *Maze, t *tree.Tree, currentCell, parentCell *Cell) bool {
+
+		var nextCell *Cell
+		currentCell.SetVisited(VisitedGenerator)
+
+		if currentCell != parentCell {
+			currentNode := tree.NewNode(currentCell.String())
+			parentNode := t.Node(parentCell.String())
+
+			t.AddNode(currentNode, parentNode)
+		}
+
+		// check for cycles
+		for _, nextCell = range currentCell.Links() {
+			if nextCell.Visited(VisitedGenerator) {
+				currentNode := t.Node(currentCell.String())
+				nextNode := t.Node(nextCell.String())
+
+				if nextNode == nil {
+					// something is really wrong and should never happen
+					Fail(fmt.Errorf("unable to find %v in tree", nextCell))
+				}
+
+				if currentNode.Parent() != nextNode {
+					Fail(fmt.Errorf("found a cycle in the graph, %v is connected to %v, but %v is not the parent;\n%v", currentNode,
+						nextNode, nextNode, t))
+				}
+			}
+
+		}
+
+		for _, nextCell = range currentCell.Links() {
+			if !nextCell.Visited(VisitedGenerator) {
+				if step(m, t, nextCell, currentCell) {
+					return true
+				}
+			}
+
+			currentCell.SetVisited(VisitedGenerator)
+		}
+
+		return false
+	}
+
+	start := m.RandomCell()
+	rootNode := tree.NewNode(start.String())
+	t, err := tree.NewTree(rootNode)
+	if err != nil {
+		return nil, err
+	}
+
+	step(m, t, start, start)
+
+	return t, nil
+
 }
 
 func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {

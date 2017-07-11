@@ -69,6 +69,8 @@ var (
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
+	exportPath = flag.String("export_path", "", "path where exported mazes are stored")
+
 	// keep track of mazes
 	mazeMap = *safemap.NewSafeMap()
 )
@@ -358,6 +360,18 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			}
 			// send reply via the reply channel
 			in.Reply <- commandReply{answer: clients}
+
+			t.UpdateSince(start)
+		case maze.CommandExportMaze:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.export-maze.latency", nil)
+
+			mtree, err := m.ToTree()
+			if err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to convert maze to tree: %v", err)}
+				return
+			}
+			log.Printf("tree:\n%v", mtree)
 
 			t.UpdateSince(start)
 		case maze.CommandAddClient:
@@ -692,6 +706,37 @@ type moveReply struct {
 
 // server is used to implement MazerServer.
 type server struct{}
+
+// ExportMaze exports the given maze to disk, only the structure is preserved
+func (s *server) ExportMaze(ctx context.Context, in *pb.ExportMazeRequest) (*pb.ExportMazeReply, error) {
+	log.Printf("exporting maze with id: %v", in.GetMazeId())
+	if in.GetMazeId() == "" {
+		return nil, fmt.Errorf("maze id cannot be empty")
+	}
+
+	t := metrics.GetOrRegisterTimer("maze.rpc.export-maze.latency", nil)
+	defer t.UpdateSince(time.Now())
+
+	m, found := mazeMap.Find(in.GetMazeId())
+	if !found {
+		return &pb.ExportMazeReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]: %v", in.GetMazeId())}, nil
+	}
+
+	comm := m.(chan commandData)
+
+	data := commandData{
+		Action: maze.CommandExportMaze,
+		Reply:  make(chan commandReply),
+	}
+	comm <- data
+	// get response from maze
+	reply := <-data.Reply
+	if reply.error != nil {
+		return &pb.ExportMazeReply{Success: false, Message: reply.error.(error).Error()}, nil
+	}
+
+	return &pb.ExportMazeReply{Success: true}, nil
+}
 
 // CreateMaze creates and displays the maze specified by the config
 func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {

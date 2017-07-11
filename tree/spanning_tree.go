@@ -3,7 +3,7 @@ package tree
 import "fmt"
 
 // spanningTree implements a spanning tree of string objects
-// to be used for a tree of cells, where the value of each cell is the coordinate: "x,y"
+// to be used for a tree of cells, where the value of each cell is the coordinate: "x,y,z"
 type Tree struct {
 	root *node
 	// tree only allows unique values, so make retrieving them fast
