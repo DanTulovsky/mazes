@@ -27,8 +27,9 @@ import (
 	"github.com/sasha-s/go-deadlock"
 	"github.com/satori/go.uuid"
 	"github.com/tevino/abool"
+	"github.com/veandco/go-sdl2/gfx"
+	"github.com/veandco/go-sdl2/mix"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_mixer"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -83,6 +84,11 @@ var (
 //	c <- t
 //	return true
 //}
+
+// required to be able to call gfx.* functions on multiple windows.
+func ResetFontCache() {
+	gfx.SetFont(nil, 0, 0)
+}
 
 // showMazeStats shows some states about the maze
 func showMazeStats(m *maze.Maze) {
@@ -330,7 +336,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
-				maze.ResetFontCache()
+				ResetFontCache()
 
 			})
 		}
