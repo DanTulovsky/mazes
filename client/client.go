@@ -87,7 +87,7 @@ var (
 	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
 
 	// misc
-	exportFile = flag.String("export_file", "", "file to save maze to (does not work yet)")
+	exportMaze = flag.Bool("export_maze", false, "save maze to a file on the server")
 	bgMusic    = flag.String("bg_music", "", "file name of background music to play")
 
 	// debug
@@ -333,8 +333,9 @@ func opCreateSolve() error {
 func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
 	c := NewClient()
+	ctx := context.Background()
 
-	resp, err := c.CreateMaze(context.Background(), &pb.CreateMazeRequest{Config: config})
+	resp, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
 	if err != nil {
 		log.Fatalf("could not create maze: %v", err)
 	}
@@ -351,6 +352,13 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 		} else {
 			wd.Add(1)
 			go showMaze(m, r, w)
+		}
+	}
+
+	if *exportMaze {
+		r, err := c.ExportMaze(ctx, &pb.ExportMazeRequest{MazeId: resp.GetMazeId()})
+		if err != nil || !r.GetSuccess() {
+			log.Printf("could not save maze on the server: %v (%v)", err, r.GetMessage())
 		}
 	}
 	return resp, m, nil
