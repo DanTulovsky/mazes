@@ -64,3 +64,31 @@ func TestIsOdd(t *testing.T) {
 		}
 	}
 }
+
+var bittests = []struct {
+	in       int
+	pos      uint
+	expected int
+}{
+	{in: 0, pos: 0, expected: 1},
+	{in: 0, pos: 1, expected: 2},
+}
+
+func TestBits(t *testing.T) {
+	for _, tt := range bittests {
+		r := SetBit(tt.in, tt.pos)
+		if r != tt.expected {
+			t.Errorf("expected %v for input %v, but got %v", tt.expected, tt.in, r)
+		}
+
+		hc := HasBit(r, tt.pos)
+		if !hc {
+			t.Errorf("expected %v for input %v, but got %v", true, r, false)
+		}
+
+		rc := ClearBit(r, tt.pos)
+		if rc != tt.in {
+			t.Errorf("expected %v for input %v, but got %v", tt.in, r, r, rc)
+		}
+	}
+}

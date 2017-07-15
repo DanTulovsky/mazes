@@ -1,8 +1,11 @@
 package maze
 
-import "testing"
+import (
+	pb "mazes/proto"
+	"testing"
+)
 
-var config = &Config{
+var config = &pb.MazeConfig{
 	Rows:    10,
 	Columns: 15,
 }

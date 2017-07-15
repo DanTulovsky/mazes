@@ -3,6 +3,8 @@ package maze
 import (
 	"container/heap"
 	"testing"
+
+	pb "mazes/proto"
 )
 
 type testCell struct {
@@ -11,7 +13,7 @@ type testCell struct {
 }
 
 func cellAt(c *Cell, l Location) bool {
-	if c.x != l.X || c.y != l.Y || c.z != l.Z {
+	if c.x != int64(l.X) || c.y != int64(l.Y) || c.z != int64(l.Z) {
 		return false
 	}
 	return true
@@ -19,7 +21,7 @@ func cellAt(c *Cell, l Location) bool {
 
 func TestQueue(t *testing.T) {
 
-	var config = &Config{
+	var config = &pb.MazeConfig{
 		Rows:    10,
 		Columns: 15,
 	}

@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"fmt"
 	"log"
+	"strconv"
 
 	"mazes/colors"
 	pb "mazes/proto"
@@ -107,6 +108,58 @@ func NewCell(x, y, z int64, c *pb.MazeConfig) *Cell {
 	cell.distances = NewDistances(cell)
 
 	return cell
+}
+
+// Encode encodes the cell (shape and cells/passages) to ascii
+// Each character is created by encoding the passages present in the cell into one of the 4 bits
+// north, south, east, west
+// e.g. 0000 = no passages = 0
+// 1000 = passage north = 1
+// 1100 = passage north and south = C
+func (c *Cell) Encode() string {
+	var e int
+
+	switch {
+	case c.North() != nil:
+		utils.SetBit(e, 0)
+	case c.South() != nil:
+		utils.SetBit(e, 1)
+	case c.East() != nil:
+		utils.SetBit(e, 2)
+	case c.West() != nil:
+		utils.SetBit(e, 3)
+	}
+
+	return fmt.Sprintf("%X", e)
+}
+
+// Decode decodes the neighbors of a cell from the encoded string and sets them
+func (c *Cell) Decode(e string) error {
+	i, err := strconv.ParseInt(e, 16, 0)
+	if err != nil {
+		return err
+	}
+	enc := int(i)
+
+	switch {
+	case utils.HasBit(enc, 0):
+		if c.North() != nil {
+			c.Link(c.North())
+		}
+	case utils.HasBit(enc, 1):
+		if c.South() != nil {
+			c.Link(c.South())
+		}
+	case utils.HasBit(enc, 2):
+		if c.East() != nil {
+			c.Link(c.East())
+		}
+	case utils.HasBit(enc, 3):
+		if c.West() != nil {
+			c.Link(c.West())
+		}
+	}
+	return nil
 }
 
 func (c *Cell) SetBelow(cell *Cell) {
@@ -693,6 +746,12 @@ func (c *Cell) linkOneWay(cell *Cell) {
 
 func (c *Cell) unLinkOneWay(cell *Cell) {
 	c.links.Delete(cell)
+}
+
+// Link unlinks a cell from its neighbor (removes passage)
+func (c *Cell) Link(cell *Cell) {
+	c.linkOneWay(cell)
+	cell.linkOneWay(c)
 }
 
 // UnLink unlinks a cell from its neighbor (removes passage)

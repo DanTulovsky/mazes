@@ -172,12 +172,65 @@ func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 		clients: make(map[string]*client),
 	}
 
-	m.prepareGrid()
+	if err := m.prepareGrid(); err != nil {
+		return nil, err
+	}
 	m.configureCells()
 
 	return m, nil
 }
 
+// Encode encodes the maze (shape and cells/passages) to ascii
+// The maze is encoded into an ascii grid. Each cell is represented by a hex character
+// See cell.Encode for explanation
+func (m *Maze) Encode() string {
+	var enc string
+
+	for _, row := range m.Rows() {
+		for _, c := range row {
+			e := c.Encode()
+			enc = enc + e
+		}
+		enc = enc + "\n"
+	}
+
+	return enc
+
+}
+
+// Decode decodes the maze (shape and cells/passages) from ascii
+func (m *Maze) Decode(encoded string) error {
+
+	if int(m.rows*m.columns) != len(encoded)-int(m.rows) {
+		return fmt.Errorf("maze size (%v, %v) does not match encoded size (length=%v):\n%v", m.columns, m.rows, len(encoded)-int(m.rows), encoded)
+	}
+
+	x := 0
+
+	for _, row := range m.Rows() {
+		for _, c := range row {
+			if string(encoded[x]) == "\n" {
+				x++
+				continue
+			}
+			if err := c.Decode(string(encoded[x])); err != nil {
+				return err
+			}
+			x++
+		}
+	}
+
+	return nil
+
+}
+
+// Export exports the maze as encoded ascii to the file
+func (m *Maze) Export(filename string) error {
+
+	return nil
+}
+
+// ToTree converts the maze to a tree
 func (m *Maze) ToTree() (*tree.Tree, error) {
 
 	var step func(m *Maze, t *tree.Tree, currentCell, parentCell *Cell) bool
@@ -507,9 +560,13 @@ func (m *Maze) getAvatar() *sdl.Texture {
 }
 
 // prepareGrid initializes the grid with cells
-func (m *Maze) prepareGrid() {
+func (m *Maze) prepareGrid() error {
 	m.Lock()
 	defer m.Unlock()
+
+	if m.columns <= 0 || m.rows <= 0 {
+		return fmt.Errorf("invalid maze dimensions: %v, %v", m.columns, m.rows)
+	}
 
 	z := int64(0)
 	m.cells = make([][]*Cell, m.columns)
@@ -521,6 +578,8 @@ func (m *Maze) prepareGrid() {
 			m.cells[x][y] = NewCell(x, y, z, m.config)
 		}
 	}
+
+	return nil
 }
 
 // configureCells configures cells with their neighbors

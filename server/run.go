@@ -372,12 +372,12 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.export-maze.latency", nil)
 
-			mtree, err := m.ToTree()
-			if err != nil {
-				in.Reply <- commandReply{error: fmt.Errorf("failed to convert maze to tree: %v", err)}
+			encoded := m.Encode()
+			if encoded != "" {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to encode maze")}
 				return
 			}
-			log.Printf("tree:\n%v", mtree)
+			log.Printf("encoded:\n%v", encoded)
 
 			t.UpdateSince(start)
 		case maze.CommandAddClient:

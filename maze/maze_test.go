@@ -1,61 +1,64 @@
 package maze
 
 import (
+	"log"
 	"mazes/utils"
 	"testing"
+
+	pb "mazes/proto"
 )
 
 var mazecreatetests = []struct {
-	config  *Config
+	config  *pb.MazeConfig
 	wantErr bool
 }{
 	{
-		config: &Config{
-			Rows:    utils.Random(5, 40),
-			Columns: utils.Random(8, 33),
+		config: &pb.MazeConfig{
+			Rows:    int64(utils.Random(5, 40)),
+			Columns: int64(utils.Random(8, 33)),
 		},
 		wantErr: false,
 	}, {
-		config: &Config{
+		config: &pb.MazeConfig{
 			Rows:    10,
 			Columns: 15,
 		},
 		wantErr: false,
 	}, {
-		config: &Config{
+		config: &pb.MazeConfig{
 			Rows:    55,
 			Columns: 4,
 		},
 		wantErr: false,
 	}, {
-		config: &Config{
+		config: &pb.MazeConfig{
 			Rows:    0,
 			Columns: 0,
 		},
 		wantErr: true,
 	}, {
-		config: &Config{
+		config: &pb.MazeConfig{
 			Rows:    -3,
 			Columns: -3,
 		},
 		wantErr: true,
 	}, {
-		config:  &Config{},
+		config:  &pb.MazeConfig{},
 		wantErr: true,
 	},
 }
 
 var mazecreatefromimagetests = []struct {
-	config  *Config
+	config  *pb.MazeConfig
 	image   string
 	wantErr bool
 }{
 	{
-		config:  &Config{},
+		config:  &pb.MazeConfig{},
 		image:   "../masks/maze_text.png",
 		wantErr: false,
 	}, {
-		config:  &Config{},
+		config:  &pb.MazeConfig{},
 		image:   "../masks/fail1.png",
 		wantErr: true,
 	},
@@ -64,7 +67,7 @@ var mazecreatefromimagetests = []struct {
 func TestNewMaze(t *testing.T) {
 
 	for _, tt := range mazecreatetests {
-		m, err := NewMaze(tt.config)
+		m, err := NewMaze(tt.config, nil)
 
 		if err != nil {
 			if !tt.wantErr {
@@ -82,10 +85,60 @@ func TestNewMaze(t *testing.T) {
 	}
 }
 
+func TestEncode(t *testing.T) {
+	for _, tt := range mazecreatetests {
+		m, err := NewMaze(tt.config, nil)
+
+		if err != nil {
+			if !tt.wantErr {
+				t.Errorf("invalid config: %v", err)
+			} else {
+				continue // skip the rest of the tests
+			}
+
+		}
+
+		e := m.Encode()
+		if m.rows*m.columns+m.rows != int64(len(e)) {
+			t.Errorf("expected encoding of length %v, but have %v.", m.rows*m.columns+m.rows, len(e))
+		}
+		log.Printf("\n%v\n", e)
+
+	}
+}
+
+func TestDecode(t *testing.T) {
+	for _, tt := range mazecreatetests {
+		m, err := NewMaze(tt.config, nil)
+
+		if err != nil {
+			if !tt.wantErr {
+				t.Errorf("invalid config: %v", err)
+			} else {
+				continue // skip the rest of the tests
+			}
+
+		}
+
+		var encoded string
+		// create encoding string
+		for _, row := range m.Rows() {
+			for _ = range row {
+				encoded = encoded + "F"
+			}
+			encoded = encoded + "\n"
+		}
+
+		if err := m.Decode(encoded); err != nil {
+			t.Errorf("error decoding: %v", err)
+		}
+	}
+}
+
 func TestNewMazeFromImage(t *testing.T) {
 
 	for _, tt := range mazecreatefromimagetests {
-		m, err := NewMazeFromImage(tt.config, tt.image)
+		m, err := NewMazeFromImage(tt.config, tt.image, nil)
 
 		if err != nil {
 			if !tt.wantErr {
@@ -104,18 +157,18 @@ func TestNewMazeFromImage(t *testing.T) {
 }
 
 func BenchmarkNewMaze(b *testing.B) {
-	config := &Config{
+	config := &pb.MazeConfig{
 		Rows:    10,
 		Columns: 10,
 	}
 
-	_, err := NewMaze(config)
+	_, err := NewMaze(config, nil)
 	if err != nil {
 		b.Errorf("invalid config: %v", err)
 	}
 
 	for i := 0; i < b.N; i++ {
-		NewMaze(config)
+		NewMaze(config, nil)
 	}
 
 }

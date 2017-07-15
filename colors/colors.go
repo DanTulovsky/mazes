@@ -91,7 +91,6 @@ func SetOpacity(c Color, o uint8) Color {
 func GetColor(c string) Color {
 	color, ok := ColorMap[c]
 	if !ok {
-		log.Printf("invalid color [%v], returning default", c)
 		return ColorMap[DEFAULTCOLOR]
 	}
 	return color
