@@ -14,6 +14,10 @@ import (
 	"io/ioutil"
 
 	"github.com/tevino/abool"
+
+	"bufio"
+	pb "mazes/proto"
+	"os"
 )
 
 var (
@@ -22,6 +26,26 @@ var (
 
 type Fromfile struct {
 	genalgos.Common
+}
+
+// MazeSizeFromFile returns the number of columns and rows in the input file
+func MazeSizeFromFile(config *pb.MazeConfig) (c, r int, err error) {
+	filename := path.Join(*SavedMazePath, config.GetFromFile())
+
+	file, _ := os.Open(filename)
+	fileScanner := bufio.NewScanner(file)
+	lineCount := 0
+	rowCount := 0
+
+	for fileScanner.Scan() {
+		if lineCount == 0 {
+			// grab row length
+			rowCount = len(fileScanner.Text())
+		}
+		lineCount++
+	}
+
+	return lineCount, rowCount, nil
 }
 
 // Apply reads in the provided file sets up the passages

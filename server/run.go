@@ -98,6 +98,15 @@ func showMazeStats(m *maze.Maze) {
 }
 
 func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Window, err error) {
+
+	if config.GetCreateAlgo() == "fromfile" {
+		if c, r, err := fromfile.MazeSizeFromFile(config); err == nil {
+			config.Columns, config.Rows = int64(c), int64(r)
+		} else {
+			return nil, nil, nil, err
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
