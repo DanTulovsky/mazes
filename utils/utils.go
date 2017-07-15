@@ -4,6 +4,9 @@ import (
 	"log"
 	"math/rand"
 	"time"
+
+	"fmt"
+	pb "mazes/proto"
 )
 
 // Random returns a random number in [min, max)
@@ -87,4 +90,44 @@ func ClearBit(n int, pos uint) int {
 func HasBit(n int, pos uint) bool {
 	val := n & (1 << pos)
 	return (val > 0)
+}
+
+// LocationFromState return the x,y coordinates of the l'th point in an array rows X columns, counting from top left
+// one row at a time. Location starts with 1.
+func LocationFromState(rows, columns, l int64) (*pb.MazeLocation, error) {
+	if l > rows*columns || l < 0 {
+		return nil, fmt.Errorf("%v is too large or too small for grid of (columns, rows) [%v, %v]", l, columns, rows)
+	}
+	counter := int64(0)
+	for r := int64(0); r < rows; r++ {
+		for c := int64(0); c < columns; c++ {
+			if l == counter {
+				return &pb.MazeLocation{X: c, Y: r, Z: 0}, nil
+			}
+			counter++
+		}
+	}
+	// can never happen
+	return nil, fmt.Errorf("did not find location [%v]; how did this happen?", l)
+}
+
+// StateFromLocation returns the state number given a location
+func StateFromLocation(rows, columns int64, l *pb.MazeLocation) (int, error) {
+	counter := 0
+	for r := int64(0); r < rows; r++ {
+		for c := int64(0); c < columns; c++ {
+			if LocsSame(l, &pb.MazeLocation{c, r, 0}) {
+				return counter, nil
+			}
+			counter++
+		}
+	}
+	return 0, fmt.Errorf("did not find location [%v]", l)
+}
+
+func LocsSame(l, m *pb.MazeLocation) bool {
+	if l.X == m.X && l.Y == m.Y && l.Z == m.Z {
+		return true
+	}
+	return false
 }

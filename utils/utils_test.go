@@ -1,6 +1,9 @@
 package utils
 
-import "testing"
+import (
+	pb "mazes/proto"
+	"testing"
+)
 
 var affinetransformtests = []struct {
 	in         float64
@@ -90,5 +93,88 @@ func TestBits(t *testing.T) {
 		if rc != tt.in {
 			t.Errorf("expected %v for input %v, but got %v", tt.in, r, r, rc)
 		}
+	}
+}
+
+var locationfrominttests = []struct {
+	rows     int64
+	columns  int64
+	location int64
+	expected *pb.MazeLocation
+	wantErr  bool
+}{
+	{rows: 10, columns: 10, location: 0, expected: &pb.MazeLocation{0, 0, 0}, wantErr: false},
+	{rows: 3, columns: 3, location: 5, expected: &pb.MazeLocation{2, 1, 0}, wantErr: false},
+	{rows: 3, columns: 3, location: 60, expected: nil, wantErr: true},
+	{rows: 3, columns: 3, location: -1, expected: nil, wantErr: true},
+	{rows: 3, columns: 2, location: 4, expected: &pb.MazeLocation{0, 2, 0}, wantErr: false},
+	{rows: 2, columns: 2, location: 2, expected: &pb.MazeLocation{0, 1, 0}, wantErr: false},
+}
+
+func TestLocationFromInt(t *testing.T) {
+	for _, tt := range locationfrominttests {
+		l, err := LocationFromState(tt.rows, tt.columns, tt.location)
+		if err != nil {
+			if !tt.wantErr {
+				t.Fatalf("error getting location (%v): %v", tt.location, err)
+			} else {
+				continue // skip the rest of the test
+			}
+		}
+
+		if tt.expected.X != l.X || tt.expected.Y != l.Y || tt.expected.Z != l.Z {
+			t.Errorf("expected: %v; received: %v (rows=%v, columns=%v)", tt.expected, l, tt.rows, tt.columns)
+		}
+	}
+}
+
+var statefromlocationtests = []struct {
+	l        *pb.MazeLocation
+	rows     int64
+	columns  int64
+	expected int
+	wantErr  bool
+}{
+	{l: &pb.MazeLocation{0, 0, 0}, rows: 10, columns: 10, expected: 0, wantErr: false},
+	{l: &pb.MazeLocation{23, 0, 0}, rows: 10, columns: 10, expected: 0, wantErr: true},
+	{l: &pb.MazeLocation{1, 0, 0}, rows: 10, columns: 10, expected: 1, wantErr: false},
+}
+
+func TestStateFromLocation(t *testing.T) {
+	for _, tt := range statefromlocationtests {
+		state, err := StateFromLocation(tt.rows, tt.columns, tt.l)
+		if err != nil {
+			if !tt.wantErr {
+				t.Fatalf("failed to find state from l (%v)", tt.l, err)
+			} else {
+				continue
+			}
+		}
+
+		if state != tt.expected {
+			t.Errorf("expected: %v; received: %v; location: %v", tt.expected, state, tt.l)
+		}
+
+	}
+}
+
+var locsametests = []struct {
+	l        *pb.MazeLocation
+	m        *pb.MazeLocation
+	expected bool
+}{
+	{l: &pb.MazeLocation{0, 0, 0}, m: &pb.MazeLocation{0, 0, 0}, expected: true},
+	{l: &pb.MazeLocation{3, 2, 6}, m: &pb.MazeLocation{3, 2, 6}, expected: true},
+	{l: &pb.MazeLocation{0, 0, 0}, m: &pb.MazeLocation{0, 1, 0}, expected: false},
+	{l: &pb.MazeLocation{0, 0, 0}, m: &pb.MazeLocation{3, 0, 0}, expected: false},
+}
+
+func TestLocsSame(t *testing.T) {
+	for _, tt := range locsametests {
+		r := LocsSame(tt.l, tt.m)
+		if r != tt.expected {
+			t.Errorf("expected: %v, received: %v; l: %v; m: %v", tt.expected, r, tt.l, tt.m)
+		}
+
 	}
 }

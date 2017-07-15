@@ -345,7 +345,7 @@ func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {
 		y, _ := strconv.ParseInt(from[1], 10, 64)
 		cell, err := m.Cell(x, y, 0)
 		if err != nil {
-			return nil, fmt.Errorf("invalid fromCell: %v", err)
+			return nil, fmt.Errorf("invalid cell: %v", err)
 		}
 		return cell, nil
 	}
@@ -930,7 +930,7 @@ func (m *Maze) drawClientPath(r *sdl.Renderer, client *client) {
 // Cell returns the cell at r,c
 func (m *Maze) Cell(column, row, z int64) (*Cell, error) {
 	if column < 0 || column >= m.columns || row < 0 || row >= m.rows {
-		return nil, fmt.Errorf("(%v, %v) is outside the grid", column, row)
+		return nil, fmt.Errorf("(%v, %v) is outside the grid (%v, %v)", column, row, m.columns, m.rows)
 	}
 	return m.cells[column][row], nil
 }
