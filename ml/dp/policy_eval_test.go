@@ -1,7 +1,6 @@
 package dp
 
 import (
-	"log"
 	"mazes/algos"
 	"mazes/maze"
 	pb "mazes/proto"
@@ -55,6 +54,19 @@ var policytests = []struct {
 		},
 		clientID: "client-bintree-dp-eval-only",
 		actions:  []int{North, South, East, West},
+	}, {
+		config: &pb.MazeConfig{
+			Columns:    8,
+			Rows:       9,
+			CreateAlgo: "prim",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "random",
+		},
+		clientID: "client-prim-dp-eval-only",
+		actions:  []int{North, South, East, West},
 	},
 }
 
@@ -85,10 +97,10 @@ func TestPolicy_Eval(t *testing.T) {
 		generating := abool.New()
 		generating.Set()
 		if err := algo.Apply(m, 0, generating); err != nil {
-			log.Printf(err.Error())
 			generating.UnSet()
 			t.Fatalf("error applying algorithm: %v", err)
 		}
+		// required to get the toCell
 		_, _, err = m.AddClient(tt.clientID, tt.clientConfig)
 		if err != nil {
 			t.Fatalf("failed to add client: %v", err)

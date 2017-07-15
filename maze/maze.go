@@ -206,8 +206,6 @@ func (m *Maze) Encode() (string, error) {
 
 			e := c.Encode()
 			enc = enc + e
-			i, _ := strconv.ParseInt(e, 16, 0)
-			log.Printf("cell: %v; e: %b (%X)", c, i, i)
 		}
 		enc = enc + "\n"
 	}

@@ -35,17 +35,17 @@ func MazeSizeFromFile(config *pb.MazeConfig) (c, r int, err error) {
 	file, _ := os.Open(filename)
 	fileScanner := bufio.NewScanner(file)
 	lineCount := 0
-	rowCount := 0
+	colCount := 0
 
 	for fileScanner.Scan() {
 		if lineCount == 0 {
 			// grab row length
-			rowCount = len(fileScanner.Text())
+			colCount = len(fileScanner.Text())
 		}
 		lineCount++
 	}
 
-	return lineCount, rowCount, nil
+	return colCount, lineCount, nil
 }
 
 // Apply reads in the provided file sets up the passages

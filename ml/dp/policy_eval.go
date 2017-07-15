@@ -47,6 +47,10 @@ func reshape(m mat64.Matrix, rows, columns int) *mat64.Dense {
 // to the probability pi(s,a) of taking action a when in state s.
 // The value of a state s under policy pi is the expected return when starting in s
 // and following pi thereafter.
+//
+// df is the discount_factor, the discount_rate: the present value of future rewards
+//  df = 0; agent maximizes only current rewards
+// as df approaches 1, agent becomes more farsighted
 func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) (*ValueFunction, error) {
 	r, _ := p.m.Dims()
 	vFunction := NewValueFunction(r) // based on number of rows in matrix = number of states
@@ -154,6 +158,8 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 				if err != nil {
 					return nil, err
 				}
+
+				// bellman equation
 				v = v + actionProb*prob*(reward+df*vNextState)
 			}
 
