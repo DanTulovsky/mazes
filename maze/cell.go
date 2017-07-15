@@ -121,22 +121,22 @@ func (c *Cell) Encode() string {
 
 	switch 1 {
 	case 1:
-		if c.North() != nil {
+		if c.North() != nil && c.Linked(c.North()) {
 			e = utils.SetBit(e, 3)
 		}
 		fallthrough
 	case 2:
-		if c.South() != nil {
+		if c.South() != nil && c.Linked(c.South()) {
 			e = utils.SetBit(e, 2)
 		}
 		fallthrough
 	case 3:
-		if c.East() != nil {
+		if c.East() != nil && c.Linked(c.East()) {
 			e = utils.SetBit(e, 1)
 		}
 		fallthrough
 	case 4:
-		if c.West() != nil {
+		if c.West() != nil && c.Linked(c.West()) {
 			e = utils.SetBit(e, 0)
 		}
 	}
@@ -152,24 +152,37 @@ func (c *Cell) Decode(e string) error {
 	}
 	enc := int(i)
 
-	switch {
-	case utils.HasBit(enc, 0):
-		if c.North() != nil {
-			c.Link(c.North())
+	switch 1 {
+	case 1:
+		if utils.HasBit(enc, 3) {
+			if err := c.Link(c.North()); err != nil {
+				return fmt.Errorf("encNorth: %b (%X); cell: %v, err: %v", enc, enc, c, err)
+			}
 		}
-	case utils.HasBit(enc, 1):
-		if c.South() != nil {
-			c.Link(c.South())
+		fallthrough
+	case 2:
+		if utils.HasBit(enc, 2) {
+			if err := c.Link(c.South()); err != nil {
+				return fmt.Errorf("encSouth: %b (%X); cell: %v, err: %v", enc, enc, c, err)
+			}
 		}
-	case utils.HasBit(enc, 2):
-		if c.East() != nil {
-			c.Link(c.East())
+		fallthrough
+	case 3:
+		if utils.HasBit(enc, 1) {
+			log.Printf(">> %v: %b (%X)", c, enc, enc)
+			if err := c.Link(c.East()); err != nil {
+				return fmt.Errorf("encEast: %b (%X); cell: %v, err: %v", enc, enc, c, err)
+			}
 		}
-	case utils.HasBit(enc, 3):
-		if c.West() != nil {
-			c.Link(c.West())
+		fallthrough
+	case 4:
+		if utils.HasBit(enc, 0) {
+			if err := c.Link(c.West()); err != nil {
+				return fmt.Errorf("encWest: %b (%X); cell: %v, err: %v", enc, enc, c, err)
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -751,24 +764,41 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
 	}
 }
 
-func (c *Cell) linkOneWay(cell *Cell) {
+func (c *Cell) linkOneWay(cell *Cell) error {
+	if cell == nil {
+		return fmt.Errorf("linkOneWay: cannot link %v to nil", c)
+	}
 	c.links.Insert(cell, true)
+	return nil
 }
 
-func (c *Cell) unLinkOneWay(cell *Cell) {
+func (c *Cell) unLinkOneWay(cell *Cell) error {
+	if cell == nil {
+		return fmt.Errorf("unLinkOneWay: cannot link %v to nil", c)
+	}
 	c.links.Delete(cell)
+	return nil
 }
 
 // Link unlinks a cell from its neighbor (removes passage)
-func (c *Cell) Link(cell *Cell) {
+func (c *Cell) Link(cell *Cell) error {
+	if cell == nil {
+		return fmt.Errorf("Link: cannot link %v to nil", c)
+	}
 	c.linkOneWay(cell)
 	cell.linkOneWay(c)
+
+	return nil
 }
 
 // UnLink unlinks a cell from its neighbor (removes passage)
-func (c *Cell) UnLink(cell *Cell) {
+func (c *Cell) UnLink(cell *Cell) error {
+	if cell == nil {
+		return fmt.Errorf("UnLink: cannot link %v to nil", c)
+	}
 	c.unLinkOneWay(cell)
 	cell.unLinkOneWay(c)
+	return nil
 }
 
 // Links returns a list of all cells linked (passage to) to this one

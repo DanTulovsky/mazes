@@ -1,13 +1,12 @@
 package maze
 
 import (
-	"log"
-	"mazes/utils"
 	"strconv"
 	"testing"
 
 	"fmt"
 	pb "mazes/proto"
+	"mazes/utils"
 )
 
 var mazecreatetests = []struct {
@@ -47,6 +46,13 @@ var mazecreatetests = []struct {
 	}, {
 		config:  &pb.MazeConfig{},
 		wantErr: true,
+	},
+	{
+		config: &pb.MazeConfig{
+			Rows:    4,
+			Columns: 3,
+		},
+		wantErr: false,
 	},
 }
 
@@ -100,12 +106,13 @@ func TestEncode(t *testing.T) {
 
 		}
 
-		e := m.Encode()
+		e, err := m.Encode()
+		if err != nil {
+			t.Errorf("failed to encode maze: %v", err)
+		}
 		if m.rows*m.columns+m.rows != int64(len(e)) {
 			t.Errorf("expected encoding of length %v, but have %v.", m.rows*m.columns+m.rows, len(e))
 		}
-		log.Printf("\n%v\n", e)
-
 	}
 }
 
@@ -122,13 +129,9 @@ func TestDecode(t *testing.T) {
 
 		}
 
-		var encoded string
-		// create encoding string
-		for _, row := range m.Rows() {
-			for _ = range row {
-				encoded = encoded + "F"
-			}
-			encoded = encoded + "\n"
+		encoded, err := m.Encode()
+		if err != nil {
+			t.Errorf("failed to encode maze: %v", err)
 		}
 
 		if err := m.Decode(encoded); err != nil {
@@ -178,6 +181,30 @@ var cellencodetests = []struct {
 		cSouth:    NewCell(5, 6, 0, &pb.MazeConfig{}),
 		cWest:     NewCell(4, 5, 0, &pb.MazeConfig{}),
 		linkNorth: true,
+		linkSouth: true,
+		linkEast:  true,
+		linkWest:  true,
+		encoded:   "1111",
+	}, {
+		config:    &pb.MazeConfig{},
+		c:         NewCell(5, 5, 0, &pb.MazeConfig{}),
+		cNorth:    NewCell(5, 4, 0, &pb.MazeConfig{}),
+		cEast:     NewCell(6, 5, 0, &pb.MazeConfig{}),
+		cSouth:    NewCell(5, 6, 0, &pb.MazeConfig{}),
+		cWest:     NewCell(4, 5, 0, &pb.MazeConfig{}),
+		linkNorth: true,
+		linkSouth: true,
+		linkEast:  false,
+		linkWest:  false,
+		encoded:   "1100",
+	}, {
+		config:    &pb.MazeConfig{},
+		c:         NewCell(5, 5, 0, &pb.MazeConfig{}),
+		cNorth:    NewCell(5, 4, 0, &pb.MazeConfig{}),
+		cEast:     NewCell(6, 5, 0, &pb.MazeConfig{}),
+		cSouth:    NewCell(5, 6, 0, &pb.MazeConfig{}),
+		cWest:     NewCell(4, 5, 0, &pb.MazeConfig{}),
+		linkNorth: true,
 		linkSouth: false,
 		linkEast:  true,
 		linkWest:  true,
@@ -188,25 +215,28 @@ var cellencodetests = []struct {
 func TestCellEncode(t *testing.T) {
 	for _, tt := range cellencodetests {
 
-		tt.c.SetNorth(nil)
-		tt.c.SetSouth(nil)
-		tt.c.SetEast(nil)
-		tt.c.SetWest(nil)
-
 		if tt.linkNorth {
-			tt.c.Link(tt.cNorth)
+			if err := tt.c.Link(tt.cNorth); err != nil {
+				t.Error(err)
+			}
 			tt.c.SetNorth(tt.cNorth)
 		}
 		if tt.linkSouth {
-			tt.c.Link(tt.cSouth)
+			if err := tt.c.Link(tt.cSouth); err != nil {
+				t.Error(err)
+			}
 			tt.c.SetSouth(tt.cSouth)
 		}
 		if tt.linkEast {
-			tt.c.Link(tt.cEast)
+			if err := tt.c.Link(tt.cEast); err != nil {
+				t.Error(err)
+			}
 			tt.c.SetEast(tt.cEast)
 		}
 		if tt.linkWest {
-			tt.c.Link(tt.cWest)
+			if err := tt.c.Link(tt.cWest); err != nil {
+				t.Error(err)
+			}
 			tt.c.SetWest(tt.cWest)
 		}
 
@@ -218,6 +248,42 @@ func TestCellEncode(t *testing.T) {
 	}
 }
 
+func TestCellDecode(t *testing.T) {
+	for _, tt := range cellencodetests {
+
+		tt.c.SetNorth(tt.cNorth)
+		tt.c.SetSouth(tt.cSouth)
+		tt.c.SetEast(tt.cEast)
+		tt.c.SetWest(tt.cWest)
+
+		// the test uses binary string representation for human understanding
+		i, _ := strconv.ParseInt(tt.encoded, 2, 0)
+		if err := tt.c.Decode(fmt.Sprintf("%X", i)); err != nil {
+			t.Errorf("error decoding into cell: %v: i: %b (%X)", err, i, i)
+		}
+
+		if tt.linkNorth {
+			if !tt.c.Linked(tt.c.North()) {
+				t.Errorf("expected link north, but did not have it: i: %b (%X)", i, i)
+			}
+		}
+		if tt.linkSouth {
+			if !tt.c.Linked(tt.c.South()) {
+				t.Errorf("expected link south, but did not have it: i: %b (%X)", i, i)
+			}
+		}
+		if tt.linkEast {
+			if !tt.c.Linked(tt.c.East()) {
+				t.Errorf("expected link east, but did not have it: i: %b (%X)", i, i)
+			}
+		}
+		if tt.linkWest {
+			if !tt.c.Linked(tt.c.West()) {
+				t.Errorf("expected link west, but did not have it: i: %b (%X)", i, i)
+			}
+		}
+	}
+}
 func BenchmarkNewMaze(b *testing.B) {
 	config := &pb.MazeConfig{
 		Rows:    10,

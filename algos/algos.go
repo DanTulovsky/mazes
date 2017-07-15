@@ -9,6 +9,7 @@ import (
 	"mazes/genalgos/bintree"
 	"mazes/genalgos/ellers"
 	gen_empty "mazes/genalgos/empty"
+	"mazes/genalgos/fromfile"
 	"mazes/genalgos/full"
 	"mazes/genalgos/hunt_and_kill"
 	"mazes/genalgos/kruskal"
@@ -31,6 +32,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"bintree":               &bintree.Bintree{},
 	"ellers":                &ellers.Ellers{},
 	"empty":                 &gen_empty.Empty{},
+	"fromfile":              &fromfile.Fromfile{},
 	"full":                  &full.Full{},
 	"hunt-and-kill":         &hunt_and_kill.HuntAndKill{},
 	"kruskal":               &kruskal.Kruskal{},
@@ -40,16 +42,6 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"sidewinder":            &sidewinder.Sidewinder{},
 	"wilsons":               &wilsons.Wilsons{},
 }
-
-//var SolveAlgorithms map[string]solvealgos.Algorithmer = map[string]solvealgos.Algorithmer{
-//	//"dijkstra":              &dijkstra.Dijkstra{},
-//	//"manual":                &manual.Manual{},
-//	"random":                &random.Random{},
-//	"random-unvisited":      &random_unvisited.RandomUnvisited{},
-//	"recursive-backtracker": &solve_rb.RecursiveBacktracker{},
-//	"wall-follower":         &wall_follower.WallFollower{},
-//	"empty":                 &empty.Empty{},
-//}
 
 var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func() solvealgos.Algorithmer{
 	//"dijkstra":              &dijkstra.Dijkstra{},

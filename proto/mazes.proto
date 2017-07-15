@@ -123,6 +123,7 @@ message MazeConfig {
 
     string Id = 28;
     bool Gui = 29;
+    string FromFile = 30;
 }
 
 // ClientConfig has all the per-client config settings in it

@@ -5,10 +5,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/tevino/abool"
 	"mazes/genalgos"
 	"mazes/maze"
 	"mazes/utils"
+
+	"github.com/tevino/abool"
 )
 
 const (
@@ -67,7 +68,8 @@ func divide(m *maze.Maze, row, column, height, width int64, delay time.Duration,
 	return nil
 }
 
-func divideHorizontally(m *maze.Maze, row, column, height, width int64, delay time.Duration, generating *abool.AtomicBool) {
+func divideHorizontally(m *maze.Maze, row, column, height, width int64,
+	delay time.Duration, generating *abool.AtomicBool) {
 
 	divideSouthOf := int64(utils.Random(0, int(height)-1))
 	passageAt := int64(utils.Random(0, int(width)))

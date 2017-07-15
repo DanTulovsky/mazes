@@ -20,6 +20,8 @@ import (
 	lsdl "mazes/sdl"
 	"safemap"
 
+	"mazes/genalgos/fromfile"
+
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
@@ -69,8 +71,6 @@ var (
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
-
-	exportPath = flag.String("export_path", "", "path where exported mazes are stored")
 
 	// keep track of mazes
 	mazeMap = *safemap.NewSafeMap()
@@ -372,17 +372,12 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.export-maze.latency", nil)
 
-			if *exportPath == "" {
+			if *fromfile.SavedMazePath == "" {
 				in.Reply <- commandReply{error: fmt.Errorf("export_path not set on server")}
 				return
 			}
-			encoded := m.Encode()
-			if encoded == "" {
-				in.Reply <- commandReply{error: fmt.Errorf("failed to encode maze")}
-				return
-			}
 
-			if err := m.Export(*exportPath); err != nil {
+			if err := m.Export(*fromfile.SavedMazePath); err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to export maze: %v", err)}
 				return
 			}
@@ -764,7 +759,8 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	t := metrics.GetOrRegisterTimer("maze.rpc.create-maze.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	mazeID := uuid.NewV4().String()
+	var mazeID string
+	mazeID = uuid.NewV4().String()
 	in.GetConfig().Id = mazeID
 
 	comm := make(chan commandData)

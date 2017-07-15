@@ -121,6 +121,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		CreateAlgo:           createAlgo,
 		BraidProbability:     *braidProbability,
 		Gui:                  *showGUI,
+		FromFile:             *mazeID,
 	}
 	return config
 }

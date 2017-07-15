@@ -73,6 +73,10 @@ type Maze struct {
 	deadlock.RWMutex
 }
 
+func (m *Maze) ID() string {
+	return m.id
+}
+
 func (m *Maze) Config() *pb.MazeConfig {
 	return m.config
 }
@@ -187,21 +191,28 @@ func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 // Encode encodes the maze (shape and cells/passages) to ascii
 // The maze is encoded into an ascii grid. Each cell is represented by a hex character
 // See cell.Encode for explanation
-func (m *Maze) Encode() string {
+func (m *Maze) Encode() (string, error) {
 	m.Lock()
 	defer m.Unlock()
 
 	var enc string
 
-	for _, row := range m.Rows() {
-		for _, c := range row {
+	for x := int64(0); x < m.rows; x++ {
+		for y := int64(0); y < m.columns; y++ {
+			c, err := m.Cell(y, x, 0)
+			if err != nil {
+				return "", err
+			}
+
 			e := c.Encode()
 			enc = enc + e
+			i, _ := strconv.ParseInt(e, 16, 0)
+			log.Printf("cell: %v; e: %b (%X)", c, i, i)
 		}
 		enc = enc + "\n"
 	}
 
-	return enc
+	return enc, nil
 
 }
 
@@ -211,22 +222,25 @@ func (m *Maze) Decode(encoded string) error {
 	m.Unlock()
 
 	if int(m.rows*m.columns) != len(encoded)-int(m.rows) {
-		return fmt.Errorf("maze size (%v, %v) does not match encoded size (length=%v):\n%v", m.columns, m.rows, len(encoded)-int(m.rows), encoded)
+		return fmt.Errorf("maze size=%v (%v, %v) does not match encoded size (length=%v):\n%v",
+			m.rows*m.columns, m.columns, m.rows, len(encoded)-int(m.rows), encoded)
 	}
 
-	x := 0
+	p := 0
 
-	for _, row := range m.Rows() {
-		for _, c := range row {
-			if string(encoded[x]) == "\n" {
-				x++
-				continue
-			}
-			if err := c.Decode(string(encoded[x])); err != nil {
+	for x := int64(0); x < m.rows; x++ {
+		for y := int64(0); y < m.columns; y++ {
+			c, err := m.Cell(y, x, 0)
+			if err != nil {
 				return err
 			}
-			x++
+
+			if err := c.Decode(string(encoded[p])); err != nil {
+				return err
+			}
+			p++
 		}
+		p++
 	}
 
 	return nil
@@ -238,8 +252,12 @@ func (m *Maze) Export(dir string) error {
 
 	filename := path.Join(dir, m.id)
 
-	log.Printf("\n%v", m.Encode())
-	data := []byte(m.Encode())
+	e, err := m.Encode()
+	if err != nil {
+		return err
+	}
+	log.Printf("\n%v", e)
+	data := []byte(e)
 	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
 		return err
 	}
