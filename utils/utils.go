@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"fmt"
+	"math"
 	pb "mazes/proto"
 )
 
@@ -98,31 +99,17 @@ func LocationFromState(rows, columns, l int64) (*pb.MazeLocation, error) {
 	if l > rows*columns || l < 0 {
 		return nil, fmt.Errorf("%v is too large or too small for grid of (columns, rows) [%v, %v]", l, columns, rows)
 	}
-	counter := int64(0)
-	for r := int64(0); r < rows; r++ {
-		for c := int64(0); c < columns; c++ {
-			if l == counter {
-				return &pb.MazeLocation{X: c, Y: r, Z: 0}, nil
-			}
-			counter++
-		}
-	}
-	// can never happen
-	return nil, fmt.Errorf("did not find location [%v]; how did this happen?", l)
+
+	r, c := ModDiv(l, columns)
+	return &pb.MazeLocation{X: c, Y: r, Z: 0}, nil
 }
 
 // StateFromLocation returns the state number given a location
 func StateFromLocation(rows, columns int64, l *pb.MazeLocation) (int, error) {
-	counter := 0
-	for r := int64(0); r < rows; r++ {
-		for c := int64(0); c < columns; c++ {
-			if LocsSame(l, &pb.MazeLocation{c, r, 0}) {
-				return counter, nil
-			}
-			counter++
-		}
+	if l.X > columns || l.Y > rows {
+		return 0, fmt.Errorf("requested coordinates (%v) are outside the grid (columns, rows) (%v, %v)", l, columns, rows)
 	}
-	return 0, fmt.Errorf("did not find location [%v]", l)
+	return int(l.X + l.Y*columns), nil
 }
 
 func LocsSame(l, m *pb.MazeLocation) bool {
@@ -130,4 +117,16 @@ func LocsSame(l, m *pb.MazeLocation) bool {
 		return true
 	}
 	return false
+}
+
+// ModDiv returns the result of x/y; integer part and remainder part
+// Don't divide by 0...
+func ModDiv(x, y int64) (int64, int64) {
+	if y == 0 {
+		return y, x
+	}
+	ipart := x / y
+	rpart := math.Mod(float64(x), float64(y))
+
+	return ipart, int64(rpart)
 }

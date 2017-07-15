@@ -96,7 +96,7 @@ func TestBits(t *testing.T) {
 	}
 }
 
-var locationfrominttests = []struct {
+var locationfromstatetests = []struct {
 	rows     int64
 	columns  int64
 	location int64
@@ -111,8 +111,8 @@ var locationfrominttests = []struct {
 	{rows: 2, columns: 2, location: 2, expected: &pb.MazeLocation{0, 1, 0}, wantErr: false},
 }
 
-func TestLocationFromInt(t *testing.T) {
-	for _, tt := range locationfrominttests {
+func TestLocationFromState(t *testing.T) {
+	for _, tt := range locationfromstatetests {
 		l, err := LocationFromState(tt.rows, tt.columns, tt.location)
 		if err != nil {
 			if !tt.wantErr {
@@ -138,6 +138,8 @@ var statefromlocationtests = []struct {
 	{l: &pb.MazeLocation{0, 0, 0}, rows: 10, columns: 10, expected: 0, wantErr: false},
 	{l: &pb.MazeLocation{23, 0, 0}, rows: 10, columns: 10, expected: 0, wantErr: true},
 	{l: &pb.MazeLocation{1, 0, 0}, rows: 10, columns: 10, expected: 1, wantErr: false},
+	{l: &pb.MazeLocation{2, 1, 0}, rows: 3, columns: 4, expected: 6, wantErr: false},
+	{l: &pb.MazeLocation{0, 2, 0}, rows: 4, columns: 3, expected: 6, wantErr: false},
 }
 
 func TestStateFromLocation(t *testing.T) {
@@ -174,6 +176,28 @@ func TestLocsSame(t *testing.T) {
 		r := LocsSame(tt.l, tt.m)
 		if r != tt.expected {
 			t.Errorf("expected: %v, received: %v; l: %v; m: %v", tt.expected, r, tt.l, tt.m)
+		}
+
+	}
+}
+
+var moddivtests = []struct {
+	x            int64
+	y            int64
+	expWhole     int64
+	expRemainder int64
+}{
+	{x: 7, y: 4, expWhole: 1, expRemainder: 3},
+	{x: 0, y: 0, expWhole: 0, expRemainder: 0},
+	{x: 3, y: 0, expWhole: 0, expRemainder: 3},
+}
+
+func TestModDiv(t *testing.T) {
+	for _, tt := range moddivtests {
+		w, r := ModDiv(tt.x, tt.y)
+
+		if w != tt.expWhole || r != tt.expRemainder {
+			t.Errorf("expected: %vr%v; got %vr%v", tt.expWhole, tt.expRemainder, w, r)
 		}
 
 	}
