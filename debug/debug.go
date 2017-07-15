@@ -7,8 +7,8 @@ import (
 
 	"sync"
 
+	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_gfx"
 )
 
 func setupSDL(n int) (*sdl.Window, *sdl.Renderer) {

@@ -119,15 +119,26 @@ func NewCell(x, y, z int64, c *pb.MazeConfig) *Cell {
 func (c *Cell) Encode() string {
 	var e int
 
-	switch {
-	case c.North() != nil:
-		utils.SetBit(e, 0)
-	case c.South() != nil:
-		utils.SetBit(e, 1)
-	case c.East() != nil:
-		utils.SetBit(e, 2)
-	case c.West() != nil:
-		utils.SetBit(e, 3)
+	switch 1 {
+	case 1:
+		if c.North() != nil {
+			e = utils.SetBit(e, 3)
+		}
+		fallthrough
+	case 2:
+		if c.South() != nil {
+			e = utils.SetBit(e, 2)
+		}
+		fallthrough
+	case 3:
+		if c.East() != nil {
+			e = utils.SetBit(e, 1)
+		}
+		fallthrough
+	case 4:
+		if c.West() != nil {
+			e = utils.SetBit(e, 0)
+		}
 	}
 
 	return fmt.Sprintf("%X", e)

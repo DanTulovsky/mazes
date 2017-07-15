@@ -12,17 +12,18 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/pkg/profile"
-	"github.com/sasha-s/go-deadlock"
-	"github.com/tevino/abool"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_image"
-	"github.com/veandco/go-sdl2/sdl_mixer"
 	"mazes/algos"
 	"mazes/colors"
 	"mazes/maze"
 	pb "mazes/proto"
 	"mazes/solvealgos"
+
+	"github.com/pkg/profile"
+	"github.com/sasha-s/go-deadlock"
+	"github.com/tevino/abool"
+	"github.com/veandco/go-sdl2/img"
+	"github.com/veandco/go-sdl2/mix"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 // For gui support

@@ -43,7 +43,7 @@ const (
 // brew install sdl2{_image,_ttf,_gfx}
 // brew install sdl2_mixer --with-flac --with-fluid-synth --with-libmikmod --with-libmodplug --with-libvorbis --with-smpeg2
 // go get -v github.com/veandco/go-sdl2/sdl{,_mixer,_image,_ttf}
-// if slow compile, runMaze: go install -a mazes/generate
+// if slow compile, runMaze: go install -a mazes/server mazes/client
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
@@ -372,12 +372,22 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.export-maze.latency", nil)
 
+			if *exportPath == "" {
+				in.Reply <- commandReply{error: fmt.Errorf("export_path not set on server")}
+				return
+			}
 			encoded := m.Encode()
-			if encoded != "" {
+			if encoded == "" {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to encode maze")}
 				return
 			}
-			log.Printf("encoded:\n%v", encoded)
+
+			if err := m.Export(*exportPath); err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to export maze: %v", err)}
+				return
+			}
+
+			in.Reply <- commandReply{error: nil}
 
 			t.UpdateSince(start)
 		case maze.CommandAddClient:

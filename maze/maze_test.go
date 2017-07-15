@@ -3,8 +3,10 @@ package maze
 import (
 	"log"
 	"mazes/utils"
+	"strconv"
 	"testing"
 
+	"fmt"
 	pb "mazes/proto"
 )
 
@@ -152,7 +154,67 @@ func TestNewMazeFromImage(t *testing.T) {
 		if m.Size() != tt.config.Rows*tt.config.Columns {
 			t.Errorf("Expected size [%v], but have [%v]", tt.config.Rows*tt.config.Columns, m.Size())
 		}
+	}
+}
 
+var cellencodetests = []struct {
+	config    *pb.MazeConfig
+	c         *Cell
+	cNorth    *Cell
+	cSouth    *Cell
+	cEast     *Cell
+	cWest     *Cell
+	linkNorth bool
+	linkSouth bool
+	linkEast  bool
+	linkWest  bool
+	encoded   string
+}{
+	{
+		config:    &pb.MazeConfig{},
+		c:         NewCell(5, 5, 0, &pb.MazeConfig{}),
+		cNorth:    NewCell(5, 4, 0, &pb.MazeConfig{}),
+		cEast:     NewCell(6, 5, 0, &pb.MazeConfig{}),
+		cSouth:    NewCell(5, 6, 0, &pb.MazeConfig{}),
+		cWest:     NewCell(4, 5, 0, &pb.MazeConfig{}),
+		linkNorth: true,
+		linkSouth: false,
+		linkEast:  true,
+		linkWest:  true,
+		encoded:   "1011",
+	},
+}
+
+func TestCellEncode(t *testing.T) {
+	for _, tt := range cellencodetests {
+
+		tt.c.SetNorth(nil)
+		tt.c.SetSouth(nil)
+		tt.c.SetEast(nil)
+		tt.c.SetWest(nil)
+
+		if tt.linkNorth {
+			tt.c.Link(tt.cNorth)
+			tt.c.SetNorth(tt.cNorth)
+		}
+		if tt.linkSouth {
+			tt.c.Link(tt.cSouth)
+			tt.c.SetSouth(tt.cSouth)
+		}
+		if tt.linkEast {
+			tt.c.Link(tt.cEast)
+			tt.c.SetEast(tt.cEast)
+		}
+		if tt.linkWest {
+			tt.c.Link(tt.cWest)
+			tt.c.SetWest(tt.cWest)
+		}
+
+		e := tt.c.Encode()
+		expected, _ := strconv.ParseInt(tt.encoded, 2, 0)
+		if e != fmt.Sprintf("%X", expected) {
+			t.Errorf("expected: %X; received: %s", expected, e)
+		}
 	}
 }
 

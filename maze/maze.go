@@ -20,6 +20,10 @@ import (
 
 	"mazes/tree"
 
+	"io/ioutil"
+
+	"path"
+
 	"github.com/rcrowley/go-metrics"
 	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
@@ -184,6 +188,9 @@ func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 // The maze is encoded into an ascii grid. Each cell is represented by a hex character
 // See cell.Encode for explanation
 func (m *Maze) Encode() string {
+	m.Lock()
+	defer m.Unlock()
+
 	var enc string
 
 	for _, row := range m.Rows() {
@@ -200,6 +207,8 @@ func (m *Maze) Encode() string {
 
 // Decode decodes the maze (shape and cells/passages) from ascii
 func (m *Maze) Decode(encoded string) error {
+	m.Lock()
+	m.Unlock()
 
 	if int(m.rows*m.columns) != len(encoded)-int(m.rows) {
 		return fmt.Errorf("maze size (%v, %v) does not match encoded size (length=%v):\n%v", m.columns, m.rows, len(encoded)-int(m.rows), encoded)
@@ -225,7 +234,15 @@ func (m *Maze) Decode(encoded string) error {
 }
 
 // Export exports the maze as encoded ascii to the file
-func (m *Maze) Export(filename string) error {
+func (m *Maze) Export(dir string) error {
+
+	filename := path.Join(dir, m.id)
+
+	log.Printf("\n%v", m.Encode())
+	data := []byte(m.Encode())
+	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -356,6 +356,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	}
 
 	if *exportMaze {
+		log.Printf("requesting server export maze...")
 		r, err := c.ExportMaze(ctx, &pb.ExportMazeRequest{MazeId: resp.GetMazeId()})
 		if err != nil || !r.GetSuccess() {
 			log.Printf("could not save maze on the server: %v (%v)", err, r.GetMessage())
