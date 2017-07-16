@@ -13,6 +13,8 @@ var policytests = []struct {
 	actions      []int
 	config       *pb.MazeConfig
 	clientConfig *pb.ClientConfig
+	df           float64
+	theta        float64 // when delta is smaller, eval stops
 	clientID     string
 }{
 	{
@@ -27,47 +29,71 @@ var policytests = []struct {
 			ToCell:    "2,1",
 		},
 		clientID: "client-empty-dp-eval-only",
-		actions:  []int{North, South, East, West},
-	}, {
-		config: &pb.MazeConfig{
-			Columns:    5,
-			Rows:       4,
-			CreateAlgo: "ellers",
-		},
-		clientConfig: &pb.ClientConfig{
-			SolveAlgo: "ml_dp_policy_eval", // no op yet
-			FromCell:  "0,0",
-			ToCell:    "2,1",
-		},
-		clientID: "client-ellers-dp-eval-only",
-		actions:  []int{North, South, East, West},
-	}, {
-		config: &pb.MazeConfig{
-			Columns:    6,
-			Rows:       3,
-			CreateAlgo: "bintree",
-		},
-		clientConfig: &pb.ClientConfig{
-			SolveAlgo: "ml_dp_policy_eval", // no op yet
-			FromCell:  "0,0",
-			ToCell:    "random",
-		},
-		clientID: "client-bintree-dp-eval-only",
-		actions:  []int{North, South, East, West},
-	}, {
-		config: &pb.MazeConfig{
-			Columns:    8,
-			Rows:       9,
-			CreateAlgo: "prim",
-		},
-		clientConfig: &pb.ClientConfig{
-			SolveAlgo: "ml_dp_policy_eval", // no op yet
-			FromCell:  "0,0",
-			ToCell:    "random",
-		},
-		clientID: "client-prim-dp-eval-only",
+		df:       0.99,
+		theta:    0.00001,
 		actions:  []int{North, South, East, West},
 	},
+	// {
+	//	config: &pb.MazeConfig{
+	//		Columns:    3,
+	//		Rows:       2,
+	//		CreateAlgo: "full", // no passages, with df=1 does not converge
+	//	},
+	//	clientConfig: &pb.ClientConfig{
+	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
+	//		FromCell:  "0,0",               // doesn't matter
+	//		ToCell:    "2,1",
+	//	},
+	//	clientID: "client-full-dp-eval-only",
+	//	df:       0.5,
+	//	theta:    0.00001,
+	//	actions:  []int{North, South, East, West},
+	//}, {
+	//	config: &pb.MazeConfig{
+	//		Columns:    5,
+	//		Rows:       4,
+	//		CreateAlgo: "ellers",
+	//	},
+	//	clientConfig: &pb.ClientConfig{
+	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
+	//		FromCell:  "0,0",
+	//		ToCell:    "2,1",
+	//	},
+	//	clientID: "client-ellers-dp-eval-only",
+	//	df:       0.9,
+	//	theta:    0.00001,
+	//	actions:  []int{North, South, East, West},
+	//}, {
+	//	config: &pb.MazeConfig{
+	//		Columns:    6,
+	//		Rows:       3,
+	//		CreateAlgo: "bintree",
+	//	},
+	//	clientConfig: &pb.ClientConfig{
+	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
+	//		FromCell:  "0,0",
+	//		ToCell:    "2,1",
+	//	},
+	//	clientID: "client-bintree-dp-eval-only",
+	//	df:       0.9,
+	//	theta:    0.00001,
+	//	actions:  []int{North, South, East, West},
+	//}, {
+	//	config: &pb.MazeConfig{
+	//		Columns:    8,
+	//		Rows:       9,
+	//		CreateAlgo: "prim",
+	//	},
+	//	clientConfig: &pb.ClientConfig{
+	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
+	//		FromCell:  "0,0",
+	//		ToCell:    "7,8",
+	//	},
+	//	clientID: "client-prim-dp-eval-only",
+	//	df:       0.9,
+	//	theta:    0.00001,
+	//	actions:  []int{North, South, East, West},
+	//},
 }
 
 func TestNewRandomPolicy(t *testing.T) {
@@ -107,9 +133,7 @@ func TestPolicy_Eval(t *testing.T) {
 		}
 
 		p := NewRandomPolicy(int(tt.config.Rows*tt.config.Columns), tt.actions)
-		df := 1.0
-		theta := 0.00001 // when delta is smaller, eval stops
-		vf, err := p.Eval(m, tt.clientID, df, theta)
+		vf, err := p.Eval(m, tt.clientID, tt.df, tt.theta)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
 		}

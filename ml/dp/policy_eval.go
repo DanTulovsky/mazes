@@ -21,6 +21,31 @@ const (
 	West
 )
 
+var (
+	actionToText = map[int]string{
+		North: "north",
+		South: "south",
+		East:  "east",
+		West:  "west",
+	}
+)
+
+// MaxInVector returns the position of the max element in the vector
+// ties are broken arbitrarily
+func MaxInVector(v *mat64.Vector) int {
+	max := float64(math.MinInt64)
+	var best []int
+
+	for x := 0; x < v.Len(); x++ {
+		value := v.At(x, 0)
+		if value >= max {
+			max = value
+			best = append(best, x)
+		}
+	}
+	return best[utils.Random(0, len(best))]
+}
+
 type Policy struct {
 	m       *mat64.Dense // the policy matrix
 	actions []int
@@ -52,8 +77,8 @@ func reshape(m mat64.Matrix, rows, columns int) *mat64.Dense {
 //  df = 0; agent maximizes only current rewards
 // as df approaches 1, agent becomes more farsighted
 func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) (*ValueFunction, error) {
-	r, _ := p.m.Dims()
-	vFunction := NewValueFunction(r) // based on number of rows in matrix = number of states
+	numStates := int(m.Config().Columns * m.Config().Rows)
+	vFunction := NewValueFunction(numStates) // based on number of rows in matrix = number of states
 
 	// get the cell that is the end (reward = 0)
 	client, err := m.Client(clientID)
@@ -61,7 +86,6 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 		return nil, err
 	}
 	endCell := m.ToCell(client)
-	log.Printf("final cell is: %v", endCell)
 
 	step := 0
 
@@ -72,7 +96,7 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 
 		// for each state, perform a full backup
 		// number of states = number of rows in matrix
-		for state := 0; state < r; state++ {
+		for state := 0; state < numStates; state++ {
 			v := 0.0 // expected value
 
 			// look through all actions
@@ -81,74 +105,11 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 				actionProb := row.At(action, 0)
 				// log.Printf("state: %v; action: %v; v: %v", state, action, actionProb)
 
-				// For each action, look at the possible next states
-
-				// get cell from state; the state is simply an integer that counts the cells in the maze
-				// starting from the top left and going row by row
-				l, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(state))
-				if err != nil {
-					return nil, err
-				}
-				cell, err := m.Cell(l.X, l.Y, l.Z)
-				if err != nil {
-					return nil, fmt.Errorf("failed to find cell at %v: %v (state=%v)", l, err, state)
-				}
-
 				// reward = -1, except at the terminal state = 0
 				reward := -1.0
-				var nextState int
-				// figure out the next state (cell) from here given the action
-				if utils.LocsSame(cell.Location(), endCell.Location()) {
-					reward = 0
-					nextState = state // don't move anywhere else
-				} else {
-					// find next cell given the action and get its state number
-					switch {
-					case action == North:
-						if cell.North() == nil {
-							nextState = state // cannot move off the grid
-							break
-						}
-						if cell.Linked(cell.North()) {
-							nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.North().Location())
-							if err != nil {
-								return nil, err
-							}
-						}
-					case action == South:
-						if cell.South() == nil {
-							nextState = state // cannot move off the grid
-							break
-						}
-						if cell.Linked(cell.South()) {
-							nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.South().Location())
-							if err != nil {
-								return nil, err
-							}
-						}
-					case action == East:
-						if cell.East() == nil {
-							nextState = state // cannot move off the grid
-							break
-						}
-						if cell.Linked(cell.East()) {
-							nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.East().Location())
-							if err != nil {
-								return nil, err
-							}
-						}
-					case action == West:
-						if cell.West() == nil {
-							nextState = state // cannot move off the grid
-							break
-						}
-						if cell.Linked(cell.West()) {
-							nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.West().Location())
-							if err != nil {
-								return nil, err
-							}
-						}
-					}
+				nextState, reward, err := p.NextState(m, endCell, state, action)
+				if err != nil {
+					return nil, err
 				}
 
 				// prob = 1; probability ???
@@ -174,11 +135,12 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 
 			// store the new value for state state
 			vFunction.Set(state, v)
-			//log.Printf("vFunction:\n%v", vFunction.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
+			// log.Printf("vFunction:\n%v", vFunction.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
 
 		}
 
-		log.Printf("delta: %v", delta)
+		// log.Printf("delta: %v", delta)
+
 		if delta < theta {
 			break
 		}
@@ -187,6 +149,112 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 	log.Printf("Steps taken: %v", step)
 	return vFunction, nil
 
+}
+
+func (p *Policy) CellFromState(m *maze.Maze, state int) (*maze.Cell, error) {
+	// get cell from state; the state is simply an integer that counts the cells in the maze
+	// starting from the top left and going row by row
+	l, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(state))
+	if err != nil {
+		return nil, err
+	}
+	cell, err := m.Cell(l.X, l.Y, l.Z)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find cell at %v: %v (state=%v)", l, err, state)
+	}
+	return cell, nil
+}
+
+// NextState returns the next state (as int) given the current state and action
+// returns nextState, reward, error
+func (p *Policy) NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (int, float64, error) {
+	var nextState int
+	var reward float64
+	// For each action, look at the possible next states
+	cell, err := p.CellFromState(m, state)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// figure out the next state (cell) from here given the action
+	if utils.LocsSame(cell.Location(), endCell.Location()) {
+		reward = 0
+		nextState = state // don't move anywhere else
+	} else {
+		reward = -1
+		// find next cell given the action and get its state number
+		switch {
+		case action == North:
+			if cell.North() == nil {
+				nextState = state // cannot move off the grid
+				break
+			}
+			if cell.Linked(cell.North()) {
+				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.North().Location())
+				if err != nil {
+					return 0, 0, err
+				}
+			}
+		case action == South:
+			if cell.South() == nil {
+				nextState = state // cannot move off the grid
+				break
+			}
+			if cell.Linked(cell.South()) {
+				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.South().Location())
+				if err != nil {
+					return 0, 0, err
+				}
+			}
+		case action == East:
+			if cell.East() == nil {
+				nextState = state // cannot move off the grid
+				break
+			}
+			if cell.Linked(cell.East()) {
+				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.East().Location())
+				if err != nil {
+					return 0, 0, err
+				}
+			}
+		case action == West:
+			if cell.West() == nil {
+				nextState = state // cannot move off the grid
+				break
+			}
+			if cell.Linked(cell.West()) {
+				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.West().Location())
+				if err != nil {
+					return 0, 0, err
+				}
+			}
+		}
+	}
+	return nextState, reward, nil
+}
+
+func (p *Policy) SetState(state int, values []float64) {
+	p.m.SetRow(state, values)
+
+}
+
+func (p *Policy) ActionsForState(s int) *mat64.Vector {
+	return p.m.RowView(s)
+}
+
+func (p *Policy) BestRandomActionsForState(s int) int {
+	actions := p.m.RowView(s)
+	max := float64(math.MinInt64)
+	var bestActions []int
+
+	for x := 0; x < actions.Len(); x++ {
+		a := actions.At(x, 0)
+		if a >= max {
+			max = a
+			bestActions = append(bestActions, x)
+		}
+	}
+	return bestActions[utils.Random(0, len(bestActions))]
 }
 
 func NewRandomPolicy(states int, actions []int) *Policy {
@@ -243,7 +311,7 @@ func (vf *ValueFunction) Reshape(rows, columns int) string {
 // Set sets the value at location l to v.
 func (vf *ValueFunction) Set(l int, v float64) error {
 	if l > vf.v.Len() || l < 0 {
-		return fmt.Errorf("invalid value for l (%v), must be between: [0,%v)", l, vf.v.Len())
+		return fmt.Errorf("(ValueFunction.set) invalid value for l (%v), must be between: [0,%v)", l, vf.v.Len())
 	}
 	vf.v.SetVec(l, v)
 	return nil
@@ -252,7 +320,7 @@ func (vf *ValueFunction) Set(l int, v float64) error {
 // Get retrieves the value at index l
 func (vf *ValueFunction) Get(l int) (float64, error) {
 	if l > vf.v.Len() || l < 0 {
-		return 0, fmt.Errorf("invalid value for l (%v), must be between: [0,%v)", l, vf.v.Len())
+		return 0, fmt.Errorf("(ValueFunction.get) invalid value for l (%v), must be between: [0,%v)", l, vf.v.Len())
 	}
 
 	return vf.v.At(l, 0), nil
