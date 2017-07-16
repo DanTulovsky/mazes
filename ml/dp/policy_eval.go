@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"mazes/maze"
 
-	"log"
-
 	"math"
 
 	"mazes/utils"
@@ -19,14 +17,17 @@ const (
 	South
 	East
 	West
+	None // no movement is best
 )
 
 var (
+	allActions   = []int{North, South, East, West, None}
 	actionToText = map[int]string{
 		North: "north",
 		South: "south",
 		East:  "east",
 		West:  "west",
+		None:  "none",
 	}
 )
 
@@ -39,8 +40,12 @@ func MaxInVector(v *mat64.Vector) int {
 	for x := 0; x < v.Len(); x++ {
 		value := v.At(x, 0)
 		if value >= max {
+			if value == max {
+				best = append(best, x)
+			} else {
+				best = []int{x}
+			}
 			max = value
-			best = append(best, x)
 		}
 	}
 	return best[utils.Random(0, len(best))]
@@ -146,7 +151,7 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64) 
 		}
 	}
 
-	log.Printf("Steps taken: %v", step)
+	// log.Printf("Steps taken: %v", step)
 	return vFunction, nil
 
 }
@@ -184,6 +189,8 @@ func (p *Policy) NextState(m *maze.Maze, endCell *maze.Cell, state, action int) 
 		reward = -1
 		// find next cell given the action and get its state number
 		switch {
+		case action == None:
+			nextState = state // no movement
 		case action == North:
 			if cell.North() == nil {
 				nextState = state // cannot move off the grid
@@ -250,8 +257,12 @@ func (p *Policy) BestRandomActionsForState(s int) int {
 	for x := 0; x < actions.Len(); x++ {
 		a := actions.At(x, 0)
 		if a >= max {
+			if a == max {
+				bestActions = append(bestActions, x)
+			} else {
+				bestActions = []int{x}
+			}
 			max = a
-			bestActions = append(bestActions, x)
 		}
 	}
 	return bestActions[utils.Random(0, len(bestActions))]

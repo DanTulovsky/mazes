@@ -392,7 +392,7 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 // AddClient adds a new client to the maze
 func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, toCell *Cell, err error) {
 
-	log.Printf("adding client: %v", id)
+	// log.Printf("adding client: %v", id)
 
 	c := &client{
 		id:         id,
@@ -424,10 +424,10 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, to
 	m.SetFromCell(c, fromCell)
 	m.SetToCell(c, toCell)
 
-	log.Printf("Path: %v -> %v", fromCell, toCell)
+	// log.Printf("Path: %v -> %v", fromCell, toCell)
 
 	// this will color the maze based on the last client to register
-	log.Printf("setting distance colors")
+	// log.Printf("setting distance colors")
 	if m.Config().GetShowDistanceColors() || m.Config().GetShowDistanceValues() {
 		m.SetDistanceInfo(c, fromCell)
 	}

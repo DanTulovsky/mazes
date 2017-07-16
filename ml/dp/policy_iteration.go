@@ -1,7 +1,6 @@
 package dp
 
 import (
-	"log"
 	"mazes/maze"
 
 	"github.com/gonum/matrix/mat64"
@@ -28,13 +27,13 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		step++
 
 		// evaluate the current policy
-		log.Printf("evaluating current policy:\n%v", policy)
+		//log.Printf("evaluating current policy:\n%v", policy)
 		vf, err = policy.Eval(m, clientID, df, theta)
 		if err != nil {
 			return nil, nil, err
 		}
-		log.Printf("Current Policy value function:\n%v",
-			vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
+		//log.Printf("Current Policy value function:\n%v",
+		//	vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
 
 		// Will be set to false if we make any changes to the policy
 		policyStable := true
@@ -52,30 +51,34 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 				if err != nil {
 					return nil, nil, err
 				}
-				log.Printf("nextState: %v; reward: %v", nextState, reward)
+				//log.Printf("currentState: %v; action: %v; nextState: %v; reward: %v", state, actionToText[a], nextState, reward)
 
 				vNextState, err := vf.Get(nextState)
 				if err != nil {
 					return nil, nil, err
 				}
-				log.Printf("vNextState: %v", vNextState)
+				//log.Printf("vNextState: %v", vNextState)
 
 				// current value
 				v := actionValues.At(a, 0)
 				v = v + prob*(reward+df*vNextState)
 				actionValues.SetVec(a, v)
-				log.Printf("setting action %v to %v", a, v)
+				// log.Printf("setting action %v to %v", actionToText[a], v)
 			}
 			bestAction := MaxInVector(actionValues)
+			//log.Printf("bestAction: %v; chosenAction: %v", actionToText[bestAction], actionToText[chosenAction])
 
 			// Greedily update the policy
 			if chosenAction != bestAction {
 				policyStable = false
-				// create a new policy for the given state (e.g. [0, 1, 0, 0] = always go south
-				newPolicyForState := make([]float64, len(actions))
-				newPolicyForState[bestAction] = 1
-				policy.SetState(state, newPolicyForState)
 			}
+			// create a new policy for the given state (e.g. [0, 1, 0, 0] = always go south
+			newPolicyForState := make([]float64, len(actions))
+			newPolicyForState[bestAction] = 1
+			policy.SetState(state, newPolicyForState)
+			//log.Printf("setting policy %v for state %v", newPolicyForState, state)
+			//log.Printf("new current policy:\n%v", policy)
+			//log.Printf("")
 		}
 
 		if policyStable {
@@ -83,6 +86,5 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		}
 	}
 
-	log.Printf("steps: %v", step)
 	return policy, vf, nil
 }

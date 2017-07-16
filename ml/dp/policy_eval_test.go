@@ -6,6 +6,7 @@ import (
 	pb "mazes/proto"
 	"testing"
 
+	"github.com/gonum/matrix/mat64"
 	"github.com/tevino/abool"
 )
 
@@ -19,81 +20,81 @@ var policytests = []struct {
 }{
 	{
 		config: &pb.MazeConfig{
-			Columns:    3,
+			Columns:    2,
 			Rows:       2,
 			CreateAlgo: "empty",
 		},
 		clientConfig: &pb.ClientConfig{
 			SolveAlgo: "ml_dp_policy_eval", // no op yet
 			FromCell:  "0,0",               // doesn't matter
-			ToCell:    "2,1",
+			ToCell:    "1,1",
 		},
 		clientID: "client-empty-dp-eval-only",
-		df:       0.99,
+		df:       1,
 		theta:    0.00001,
-		actions:  []int{North, South, East, West},
+		actions:  allActions,
 	},
-	// {
-	//	config: &pb.MazeConfig{
-	//		Columns:    3,
-	//		Rows:       2,
-	//		CreateAlgo: "full", // no passages, with df=1 does not converge
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",               // doesn't matter
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-full-dp-eval-only",
-	//	df:       0.5,
-	//	theta:    0.00001,
-	//	actions:  []int{North, South, East, West},
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    5,
-	//		Rows:       4,
-	//		CreateAlgo: "ellers",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-ellers-dp-eval-only",
-	//	df:       0.9,
-	//	theta:    0.00001,
-	//	actions:  []int{North, South, East, West},
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    6,
-	//		Rows:       3,
-	//		CreateAlgo: "bintree",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-bintree-dp-eval-only",
-	//	df:       0.9,
-	//	theta:    0.00001,
-	//	actions:  []int{North, South, East, West},
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    8,
-	//		Rows:       9,
-	//		CreateAlgo: "prim",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "7,8",
-	//	},
-	//	clientID: "client-prim-dp-eval-only",
-	//	df:       0.9,
-	//	theta:    0.00001,
-	//	actions:  []int{North, South, East, West},
-	//},
+	{
+		config: &pb.MazeConfig{
+			Columns:    3,
+			Rows:       2,
+			CreateAlgo: "full", // no passages, with df=1 does not converge
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",               // doesn't matter
+			ToCell:    "2,1",
+		},
+		clientID: "client-full-dp-eval-only",
+		df:       0.5,
+		theta:    0.00001,
+		actions:  allActions,
+	}, {
+		config: &pb.MazeConfig{
+			Columns:    5,
+			Rows:       4,
+			CreateAlgo: "ellers",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "2,1",
+		},
+		clientID: "client-ellers-dp-eval-only",
+		df:       1,
+		theta:    0.00001,
+		actions:  allActions,
+	}, {
+		config: &pb.MazeConfig{
+			Columns:    6,
+			Rows:       3,
+			CreateAlgo: "bintree",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "2,1",
+		},
+		clientID: "client-bintree-dp-eval-only",
+		df:       1,
+		theta:    0.00001,
+		actions:  allActions,
+	}, {
+		config: &pb.MazeConfig{
+			Columns:    8,
+			Rows:       9,
+			CreateAlgo: "prim",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "7,8",
+		},
+		clientID: "client-prim-dp-eval-only",
+		df:       1,
+		theta:    0.00001,
+		actions:  allActions,
+	},
 }
 
 func TestNewRandomPolicy(t *testing.T) {
@@ -148,6 +149,24 @@ func TestValueFunction_Set(t *testing.T) {
 		vf := NewValueFunction(int(tt.config.Rows * tt.config.Columns))
 		vf.Set(1, 0.33)
 		t.Logf("value function:\n%v", vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
+
+	}
+}
+
+var maxinvectortests = []struct {
+	v        *mat64.Vector
+	expected int
+}{
+	{v: mat64.NewVector(3, []float64{1, 2, 3}), expected: 2},   // location of '3'
+	{v: mat64.NewVector(3, []float64{52, 2, 11}), expected: 0}, // location of '52'
+}
+
+func TestMaxInVector(t *testing.T) {
+	for _, tt := range maxinvectortests {
+		best := MaxInVector(tt.v)
+		if best != tt.expected {
+			t.Errorf("expected: %v; got: %v; vector:\n%v", tt.expected, best, mat64.Formatted(tt.v, mat64.Prefix(""), mat64.Excerpt(0)))
+		}
 
 	}
 }
