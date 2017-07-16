@@ -48,7 +48,7 @@ func MazeSizeFromFile(config *pb.MazeConfig) (c, r int, err error) {
 	return colCount, lineCount, nil
 }
 
-// Apply reads in the provided file sets up the passages
+// Apply reads in the provided file and sets up the passages
 func (a *Fromfile) Apply(m *maze.Maze, delay time.Duration, generating *abool.AtomicBool) error {
 
 	defer genalgos.TimeTrack(m, time.Now())

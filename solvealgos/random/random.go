@@ -54,7 +54,6 @@ func (a *Random) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 		} else {
 			// nowhere to go?
 			return fmt.Errorf("%v isn't linked to any other cell, failing", currentCell)
-
 		}
 	}
 

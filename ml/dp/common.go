@@ -68,13 +68,11 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("vNextState: %v", vNextState)
 
 		// current value
 		v := actionValues.At(a, 0)
 		v = v + prob*(reward+df*vNextState)
 		actionValues.SetVec(a, v)
-		// log.Printf("setting action %v to %v", actionToText[a], v)
 	}
 
 	return actionValues, nil

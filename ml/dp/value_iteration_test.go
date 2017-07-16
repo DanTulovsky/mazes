@@ -46,7 +46,7 @@ var valueiterationtests = []struct {
 			ToCell:    "2,1",
 		},
 		clientID: "client-full-dp-eval-only",
-		df:       0.5,
+		df:       0.99,
 		theta:    0.00001,
 		actions:  defaultActions,
 	}, {
@@ -61,7 +61,7 @@ var valueiterationtests = []struct {
 			ToCell:    "2,1",
 		},
 		clientID: "client-ellers-dp-eval-only",
-		df:       0.9,
+		df:       0.99,
 		theta:    0.00001,
 		actions:  defaultActions,
 	}, {
@@ -76,7 +76,7 @@ var valueiterationtests = []struct {
 			ToCell:    "2,1",
 		},
 		clientID: "client-bintree-dp-eval-only",
-		df:       0.9,
+		df:       0.99,
 		theta:    0.00001,
 		actions:  defaultActions,
 	}, {
@@ -91,7 +91,7 @@ var valueiterationtests = []struct {
 			ToCell:    "3,4",
 		},
 		clientID: "client-prim-dp-eval-only",
-		df:       0.9,
+		df:       0.99,
 		theta:    0.00001,
 		actions:  defaultActions,
 	},
