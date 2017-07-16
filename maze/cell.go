@@ -169,7 +169,6 @@ func (c *Cell) Decode(e string) error {
 		fallthrough
 	case 3:
 		if utils.HasBit(enc, 1) {
-			log.Printf(">> %v: %b (%X)", c, enc, enc)
 			if err := c.Link(c.East()); err != nil {
 				return fmt.Errorf("encEast: %b (%X); cell: %v, err: %v", enc, enc, c, err)
 			}

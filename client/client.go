@@ -344,16 +344,22 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	var m *maze.Maze
 	var r *sdl.Renderer
 	var w *sdl.Window
+
+	// create local maze for DP algorithms or local gui
+	if *solveAlgo == "dp-value-iteration" || *showLocalGUI {
+		// if server gui is off, enable this so the client gui works
+		if *showLocalGUI {
+			config.Gui = true
+		}
+		if m, r, w, err = createMaze(config); err != nil {
+			log.Fatalf("could not create local client view of maze for dp: %v", err)
+		}
+	}
+
 	// show local maze if asked
 	if *showLocalGUI {
-		// if server gui is off, enable this so the client gui works
-		config.Gui = true
-		if m, r, w, err = createMaze(config); err != nil {
-			log.Fatalf("could not create local client view of maze: %v", err)
-		} else {
-			wd.Add(1)
-			go showMaze(m, r, w)
-		}
+		wd.Add(1)
+		go showMaze(m, r, w)
 	}
 
 	if *exportMaze {

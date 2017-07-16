@@ -47,7 +47,7 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 				return nil, nil, err
 			}
 			bestAction := MaxInVectorIndex(actionValues)
-			//log.Printf("state: %v; bestAction: %v; chosenAction: %v", state, actionToText[bestAction], actionToText[chosenAction])
+			//log.Printf("state: %v; bestAction: %v; chosenAction: %v", state, ActionToText[bestAction], ActionToText[chosenAction])
 
 			// Greedily update the policy
 			if chosenAction != bestAction {

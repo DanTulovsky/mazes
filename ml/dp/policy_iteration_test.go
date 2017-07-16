@@ -32,7 +32,7 @@ var policyiterationtests = []struct {
 		clientID: "client-empty-dp-eval-only",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  defaultActions,
+		actions:  DefaultActions,
 	},
 	{
 		config: &pb.MazeConfig{
@@ -48,7 +48,7 @@ var policyiterationtests = []struct {
 		clientID: "client-full-dp-eval-only",
 		df:       0.5,
 		theta:    0.00001,
-		actions:  defaultActions,
+		actions:  DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    5,
@@ -63,7 +63,7 @@ var policyiterationtests = []struct {
 		clientID: "client-ellers-dp-eval-only",
 		df:       0.9,
 		theta:    0.00001,
-		actions:  defaultActions,
+		actions:  DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    6,
@@ -78,7 +78,7 @@ var policyiterationtests = []struct {
 		clientID: "client-bintree-dp-eval-only",
 		df:       0.9,
 		theta:    0.00001,
-		actions:  defaultActions,
+		actions:  DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    4,
@@ -93,7 +93,7 @@ var policyiterationtests = []struct {
 		clientID: "client-prim-dp-eval-only",
 		df:       0.9,
 		theta:    0.00001,
-		actions:  defaultActions,
+		actions:  DefaultActions,
 	},
 }
 

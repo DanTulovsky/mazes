@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	defaultActions = []int{North, South, East, West, None}
-	actionToText   = map[int]string{
+	DefaultActions = []int{North, South, East, West, None}
+	ActionToText   = map[int]string{
 		North: "north",
 		South: "south",
 		East:  "east",
@@ -62,7 +62,7 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("currentState: %v; action: %v; nextState: %v; reward: %v", state, actionToText[a], nextState, reward)
+		//log.Printf("currentState: %v; action: %v; nextState: %v; reward: %v", state, ActionToText[a], nextState, reward)
 
 		vNextState, err := vf.Get(nextState)
 		if err != nil {
