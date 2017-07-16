@@ -14,20 +14,20 @@ var policytests = []struct {
 	actions      []int
 	config       *pb.MazeConfig
 	clientConfig *pb.ClientConfig
-	df           float64
+	df           float64 // prefer more recent steps when calculating value (1 = prefer all)
 	theta        float64 // when delta is smaller, eval stops
 	clientID     string
 }{
 	{
 		config: &pb.MazeConfig{
-			Columns:    2,
-			Rows:       2,
+			Columns:    5,
+			Rows:       6,
 			CreateAlgo: "empty",
 		},
 		clientConfig: &pb.ClientConfig{
 			SolveAlgo: "ml_dp_policy_eval", // no op yet
 			FromCell:  "0,0",               // doesn't matter
-			ToCell:    "1,1",
+			ToCell:    "4,4",
 		},
 		clientID: "client-empty-dp-eval-only",
 		df:       1,
@@ -81,17 +81,17 @@ var policytests = []struct {
 		actions:  allActions,
 	}, {
 		config: &pb.MazeConfig{
-			Columns:    8,
-			Rows:       9,
+			Columns:    4,
+			Rows:       5,
 			CreateAlgo: "prim",
 		},
 		clientConfig: &pb.ClientConfig{
 			SolveAlgo: "ml_dp_policy_eval", // no op yet
 			FromCell:  "0,0",
-			ToCell:    "7,8",
+			ToCell:    "3,4",
 		},
 		clientID: "client-prim-dp-eval-only",
-		df:       1,
+		df:       0.9,
 		theta:    0.00001,
 		actions:  allActions,
 	},

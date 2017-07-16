@@ -36,7 +36,7 @@ func TestPolicyImprovement(t *testing.T) {
 		}
 
 		encoded, err := m.Encode()
-		t.Logf("maze:\n%v\npolicy:\n%v\nvalue function (%v):\n%v", encoded, policy, tt.clientID, vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
+		t.Logf("maze:\n%v\npolicy(df=%v):\n%v\nvalue function (%v):\n%v", encoded, tt.df, policy, tt.clientID, vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
 
 	}
 }
