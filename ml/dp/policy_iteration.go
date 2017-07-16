@@ -1,18 +1,17 @@
 package dp
 
 import (
+	"log"
 	"mazes/maze"
-
-	"github.com/gonum/matrix/mat64"
 )
 
 // PolicyImprovement Algorithm. Iteratively evaluates and improves a policy
 // until an optimal policy is found.
 func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions []int) (*Policy, *ValueFunction, error) {
-	// start with a random policy
-	policy := NewRandomPolicy(int(m.Config().Rows*m.Config().Columns), actions)
-	vf := NewValueFunction(int(m.Config().Rows * m.Config().Columns))
 	numStates := int(m.Config().Columns * m.Config().Rows)
+	// start with a random policy
+	policy := NewRandomPolicy(numStates, actions)
+	vf := NewValueFunction(numStates)
 
 	// get the cell that is the end (reward = 0)
 	client, err := m.Client(clientID)
@@ -21,14 +20,14 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 	}
 	endCell := m.ToCell(client)
 
-	step := 0
+	policiesEvaluated := 0
 
 	for {
-		step++
+		policiesEvaluated++
 
 		// evaluate the current policy
 		//log.Printf("evaluating current policy:\n%v", policy)
-		vf, err = policy.Eval(m, clientID, df, theta)
+		vf, err = policy.Eval(m, clientID, df, theta, vf)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -43,30 +42,12 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 			// The best action we would take under the current policy
 			chosenAction := policy.BestRandomActionsForState(state)
 
-			actionValues := mat64.NewVector(len(actions), nil)
-			// Find the best action by one-step lookahead, ties resolved arbitrarily
-			for a := 0; a < len(actions); a++ {
-				prob := 1.0
-				nextState, reward, err := policy.NextState(m, endCell, state, a)
-				if err != nil {
-					return nil, nil, err
-				}
-				//log.Printf("currentState: %v; action: %v; nextState: %v; reward: %v", state, actionToText[a], nextState, reward)
-
-				vNextState, err := vf.Get(nextState)
-				if err != nil {
-					return nil, nil, err
-				}
-				//log.Printf("vNextState: %v", vNextState)
-
-				// current value
-				v := actionValues.At(a, 0)
-				v = v + prob*(reward+df*vNextState)
-				actionValues.SetVec(a, v)
-				// log.Printf("setting action %v to %v", actionToText[a], v)
+			actionValues, err := OneStepLookAhead(m, endCell, vf, df, state, len(actions))
+			if err != nil {
+				return nil, nil, err
 			}
-			bestAction := MaxInVector(actionValues)
-			//log.Printf("bestAction: %v; chosenAction: %v", actionToText[bestAction], actionToText[chosenAction])
+			bestAction := MaxInVectorIndex(actionValues)
+			//log.Printf("state: %v; bestAction: %v; chosenAction: %v", state, actionToText[bestAction], actionToText[chosenAction])
 
 			// Greedily update the policy
 			if chosenAction != bestAction {
@@ -82,9 +63,11 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		}
 
 		if policyStable {
-			return policy, vf, nil
+			break
 		}
+		// log.Printf("policy:\n%v\nvf:\n%v", policy, vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
 	}
 
+	log.Printf("policies evaluated: %v", policiesEvaluated)
 	return policy, vf, nil
 }

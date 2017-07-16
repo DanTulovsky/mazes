@@ -3,14 +3,14 @@ package dp
 import (
 	"mazes/algos"
 	"mazes/maze"
-	pb "mazes/proto"
 	"testing"
 
-	"github.com/gonum/matrix/mat64"
+	pb "mazes/proto"
+
 	"github.com/tevino/abool"
 )
 
-var policytests = []struct {
+var valueiterationtests = []struct {
 	actions      []int
 	config       *pb.MazeConfig
 	clientConfig *pb.ClientConfig
@@ -20,8 +20,8 @@ var policytests = []struct {
 }{
 	{
 		config: &pb.MazeConfig{
-			Columns:    6,
-			Rows:       5,
+			Columns:    8,
+			Rows:       6,
 			CreateAlgo: "empty",
 		},
 		clientConfig: &pb.ClientConfig{
@@ -97,22 +97,8 @@ var policytests = []struct {
 	},
 }
 
-func TestNewRandomPolicy(t *testing.T) {
-	for _, tt := range policytests {
-		p := NewRandomPolicy(int(tt.config.Rows*tt.config.Columns), tt.actions)
-		t.Logf("policy:\n%v", p)
-	}
-}
-
-func TestNewValueFunction(t *testing.T) {
-	for _, tt := range policytests {
-		vf := NewValueFunction(int(tt.config.Rows * tt.config.Columns))
-		t.Logf("vf reshaped:\n%v", vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
-	}
-}
-
-func TestPolicy_Eval(t *testing.T) {
-	for _, tt := range policytests {
+func TestValueIteration(t *testing.T) {
+	for _, tt := range valueiterationtests {
 		// create empty maze
 		m, err := maze.NewMaze(tt.config, nil)
 		if err != nil {
@@ -133,40 +119,13 @@ func TestPolicy_Eval(t *testing.T) {
 			t.Fatalf("failed to add client: %v", err)
 		}
 
-		p := NewRandomPolicy(int(tt.config.Rows*tt.config.Columns), tt.actions)
-		vf, err := p.Eval(m, tt.clientID, tt.df, tt.theta, nil)
+		policy, vf, err := ValueIteration(m, tt.clientID, tt.df, tt.theta, tt.actions)
 		if err != nil {
-			t.Fatalf("error evaluating policy: %v", err)
+			t.Fatalf("%v", err)
 		}
+
 		encoded, err := m.Encode()
-		t.Logf("maze:\n%v\nvalue function (%v):\n%v", encoded, tt.clientID, vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
-
-	}
-}
-
-func TestValueFunction_Set(t *testing.T) {
-	for _, tt := range policytests {
-		vf := NewValueFunction(int(tt.config.Rows * tt.config.Columns))
-		vf.Set(1, 0.33)
-		t.Logf("value function:\n%v", vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
-
-	}
-}
-
-var maxinvectortests = []struct {
-	v        *mat64.Vector
-	expected int
-}{
-	{v: mat64.NewVector(3, []float64{1, 2, 3}), expected: 2},   // location of '3'
-	{v: mat64.NewVector(3, []float64{52, 2, 11}), expected: 0}, // location of '52'
-}
-
-func TestMaxInVector(t *testing.T) {
-	for _, tt := range maxinvectortests {
-		best := MaxInVectorIndex(tt.v)
-		if best != tt.expected {
-			t.Errorf("expected: %v; got: %v; vector:\n%v", tt.expected, best, mat64.Formatted(tt.v, mat64.Prefix(""), mat64.Excerpt(0)))
-		}
+		t.Logf("maze:\n%v\npolicy(df=%v):\n%v\nvalue function (%v):\n%v", encoded, tt.df, policy, tt.clientID, vf.Reshape(int(tt.config.Rows), int(tt.config.Columns)))
 
 	}
 }
