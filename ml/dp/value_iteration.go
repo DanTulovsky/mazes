@@ -26,6 +26,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 
 	// Do value iteration until delta < theta
 	for {
+		vfEvaluated++
 		delta := 0.0
 
 		// For each state...
