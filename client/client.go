@@ -145,6 +145,7 @@ func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *m
 	}
 
 	log.Printf("solving maze (client=%v)...", r.GetClientId())
+	log.Printf("fromCell: %v; toCell: %v", r.GetFromCell(), r.GetToCell())
 
 	// match from/to path on the server (if random, for example)
 	config.FromCell = fmt.Sprintf("%d,%d", r.GetFromCell().GetX(), r.GetFromCell().GetY())

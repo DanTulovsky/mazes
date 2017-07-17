@@ -1,6 +1,7 @@
 package dp
 
 import (
+	"log"
 	"math"
 	"mazes/maze"
 	"mazes/utils"
@@ -50,6 +51,58 @@ func MaxInVectorIndex(v *mat64.Vector) int {
 	return best[utils.Random(0, len(best))]
 }
 
+func probabilityForStateAction(m *maze.Maze, state, nextState, a int) (float64, error) {
+	p := 0.0
+
+	// probability of moving from state -> nextState via a
+	// if cells linked = 1
+	// otherwise = 0
+	locCellFrom, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(state))
+	if err != nil {
+		return 0.0, err
+	}
+	cellFrom, err := m.Cell(locCellFrom.GetX(), locCellFrom.GetY(), locCellFrom.GetZ())
+	if err != nil {
+		return 0.0, err
+	}
+
+	locCellTo, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(nextState))
+	if err != nil {
+		return 0.0, err
+	}
+	cellTo, err := m.Cell(locCellTo.GetX(), locCellTo.GetY(), locCellTo.GetZ())
+	if err != nil {
+		return 0.0, err
+	}
+
+	switch {
+	case ActionToText[a] == "north":
+		if cellFrom.Linked(cellFrom.North()) && utils.LocsSame(locCellTo, cellFrom.North().Location()) {
+			p = 1.0
+		}
+	case ActionToText[a] == "south":
+		if cellFrom.South() != nil && utils.LocsSame(locCellTo, cellFrom.South().Location()) {
+			p = 1.0
+		}
+	case ActionToText[a] == "east":
+		if cellFrom.East() != nil && utils.LocsSame(locCellTo, cellFrom.East().Location()) {
+			p = 1.0
+		}
+	case ActionToText[a] == "west":
+		if cellFrom.West() != nil && utils.LocsSame(locCellTo, cellFrom.West().Location()) {
+			p = 1.0
+		}
+	case ActionToText[a] == "none":
+		p = 1.0
+	default:
+		return 0.0, fmt.Errorf("probabilityForStateAction: invalid action: %v", ActionToText[a])
+	}
+
+	log.Printf("Prob: %v -> %v (via %v): %v (%v)", cellFrom, cellTo, ActionToText[a], cellFrom.Linked(cellTo), p)
+
+	return p, nil
+}
+
 // OneStepLookAhead returns a vector of expected values for each action
 func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df float64, state, numActions int) (*mat64.Vector, error) {
 
@@ -57,8 +110,13 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 
 	// Find the best action by one-step lookahead, ties resolved arbitrarily
 	for a := 0; a < numActions; a++ {
-		prob := 1.0
 		nextState, reward, err := NextState(m, endCell, state, a)
+		if err != nil {
+			return nil, err
+		}
+
+		// Probablity of transitioning from state -> nextState given action a.
+		prob, err := probabilityForStateAction(m, state, nextState, a)
 		if err != nil {
 			return nil, err
 		}
@@ -148,6 +206,7 @@ func NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (int, float6
 	return nextState, reward, nil
 }
 
+// CellFromState returns the cell given the state number
 func CellFromState(m *maze.Maze, state int) (*maze.Cell, error) {
 	// get cell from state; the state is simply an integer that counts the cells in the maze
 	// starting from the top left and going row by row

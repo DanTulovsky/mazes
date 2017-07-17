@@ -199,7 +199,7 @@ func (p *Policy) String() string {
 	r, c := p.m.Dims()
 	excerpt := 0
 	if r > 10 || c > 10 {
-		excerpt = 5
+		excerpt = 10000
 	}
 	return fmt.Sprintf("%v\n\n", mat64.Formatted(p.m, mat64.Prefix(""), mat64.Excerpt(excerpt)))
 }
