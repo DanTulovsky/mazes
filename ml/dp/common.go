@@ -158,48 +158,48 @@ func NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (int, float6
 		case action == None:
 			nextState = state // no movement
 		case action == North:
-			if cell.North() == nil {
-				nextState = state // cannot move off the grid
-				break
-			}
 			if cell.Linked(cell.North()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.North().Location())
 				if err != nil {
 					return 0, 0, err
 				}
-			}
-		case action == South:
-			if cell.South() == nil {
+			} else {
 				nextState = state // cannot move off the grid
+				reward = -100
 				break
 			}
+		case action == South:
 			if cell.Linked(cell.South()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.South().Location())
 				if err != nil {
 					return 0, 0, err
 				}
-			}
-		case action == East:
-			if cell.East() == nil {
+			} else {
 				nextState = state // cannot move off the grid
+				reward = -100
 				break
 			}
+		case action == East:
 			if cell.Linked(cell.East()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.East().Location())
 				if err != nil {
 					return 0, 0, err
 				}
-			}
-		case action == West:
-			if cell.West() == nil {
+			} else {
 				nextState = state // cannot move off the grid
+				reward = -100
 				break
 			}
+		case action == West:
 			if cell.Linked(cell.West()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.West().Location())
 				if err != nil {
 					return 0, 0, err
 				}
+			} else {
+				nextState = state // cannot move off the grid
+				reward = -100
+				break
 			}
 		}
 	}

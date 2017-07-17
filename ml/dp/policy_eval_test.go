@@ -1,14 +1,44 @@
 package dp
 
 import (
-	"mazes/algos"
 	"mazes/maze"
 	pb "mazes/proto"
 	"testing"
 
+	"mazes/genalgos"
+	"mazes/genalgos/aldous_broder"
+	"mazes/genalgos/bintree"
+	"mazes/genalgos/ellers"
+	"mazes/genalgos/empty"
+	"mazes/genalgos/fromfile"
+	"mazes/genalgos/full"
+	"mazes/genalgos/hunt_and_kill"
+	"mazes/genalgos/kruskal"
+	"mazes/genalgos/prim"
+	"mazes/genalgos/recursive_backtracker"
+	"mazes/genalgos/recursive_division"
+	"mazes/genalgos/sidewinder"
+	"mazes/genalgos/wilsons"
+
 	"github.com/gonum/matrix/mat64"
 	"github.com/tevino/abool"
 )
+
+var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer{
+	"aldous-broder":         &aldous_broder.AldousBroder{},
+	"bintree":               &bintree.Bintree{},
+	"ellers":                &ellers.Ellers{},
+	"empty":                 &empty.Empty{},
+	"fromfile":              &fromfile.Fromfile{},
+	"full":                  &full.Full{},
+	"hunt-and-kill":         &hunt_and_kill.HuntAndKill{},
+	"kruskal":               &kruskal.Kruskal{},
+	"prim":                  &prim.Prim{},
+	"recursive-backtracker": &recursive_backtracker.RecursiveBacktracker{},
+	"recursive-division":    &recursive_division.RecursiveDivision{},
+	"sidewinder":            &sidewinder.Sidewinder{},
+	"wilsons":               &wilsons.Wilsons{},
+}
 
 var policytests = []struct {
 	actions      []int
@@ -120,7 +150,7 @@ func TestPolicy_Eval(t *testing.T) {
 		}
 
 		// apply any algorithm to it
-		algo := algos.Algorithms[tt.config.CreateAlgo]
+		algo := Algorithms[tt.config.CreateAlgo]
 		generating := abool.New()
 		generating.Set()
 		if err := algo.Apply(m, 0, generating); err != nil {

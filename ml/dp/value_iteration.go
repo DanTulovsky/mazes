@@ -10,6 +10,7 @@ import (
 
 func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []int) (*Policy, *ValueFunction, error) {
 
+	// Used to construct state/value function Q
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
 	// get the cell that is the end (reward = 0)

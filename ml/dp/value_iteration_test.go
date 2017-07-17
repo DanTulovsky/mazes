@@ -1,7 +1,6 @@
 package dp
 
 import (
-	"mazes/algos"
 	"mazes/maze"
 	"testing"
 
@@ -106,7 +105,7 @@ func TestValueIteration(t *testing.T) {
 		}
 
 		// apply any algorithm to it
-		algo := algos.Algorithms[tt.config.CreateAlgo]
+		algo := Algorithms[tt.config.CreateAlgo]
 		generating := abool.New()
 		generating.Set()
 		if err := algo.Apply(m, 0, generating); err != nil {
