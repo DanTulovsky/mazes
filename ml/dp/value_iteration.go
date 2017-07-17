@@ -10,7 +10,7 @@ import (
 
 func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []int) (*Policy, *ValueFunction, error) {
 
-	// Used to construct state/value function Q
+	// Used to construct value function V
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
 	// get the cell that is the end (reward = 0)
@@ -38,6 +38,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 				return nil, nil, err
 			}
 			bestActionValue := mat64.Max(actionValues)
+			log.Printf("actionValues: %v", mat64.Formatted(actionValues, mat64.Prefix(""), mat64.Excerpt(0)))
 
 			// How much our value function changed (across any states)
 			previousVal, err := vf.Get(state)
@@ -50,7 +51,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 			vf.Set(state, bestActionValue)
 		}
 
-		// log.Printf("delta: %v", delta)
+		log.Printf("delta: %v", delta)
 		if delta < theta {
 			break
 		}

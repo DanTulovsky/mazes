@@ -1,7 +1,6 @@
 package dp
 
 import (
-	"log"
 	"math"
 	"mazes/maze"
 	"mazes/utils"
@@ -70,10 +69,10 @@ func probabilityForStateAction(m *maze.Maze, state, nextState, a int) (float64, 
 	if err != nil {
 		return 0.0, err
 	}
-	cellTo, err := m.Cell(locCellTo.GetX(), locCellTo.GetY(), locCellTo.GetZ())
-	if err != nil {
-		return 0.0, err
-	}
+	//cellTo, err := m.Cell(locCellTo.GetX(), locCellTo.GetY(), locCellTo.GetZ())
+	//if err != nil {
+	//	return 0.0, err
+	//}
 
 	switch {
 	case ActionToText[a] == "north":
@@ -98,7 +97,7 @@ func probabilityForStateAction(m *maze.Maze, state, nextState, a int) (float64, 
 		return 0.0, fmt.Errorf("probabilityForStateAction: invalid action: %v", ActionToText[a])
 	}
 
-	log.Printf("Prob: %v -> %v (via %v): %v (%v)", cellFrom, cellTo, ActionToText[a], cellFrom.Linked(cellTo), p)
+	// log.Printf("Prob: %v -> %v (via %v): %v (%v)", cellFrom, cellTo, ActionToText[a], cellFrom.Linked(cellTo), p)
 
 	return p, nil
 }
@@ -120,7 +119,7 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 		if err != nil {
 			return nil, err
 		}
-		//log.Printf("currentState: %v; action: %v; nextState: %v; reward: %v", state, ActionToText[a], nextState, reward)
+		// log.Printf("currentState: %v; action: %v; nextState: %v; reward: %v", state, ActionToText[a], nextState, reward)
 
 		vNextState, err := vf.Get(nextState)
 		if err != nil {
@@ -130,9 +129,11 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 		// current value
 		v := actionValues.At(a, 0)
 		v = v + prob*(reward+df*vNextState)
+		//log.Printf("v> %v", v)
 		actionValues.SetVec(a, v)
 	}
 
+	// log.Printf("actionValue: %v", actionValues)
 	return actionValues, nil
 }
 
