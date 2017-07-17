@@ -108,10 +108,15 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 	actionValues := mat64.NewVector(numActions, nil)
 
 	// Find the best action by one-step lookahead, ties resolved arbitrarily
+	// only consider actions that are possible from current state
 	for a := 0; a < numActions; a++ {
-		nextState, reward, err := NextState(m, endCell, state, a)
+		nextState, reward, valid, err := NextState(m, endCell, state, a)
 		if err != nil {
 			return nil, err
+		}
+		if !valid {
+			actionValues.SetVec(a, math.Inf(-1))
+			continue // do not include actions that are not possible from this state
 		}
 
 		// Probablity of transitioning from state -> nextState given action a.
@@ -138,73 +143,62 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 }
 
 // NextState returns the next state (as int) given the current state and action
-// returns nextState, reward, error
-func NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (int, float64, error) {
-	var nextState int
-	var reward float64
+// returns nextState, reward, valid, error
+// valid is set to false if the action is not valid for this state
+func NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (nextState int, reward float64, valid bool, err error) {
 	// For each action, look at the possible next states
 	cell, err := CellFromState(m, state)
 	if err != nil {
-		return 0, 0, err
+		return nextState, reward, valid, err
 	}
 
 	// figure out the next state (cell) from here given the action
 	if utils.LocsSame(cell.Location(), endCell.Location()) {
 		reward = 0
 		nextState = state // don't move anywhere else
+		valid = true
 	} else {
 		reward = -1
 		// find next cell given the action and get its state number
 		switch {
 		case action == None:
-			nextState = state // no movement
+			nextState = state
+			valid = true
 		case action == North:
 			if cell.Linked(cell.North()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.North().Location())
 				if err != nil {
-					return 0, 0, err
+					return nextState, reward, valid, err
 				}
-			} else {
-				nextState = state // cannot move off the grid
-				reward = -100
-				break
+				valid = true
 			}
 		case action == South:
 			if cell.Linked(cell.South()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.South().Location())
 				if err != nil {
-					return 0, 0, err
+					return nextState, reward, valid, err
 				}
-			} else {
-				nextState = state // cannot move off the grid
-				reward = -100
-				break
+				valid = true
 			}
 		case action == East:
 			if cell.Linked(cell.East()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.East().Location())
 				if err != nil {
-					return 0, 0, err
+					return nextState, reward, valid, err
 				}
-			} else {
-				nextState = state // cannot move off the grid
-				reward = -100
-				break
+				valid = true
 			}
 		case action == West:
 			if cell.Linked(cell.West()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.West().Location())
 				if err != nil {
-					return 0, 0, err
+					return nextState, reward, valid, err
 				}
-			} else {
-				nextState = state // cannot move off the grid
-				reward = -100
-				break
+				valid = true
 			}
 		}
 	}
-	return nextState, reward, nil
+	return nextState, reward, valid, nil
 }
 
 // CellFromState returns the cell given the state number

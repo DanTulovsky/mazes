@@ -40,7 +40,7 @@ func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}
 	log.Printf("value function:\n%v", vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
-	log.Printf("optimal policy:\n%v", policy)
+	// log.Printf("optimal policy:\n%v", policy)
 	solved := false
 	steps := 0
 
@@ -57,7 +57,7 @@ func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 		}
 		// not random because only one action is 1, the rest 0
 		action := policy.BestRandomActionsForState(state)
-		log.Printf("At: %v; moving to: %v", loc, dp.ActionToText[action])
+		// log.Printf("At: %v (state=%v); moving to: %v", loc, state, dp.ActionToText[action])
 
 		reply, err := a.Move(mazeID, clientID, dp.ActionToText[action])
 		if err != nil {
@@ -66,6 +66,7 @@ func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 
 		previousCell := currentCell
 		currentCell = reply.GetCurrentLocation()
+		// availableDirections := reply.GetAvailableDirections()
 		steps++
 
 		if err := a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps); err != nil {

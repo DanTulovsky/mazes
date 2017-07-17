@@ -38,7 +38,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 				return nil, nil, err
 			}
 			bestActionValue := mat64.Max(actionValues)
-			log.Printf("actionValues: %v", mat64.Formatted(actionValues.T(), mat64.Prefix(""), mat64.Excerpt(0)))
+			// log.Printf("best: %v, actionValues: %v", bestActionValue, mat64.Formatted(actionValues.T(), mat64.Prefix(""), mat64.Excerpt(0)))
 
 			// How much our value function changed (across any states)
 			previousVal, err := vf.Get(state)
@@ -51,7 +51,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 			vf.Set(state, bestActionValue)
 		}
 
-		log.Printf("delta: %v", delta)
+		// log.Printf("delta: %v", delta)
 		if delta < theta {
 			break
 		}

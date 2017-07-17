@@ -46,8 +46,8 @@ var (
 	showLocalGUI       = flag.Bool("local_gui", false, "show client's view of the maze")
 
 	// dimensions
-	rows    = flag.Int64("r", 30, "number of rows in the maze")
-	columns = flag.Int64("c", 60, "number of rows in the maze")
+	rows    = flag.Int64("r", 15, "number of rows in the maze")
+	columns = flag.Int64("c", 15, "number of rows in the maze")
 
 	// colors
 	bgColor              = flag.String("bgcolor", "white", "background color")
@@ -60,7 +60,7 @@ var (
 	toCellColor          = flag.String("to_cell_color", "", "to cell color, based on path if empty")
 
 	// width
-	cellWidth = flag.Int64("w", 20, "cell width (best as multiple of 2)")
+	cellWidth = flag.Int64("w", 30, "cell width (best as multiple of 2)")
 	pathWidth = flag.Int64("path_width", 2, "path width")
 	wallWidth = flag.Int64("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")

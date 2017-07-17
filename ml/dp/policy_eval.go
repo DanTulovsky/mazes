@@ -119,9 +119,12 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64, 
 				// reward = -1, except at the terminal state = 0
 				// expected immediate reward on transition from s to s' under action a
 				reward := -1.0
-				nextState, reward, err := NextState(m, endCell, state, action)
+				nextState, reward, valid, err := NextState(m, endCell, state, action)
 				if err != nil {
 					return nil, err
+				}
+				if !valid {
+					continue  // do not include actions that are not possible from this state
 				}
 
 				// prob = 1; probability of transition from s to s' under action a (always 100%)

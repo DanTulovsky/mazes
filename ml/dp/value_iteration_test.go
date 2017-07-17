@@ -19,8 +19,8 @@ var valueiterationtests = []struct {
 }{
 	{
 		config: &pb.MazeConfig{
-			Columns:    2,
-			Rows:       2,
+			Columns:    3,
+			Rows:       3,
 			CreateAlgo: "empty",
 		},
 		clientConfig: &pb.ClientConfig{
@@ -28,72 +28,71 @@ var valueiterationtests = []struct {
 			FromCell:  "0,0",               // doesn't matter
 			ToCell:    "1,1",
 		},
-		clientID: "client-empty-dp-eval-only",
+		clientID: "client-empty-dp-value-iteration",
+		df:       0.99,
+		theta:    0.00001,
+		actions:  DefaultActions,
+	},{
+		config: &pb.MazeConfig{
+			Columns:    3,
+			Rows:       2,
+			CreateAlgo: "full", // no passages, with df=1 does not converge
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",               // doesn't matter
+			ToCell:    "2,1",
+		},
+		clientID: "client-full-dp-value-iteration",
+		df:       0.99,
+		theta:    0.00001,
+		actions:  DefaultActions,
+	},{
+		config: &pb.MazeConfig{
+			Columns:    5,
+			Rows:       4,
+			CreateAlgo: "ellers",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "2,1",
+		},
+		clientID: "client-ellers-dp-value-iteration",
+		df:       0.99,
+		theta:    0.00001,
+		actions:  DefaultActions,
+	},{
+		config: &pb.MazeConfig{
+			Columns:    6,
+			Rows:       3,
+			CreateAlgo: "bintree",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "2,1",
+		},
+		clientID: "client-bintree-dp-value-iteration",
+		df:       0.99,
+		theta:    0.00001,
+		actions:  DefaultActions,
+	}, {
+		config: &pb.MazeConfig{
+			Columns:    20,
+			Rows:       30,
+			CreateAlgo: "prim",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "3,4",
+		},
+		clientID: "client-prim-dp-value-iteration",
 		df:       0.99,
 		theta:    0.00001,
 		actions:  DefaultActions,
 	},
-	//{
-	//	config: &pb.MazeConfig{
-	//		Columns:    3,
-	//		Rows:       2,
-	//		CreateAlgo: "full", // no passages, with df=1 does not converge
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",               // doesn't matter
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-full-dp-eval-only",
-	//	df:       0.99,
-	//	theta:    0.00001,
-	//	actions:  DefaultActions,
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    5,
-	//		Rows:       4,
-	//		CreateAlgo: "ellers",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-ellers-dp-eval-only",
-	//	df:       0.99,
-	//	theta:    0.00001,
-	//	actions:  DefaultActions,
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    6,
-	//		Rows:       3,
-	//		CreateAlgo: "bintree",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-bintree-dp-eval-only",
-	//	df:       0.99,
-	//	theta:    0.00001,
-	//	actions:  DefaultActions,
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    4,
-	//		Rows:       5,
-	//		CreateAlgo: "prim",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "3,4",
-	//	},
-	//	clientID: "client-prim-dp-eval-only",
-	//	df:       0.99,
-	//	theta:    0.00001,
-	//	actions:  DefaultActions,
-	//},
 }
 
 func TestValueIteration(t *testing.T) {
