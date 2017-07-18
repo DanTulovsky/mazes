@@ -76,7 +76,7 @@ func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 		solved = reply.Solved
 	}
 
-	log.Printf("maze solved!")
+	log.Printf("maze solved in %v steps!", steps)
 	a.ShowStats()
 
 	return nil

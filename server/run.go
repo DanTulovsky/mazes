@@ -49,6 +49,8 @@ const (
 // for tests: go get -u gopkg.in/check.v1
 // https://blog.jetbrains.com/idea/2015/08/experimental-zero-latency-typing-in-intellij-idea-15-eap/
 
+// brew install protobuf
+// go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 // for proto: protoc -I ./mazes/proto/ ./mazes/proto/mazes.proto --go_out=plugins=grpc:mazes/proto/
 //   protoc -I ./proto/ ./proto/mazes.proto --go_out=plugins=grpc:proto/
 // python:
@@ -67,6 +69,7 @@ var (
 
 	// stats
 	showStats = flag.Bool("maze_stats", false, "show maze stats")
+	enableMonitoring           = flag.Bool("enable_monitoring", false, "enable monitoring")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -648,11 +651,13 @@ func runServer() {
 
 	log.Printf("server ready on port %v", port)
 
-	log.Printf("starting metrics...")
-	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
-	exp.Exp(metrics.DefaultRegistry)
-	addr, _ := net.ResolveTCPAddr("tcp", "localhost:2003")
-	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+	if * enableMonitoring {
+		log.Printf("starting metrics...")
+		// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+		exp.Exp(metrics.DefaultRegistry)
+		addr, _ := net.ResolveTCPAddr("tcp", "localhost:2003")
+		go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+	}
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

@@ -87,8 +87,9 @@ var (
 	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
 
 	// misc
-	exportMaze = flag.Bool("export_maze", false, "save maze to a file on the server")
-	bgMusic    = flag.String("bg_music", "", "file name of background music to play")
+	exportMaze       = flag.Bool("export_maze", false, "save maze to a file on the server")
+	bgMusic          = flag.String("bg_music", "", "file name of background music to play")
+	enableMonitoring = flag.Bool("enable_monitoring", false, "enable monitoring")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -340,6 +341,13 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	resp, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
 	if err != nil {
 		log.Fatalf("could not create maze: %v", err)
+	}
+
+	if *solveAlgo == "dp-value-iteration" && *mazeID == "" {
+		// automatically export the maze on the server so the client can pick it up
+		*exportMaze = true
+		// *mazeID = resp.GetMazeId()
+		config.FromFile = resp.GetMazeId()
 	}
 
 	var m *maze.Maze
@@ -619,11 +627,13 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
-	exp.Exp(metrics.DefaultRegistry)
+	if *enableMonitoring {
+		// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
+		exp.Exp(metrics.DefaultRegistry)
 
-	addr, _ := net.ResolveTCPAddr("tcp", "localhost:2003")
-	go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+		addr, _ := net.ResolveTCPAddr("tcp", "localhost:2003")
+		go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
+	}
 
 	// run http server for expvars
 	sock, err := net.Listen("tcp", "localhost:8124")
