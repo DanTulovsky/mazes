@@ -34,12 +34,12 @@ func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 	df := 1.0
 	theta := 0.000000001
 	log.Printf("Determining optimal policy...")
-	policy, vf, err := dp.ValueIteration(m, clientID, df, theta, dp.DefaultActions)
+	policy, _, err := dp.ValueIteration(m, clientID, df, theta, dp.DefaultActions)
 	//policy, vf, err := dp.PolicyImprovement(m, clientID, df, theta, dp.DefaultActions)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}
-	log.Printf("value function:\n%v", vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
+	// log.Printf("value function:\n%v", vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
 	// log.Printf("optimal policy:\n%v", policy)
 	solved := false
 	steps := 0

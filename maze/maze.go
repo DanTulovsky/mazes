@@ -254,7 +254,7 @@ func (m *Maze) Export(dir string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("\n%v", e)
+	// log.Printf("\n%v", e)
 	data := []byte(e)
 	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
 		return err
