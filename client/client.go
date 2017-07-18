@@ -18,6 +18,8 @@ import (
 	"mazes/maze"
 	"os"
 
+	"mazes/utils"
+
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
@@ -343,7 +345,8 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 		log.Fatalf("could not create maze: %v", err)
 	}
 
-	if *solveAlgo == "dp-value-iteration" && *mazeID == "" {
+	dpAlgos := []string{"dp-value-iteration", "dp-policy-iteration"}
+	if utils.StrInList(dpAlgos, *solveAlgo) && *mazeID == "" {
 		// automatically export the maze on the server so the client can pick it up
 		*exportMaze = true
 		// *mazeID = resp.GetMazeId()
@@ -361,7 +364,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 			config.Gui = true
 		}
 		if m, r, w, err = createMaze(config); err != nil {
-			log.Fatalf(" could not create local client view of maze for dp: %v", err)
+			log.Fatalf("could not create local client view of maze for dp: %v", err)
 		}
 	}
 

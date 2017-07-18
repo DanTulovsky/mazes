@@ -21,6 +21,7 @@ import (
 	pb "mazes/proto"
 	"mazes/solvealgos"
 	"mazes/solvealgos/empty"
+	"mazes/solvealgos/ml/dp_policy_iteration"
 	"mazes/solvealgos/ml/dp_value_iteration"
 	"mazes/solvealgos/random"
 	"mazes/solvealgos/random_unvisited"
@@ -47,12 +48,17 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func() solvealgos.Algorithmer{
 	//"dijkstra":              &dijkstra.Dijkstra{},
 	//"manual":                &manual.Manual{},
+	"dp-policy-iteration":   NewDPPolicyIteration,
 	"dp-value-iteration":    NewDPValueIteration,
 	"random":                NewRandom,
 	"random-unvisited":      NewRandomUnvisited,
 	"recursive-backtracker": NewRecursiveBacktracker,
 	"wall-follower":         NewWallFollower,
 	"empty":                 NewEmpty,
+}
+
+func NewDPPolicyIteration() solvealgos.Algorithmer {
+	return &dp_policy_iteration.DPPolicyIteration{}
 }
 
 func NewDPValueIteration() solvealgos.Algorithmer {

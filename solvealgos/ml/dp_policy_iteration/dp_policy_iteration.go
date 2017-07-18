@@ -1,4 +1,4 @@
-package dp_value_iteration
+package dp_policy_iteration
 
 import (
 	"log"
@@ -13,11 +13,11 @@ import (
 	"mazes/utils"
 )
 
-type DPValueIteration struct {
+type DPPolicyIteration struct {
 	solvealgos.Common
 }
 
-func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
+func (a *DPPolicyIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
 	directions []*pb.Direction, m *maze.Maze) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
@@ -31,10 +31,10 @@ func (a *DPValueIteration) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 		return fmt.Errorf("error applying algorithm: %v", err)
 	}
 
-	df := 1.0
+	df := 0.99
 	theta := 0.000000001
 	log.Printf("Determining optimal policy...")
-	policy, _, err := dp.ValueIteration(m, clientID, df, theta, dp.DefaultActions)
+	policy, _, err := dp.PolicyImprovement(m, clientID, df, theta, dp.DefaultActions)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}
