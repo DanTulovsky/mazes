@@ -361,7 +361,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 			config.Gui = true
 		}
 		if m, r, w, err = createMaze(config); err != nil {
-			log.Fatalf("could not create local client view of maze for dp: %v", err)
+			log.Fatalf(" could not create local client view of maze for dp: %v", err)
 		}
 	}
 
