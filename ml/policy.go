@@ -75,7 +75,6 @@ func NewPolicyFromValuFunction(m *maze.Maze, endCell *pb.MazeLocation, vf *Value
 	return policy, nil
 }
 
-
 func (p *Policy) SetState(state int, values []float64) {
 	p.M.SetRow(state, values)
 

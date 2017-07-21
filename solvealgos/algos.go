@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"mazes/maze"
+	"mazes/ml"
 	pb "mazes/proto"
 
 	"mazes/ml/dp"
@@ -48,7 +49,7 @@ type Common struct {
 	solveTime  time.Duration // how long the last solve time took
 	stream     pb.Mazer_SolveMazeClient
 	travelPath *maze.Path // all the cells visited in order
-	policy     *dp.Policy
+	policy     *ml.Policy
 }
 
 func (a *Common) CellForLocation(m *maze.Maze, l *pb.MazeLocation) (*maze.Cell, error) {
@@ -66,12 +67,12 @@ func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 }
 
 // SetPolicy sets the solvePath
-func (a *Common) SetPolicy(p *dp.Policy) {
+func (a *Common) SetPolicy(p *ml.Policy) {
 	a.policy = p
 }
 
 // Policy sets the solvePath
-func (a *Common) Policy() *dp.Policy {
+func (a *Common) Policy() *ml.Policy {
 	return a.policy
 }
 

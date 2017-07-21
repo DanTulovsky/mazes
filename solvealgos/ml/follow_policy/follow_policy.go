@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"mazes/maze"
-	"mazes/ml/dp"
+	"mazes/ml"
 	"mazes/solvealgos"
 	"mazes/utils"
 	"time"
@@ -42,7 +42,7 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 		action := a.Policy().BestRandomActionsForState(state)
 		// log.Printf("At: %v (state=%v); moving to: %v", loc, state, dp.ActionToText[action])
 
-		reply, err := a.Move(mazeID, clientID, dp.ActionToText[action])
+		reply, err := a.Move(mazeID, clientID, ml.ActionToText[action])
 		if err != nil {
 			return err
 		}
