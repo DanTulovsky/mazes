@@ -24,11 +24,8 @@ type episode struct {
 	reward float64
 }
 
-type Policy struct {
-}
-
-// Prediction returns the value function for the given policy
-func Prediction(m *maze.Maze, policy *ml.Policy, numEpisodes int) (*ml.ValueFunction, error) {
+// Evaluate returns the value function for the given policy
+func Evaluate(policy *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, theta float64) (*ml.ValueFunction, error) {
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -56,8 +53,8 @@ func Prediction(m *maze.Maze, policy *ml.Policy, numEpisodes int) (*ml.ValueFunc
 		}
 
 		// get the action, according to policy, for this state
-		action := policy.BestRandomActionsForState(state)
+		action := policy.BestRandomActionsForState(int(state))
 
 	}
-	return vf
+	return vf, nil
 }

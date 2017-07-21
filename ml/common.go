@@ -101,7 +101,7 @@ func probabilityForStateAction(m *maze.Maze, state, nextState, a int) (float64, 
 	if err != nil {
 		return 0.0, err
 	}
-	//cellTo, err := m.Cell(locCellTo.GetX(), locCellTo.GetY(), locCellTo.GetZ())
+	//cellTo, err := M.Cell(locCellTo.GetX(), locCellTo.GetY(), locCellTo.GetZ())
 	//if err != nil {
 	//	return 0.0, err
 	//}

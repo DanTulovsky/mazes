@@ -28,7 +28,7 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 
 		// evaluate the current policy
 		//log.Printf("evaluating current policy:\n%v", policy)
-		vf, err = policy.Eval(m, clientID, df, theta, vf)
+		vf, err = Evaluate(policy, m, clientID, df, theta, vf)
 		if err != nil {
 			return nil, nil, err
 		}
