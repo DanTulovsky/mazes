@@ -18,7 +18,7 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 	if err != nil {
 		return nil, nil, err
 	}
-	endCell := m.ToCell(client)
+	endCell := m.ToCell(client).Location()
 
 	policiesEvaluated := 0
 

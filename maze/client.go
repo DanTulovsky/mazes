@@ -23,3 +23,11 @@ func (c *client) SetCurrentLocation(cell *Cell) {
 func (c *client) CurrentLocation() *Cell {
 	return c.currentLocation
 }
+
+func (c *client) FromCell() *Cell {
+	return c.fromCell
+}
+
+func (c *client) ToCell() *Cell {
+	return c.toCell
+}

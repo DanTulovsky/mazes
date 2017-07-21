@@ -9,6 +9,7 @@ import (
 	"mazes/genalgos/bintree"
 	"mazes/genalgos/ellers"
 	gen_empty "mazes/genalgos/empty"
+	"mazes/genalgos/from_encoded_string"
 	"mazes/genalgos/fromfile"
 	"mazes/genalgos/full"
 	"mazes/genalgos/hunt_and_kill"
@@ -23,6 +24,7 @@ import (
 	"mazes/solvealgos/empty"
 	"mazes/solvealgos/ml/dp_policy_iteration"
 	"mazes/solvealgos/ml/dp_value_iteration"
+	"mazes/solvealgos/ml/follow_policy"
 	"mazes/solvealgos/random"
 	"mazes/solvealgos/random_unvisited"
 	solve_rb "mazes/solvealgos/recursive_backtracker"
@@ -34,6 +36,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 	"bintree":               &bintree.Bintree{},
 	"ellers":                &ellers.Ellers{},
 	"empty":                 &gen_empty.Empty{},
+	"from-encoded-string":   &from_encoded_string.FromEncodedString{},
 	"fromfile":              &fromfile.Fromfile{},
 	"full":                  &full.Full{},
 	"hunt-and-kill":         &hunt_and_kill.HuntAndKill{},
@@ -50,11 +53,16 @@ var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func()
 	//"manual":                &manual.Manual{},
 	"dp-policy-iteration":   NewDPPolicyIteration,
 	"dp-value-iteration":    NewDPValueIteration,
+	"follow-policy":         NewFollowPolicy,
 	"random":                NewRandom,
 	"random-unvisited":      NewRandomUnvisited,
 	"recursive-backtracker": NewRecursiveBacktracker,
 	"wall-follower":         NewWallFollower,
 	"empty":                 NewEmpty,
+}
+
+func NewFollowPolicy() solvealgos.Algorithmer {
+	return &ml_follow_policy.MLFollowPolicy{}
 }
 
 func NewDPPolicyIteration() solvealgos.Algorithmer {

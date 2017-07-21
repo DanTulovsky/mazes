@@ -313,6 +313,13 @@ func (c *Cell) String() string {
 	return fmt.Sprintf("(%v, %v, %v)", c.x, c.y, c.z)
 }
 
+// StringXY returns the cell coordinates as x,y pair
+func (c *Cell) StringXY() string {
+	c.RLock()
+	defer c.RUnlock()
+	return fmt.Sprintf("%v,%v", c.x, c.y)
+}
+
 // PathTo returns the path to the toCell or nil if not available
 func (c *Cell) PathTo(toCell *Cell) *Path {
 	if path, ok := c.paths.Find(toCell); ok {

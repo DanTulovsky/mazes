@@ -93,10 +93,12 @@ message ListMazeReply {
 
 message CreateMazeRequest {
   MazeConfig config = 1;
+  bool return_maze = 2; // if set to true, the maze itself is return, ascii encoded
 }
 
 message CreateMazeReply {
   string MazeId = 1;
+  string encoded_maze = 2;
 }
 
 // MazeConfig is the full config for a maze
@@ -124,6 +126,7 @@ message MazeConfig {
     string Id = 28;
     bool Gui = 29;
     string FromFile = 30;
+    bool return_maze = 31; // return encoded maze back to the client
 }
 
 // ClientConfig has all the per-client config settings in it

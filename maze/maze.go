@@ -70,7 +70,21 @@ type Maze struct {
 	winWidth, winHeight int
 	r                   *sdl.Renderer
 
+	encoded string // the maze cells and passages encoded as ascii
+
 	deadlock.RWMutex
+}
+
+func (m *Maze) SetEncodedString(e string) {
+	m.Lock()
+	defer m.Unlock()
+	m.encoded = e
+}
+
+func (m *Maze) EncodedString() string {
+	m.RLock()
+	defer m.RUnlock()
+	return m.encoded
 }
 
 func (m *Maze) ID() string {
@@ -424,7 +438,7 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, to
 	m.SetFromCell(c, fromCell)
 	m.SetToCell(c, toCell)
 
-	// log.Printf("Path: %v -> %v", fromCell, toCell)
+	log.Printf("Path: %v -> %v", fromCell, toCell)
 
 	// this will color the maze based on the last client to register
 	// log.Printf("setting distance colors")

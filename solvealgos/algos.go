@@ -11,6 +11,8 @@ import (
 	"mazes/maze"
 	pb "mazes/proto"
 
+	"mazes/ml/dp"
+
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -25,11 +27,14 @@ type Algorithmer interface {
 	SolvePath() *maze.Path                                                        // final path
 	SolveSteps() int
 	SolveTime() time.Duration
+	SetPolicy(p *dp.Policy)
 	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)
 	// m is the *local* maze for display only
-	Solve(mazeID, client string, fromCell, toCell *pb.MazeLocation, delay time.Duration, directions []*pb.Direction, m *maze.Maze) error
+	// p is the ML policy to follow, only used when from_policy algo is used
+	Solve(mazeID, client string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
+		directions []*pb.Direction, m *maze.Maze) error
 	Stream() pb.Mazer_SolveMazeClient
 	SetStream(pb.Mazer_SolveMazeClient)
 	ShowStats()
@@ -43,6 +48,7 @@ type Common struct {
 	solveTime  time.Duration // how long the last solve time took
 	stream     pb.Mazer_SolveMazeClient
 	travelPath *maze.Path // all the cells visited in order
+	policy     *dp.Policy
 }
 
 func (a *Common) CellForLocation(m *maze.Maze, l *pb.MazeLocation) (*maze.Cell, error) {
@@ -57,6 +63,16 @@ func (a *Common) CellForLocation(m *maze.Maze, l *pb.MazeLocation) (*maze.Cell, 
 func (a *Common) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
 	directions []*pb.Direction, m *maze.Maze) error {
 	return errors.New("Solve() not implemented")
+}
+
+// SetPolicy sets the solvePath
+func (a *Common) SetPolicy(p *dp.Policy) {
+	a.policy = p
+}
+
+// Policy sets the solvePath
+func (a *Common) Policy() *dp.Policy {
+	return a.policy
 }
 
 // SetSolvePath sets the solvePath

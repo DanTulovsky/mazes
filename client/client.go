@@ -18,7 +18,9 @@ import (
 	"mazes/maze"
 	"os"
 
-	"mazes/utils"
+	"mazes/ml/dp"
+
+	"mazes/genalgos/from_encoded_string"
 
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
@@ -92,6 +94,7 @@ var (
 	exportMaze       = flag.Bool("export_maze", false, "save maze to a file on the server")
 	bgMusic          = flag.String("bg_music", "", "file name of background music to play")
 	enableMonitoring = flag.Bool("enable_monitoring", false, "enable monitoring")
+	returnMaze       = flag.Bool("return_maze", false, "return the encoded maze in the create reply, used for ML DP algorithms")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -125,12 +128,13 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		BraidProbability:     *braidProbability,
 		Gui:                  *showGUI,
 		FromFile:             *mazeID,
+		ReturnMaze:           *returnMaze,
 	}
 	return config
 }
 
 // addClient creates a new client in the maze and runs the solver, the m value is the *local* maze for display
-func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze) error {
+func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze, p *dp.Policy) error {
 	log.Printf("registering and running new client in maze %v...", mazeID)
 	c := NewClient()
 
@@ -160,7 +164,7 @@ func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *m
 		m.AddClient(r.GetClientId(), config)
 	}
 
-	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo(), m)
+	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo(), m, p)
 }
 
 // opCreateSolveMulti creates and solves the maze
@@ -194,7 +198,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 
 	// register more clients
 	wd.Add(1)
@@ -212,7 +216,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -229,7 +233,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -246,7 +250,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -263,7 +267,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -280,7 +284,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 
 	wd.Add(1)
 	go addClient(context.Background(), mazeId, &pb.ClientConfig{
@@ -297,7 +301,7 @@ func opCreateSolveMulti() error {
 		MarkVisitedCells:       *markVisitedCells,
 		DrawPathLength:         *drawPathLength,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil)
+	}, nil, nil)
 	log.Printf("waiting for clients...")
 	wd.Wait()
 
@@ -331,7 +335,70 @@ func opCreateSolve() error {
 		DrawPathLength:         *drawPathLength,
 		MarkVisitedCells:       *markVisitedCells,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, m)
+	}, m, nil)
+}
+
+// opCreateSolveMlDpValueIteration creates and solves a maze using DP Value Iteration
+func opCreateSolveMlDpValueIteration() error {
+	log.Print("creating maze...")
+
+	// always return maze from server
+	*returnMaze = true
+	*solveAlgo = "follow-policy"
+
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
+	clientConfig := &pb.ClientConfig{
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         *drawPathLength,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}
+
+	r, m, err := opCreate()
+	if err != nil {
+		return err
+	}
+
+	log.Print("figuring out optimal policy using dp value iteration...")
+	algo := &from_encoded_string.FromEncodedString{}
+	if err := algo.Apply(m, 0, nil); err != nil {
+		return fmt.Errorf("error applying algorithm: %v", err)
+	}
+
+	df := 1.0
+	theta := 0.000000001
+	clientID := "clientID"
+	log.Printf("Determining optimal policy...")
+	m.AddClient(clientID, clientConfig)
+	// runs through the *local* maze to find optimal path
+	policy, _, err := dp.ValueIteration(m, clientID, df, theta, dp.DefaultActions)
+	if err != nil {
+		return fmt.Errorf("error calculating optimal policy: %v", err)
+	}
+
+	// we must pass the same from/to to the server as we used locally
+	c, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+	clientConfig.FromCell = c.FromCell().StringXY()
+	clientConfig.ToCell = c.ToCell().StringXY()
+	m.Reset()
+
+	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+
 }
 
 // opCreate creates a new maze
@@ -345,33 +412,26 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 		log.Fatalf("could not create maze: %v", err)
 	}
 
-	dpAlgos := []string{"dp-value-iteration", "dp-policy-iteration"}
-	if utils.StrInList(dpAlgos, *solveAlgo) && *mazeID == "" {
-		// automatically export the maze on the server so the client can pick it up
-		*exportMaze = true
-		// *mazeID = resp.GetMazeId()
-		config.FromFile = resp.GetMazeId()
-	}
-
 	var m *maze.Maze
 	var r *sdl.Renderer
 	var w *sdl.Window
 
 	// create local maze for DP algorithms or local gui
-	if *solveAlgo == "dp-value-iteration" || *showLocalGUI {
-		// if server gui is off, enable this so the client gui works
+	if *showLocalGUI || *solveAlgo == "follow-policy" {
 		if *showLocalGUI {
+			// if server gui is off, enable this so the client gui works
 			config.Gui = true
 		}
-		if m, r, w, err = createMaze(config); err != nil {
-			log.Fatalf("could not create local client view of maze for dp: %v", err)
-		}
-	}
 
-	// show local maze if asked
-	if *showLocalGUI {
-		wd.Add(1)
-		go showMaze(m, r, w)
+		encodedMaze := resp.GetEncodedMaze()
+		if m, r, w, err = createMaze(config, encodedMaze); err != nil {
+			log.Fatalf("could not create local client view of maze: %v", err)
+		}
+		if *showLocalGUI {
+			wd.Add(1)
+			go showMaze(m, r, w)
+		}
+
 	}
 
 	if *exportMaze {
@@ -396,7 +456,7 @@ func opList() (*pb.ListMazeReply, error) {
 }
 
 // opSolve solves the maze with mazeID, m is the *local* maze for display only
-func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze) error {
+func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze, p *dp.Policy) error {
 	log.Printf("in opSolve, client: %v", clientID)
 	c := NewClient()
 
@@ -434,6 +494,7 @@ func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze) error {
 	if err != nil {
 		return err
 	}
+	solver.SetPolicy(p)
 
 	log.Printf("running solver %v", solveAlgo)
 
@@ -471,12 +532,14 @@ func NewClient() pb.MazerClient {
 	return pb.NewMazerClient(conn)
 }
 
-func newMaze(config *pb.MazeConfig, r *sdl.Renderer) (*maze.Maze, error) {
+func newMaze(config *pb.MazeConfig, r *sdl.Renderer, encodedMaze string) (*maze.Maze, error) {
 	m, err := maze.NewMaze(config, r)
 	if err != nil {
 		log.Printf("invalid maze config: %v", err)
 		os.Exit(1)
 	}
+
+	m.SetEncodedString(encodedMaze)
 
 	// create empty maze
 	algo := algos.Algorithms[config.CreateAlgo]
@@ -491,39 +554,49 @@ func newMaze(config *pb.MazeConfig, r *sdl.Renderer) (*maze.Maze, error) {
 		return nil, err
 	}
 
-	// create background texture, it is saved and re-rendered as a picture
-	mTexture, err := m.MakeBGTexture()
-	if err != nil {
-		return nil, err
+	if *showLocalGUI {
+		// create background texture, it is saved and re-rendered as a picture
+		mTexture, err := m.MakeBGTexture()
+		if err != nil {
+			return nil, err
+		}
+		m.SetBGTexture(mTexture)
 	}
-	m.SetBGTexture(mTexture)
 
 	return m, nil
 }
 
 // createMaze sets up the new maze
-func createMaze(config *pb.MazeConfig) (*maze.Maze, *sdl.Renderer, *sdl.Window, error) {
+func createMaze(config *pb.MazeConfig, encodedMaze string) (*maze.Maze, *sdl.Renderer, *sdl.Window, error) {
 	log.Print("showing client's view of the maze...")
 
-	// client alays starts with an full view
-	config.CreateAlgo = "full"
+	if encodedMaze != "" {
+		config.CreateAlgo = "from-encoded-string"
+	} else {
+		// client always starts with an full view
+		config.CreateAlgo = "full"
+	}
 
 	if !algos.CheckCreateAlgo(config.CreateAlgo) {
 		log.Fatalf("invalid create algorithm: %v", config.CreateAlgo)
 	}
 
+	var w *sdl.Window
+	var r *sdl.Renderer
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// offset this window one to the right so it shows up next to the server one
-	w, r := lsdl.SetupSDL(config, "Client View", 1, 0)
+	if *showLocalGUI {
+		// offset this window one to the right so it shows up next to the server one
+		w, r = lsdl.SetupSDL(config, "Client View", 1, 0)
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	var m *maze.Maze
 	var err error
-	if m, err = newMaze(config, r); err != nil {
+	if m, err = newMaze(config, r, encodedMaze); err != nil {
 		return nil, nil, nil, err
 	}
 	return m, r, w, nil
@@ -609,11 +682,15 @@ func run() {
 			DrawPathLength:         *drawPathLength,
 			MarkVisitedCells:       *markVisitedCells,
 			NumberMarkVisitedCells: *numberMarkVisitedCells,
-		}, nil); err != nil {
+		}, nil, nil); err != nil {
 			log.Fatalf(err.Error())
 		}
 	case "create_solve":
 		if err := opCreateSolve(); err != nil {
+			log.Print(err.Error())
+		}
+	case "create_solve_ml_dp_value_iteration":
+		if err := opCreateSolveMlDpValueIteration(); err != nil {
 			log.Print(err.Error())
 		}
 	case "create_solve_multi":

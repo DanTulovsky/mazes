@@ -68,8 +68,8 @@ var (
 	bgMusic = flag.String("bg_music", "", "file name of background music to play")
 
 	// stats
-	showStats = flag.Bool("maze_stats", false, "show maze stats")
-	enableMonitoring           = flag.Bool("enable_monitoring", false, "enable monitoring")
+	showStats        = flag.Bool("maze_stats", false, "show maze stats")
+	enableMonitoring = flag.Bool("enable_monitoring", false, "enable monitoring")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -276,6 +276,15 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 	// End Generator
 	///////////////////////////////////////////////////////////////////////////
 	log.Printf("finished creating maze...")
+
+	if m.Config().GetReturnMaze() {
+		encoded, err := m.Encode()
+		if err != nil {
+			encoded = err.Error()
+		}
+		m.SetEncodedString(encoded)
+	}
+
 	return m, r, w, nil
 }
 
@@ -651,7 +660,7 @@ func runServer() {
 
 	log.Printf("server ready on port %v", port)
 
-	if * enableMonitoring {
+	if *enableMonitoring {
 		log.Printf("starting metrics...")
 		// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 		exp.Exp(metrics.DefaultRegistry)
@@ -786,7 +795,8 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	}
 	go runMaze(m, r, w, comm)
 
-	return &pb.CreateMazeReply{MazeId: mazeID}, nil
+	log.Printf("client requested maze in the response!")
+	return &pb.CreateMazeReply{MazeId: mazeID, EncodedMaze: m.EncodedString()}, nil
 }
 
 // RegisterClient registers a new client with an existing maze

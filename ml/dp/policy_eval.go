@@ -10,6 +10,8 @@ import (
 
 	"github.com/gonum/matrix"
 	"github.com/gonum/matrix/mat64"
+
+	pb "mazes/proto"
 )
 
 type Policy struct {
@@ -56,7 +58,7 @@ func NewRandomPolicy(numStates int, actions []int) *Policy {
 }
 
 // NewPolicyFromValuFunction returns a policy based on the provided value function
-func NewPolicyFromValuFunction(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df float64, numStates int, actions []int) (*Policy, error) {
+func NewPolicyFromValuFunction(m *maze.Maze, endCell *pb.MazeLocation, vf *ValueFunction, df float64, numStates int, actions []int) (*Policy, error) {
 	policy := NewZeroPolicy(numStates, actions)
 
 	for state := 0; state < numStates; state++ {
@@ -95,7 +97,7 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64, 
 	if err != nil {
 		return nil, err
 	}
-	endCell := m.ToCell(client)
+	endCell := m.ToCell(client).Location()
 
 	step := 0
 
@@ -124,7 +126,7 @@ func (p *Policy) Eval(m *maze.Maze, clientID string, df float64, theta float64, 
 					return nil, err
 				}
 				if !valid {
-					continue  // do not include actions that are not possible from this state
+					continue // do not include actions that are not possible from this state
 				}
 
 				// prob = 1; probability of transition from s to s' under action a (always 100%)

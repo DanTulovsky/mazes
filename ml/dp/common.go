@@ -8,6 +8,8 @@ import (
 	"fmt"
 
 	"github.com/gonum/matrix/mat64"
+
+	pb "mazes/proto"
 )
 
 const (
@@ -103,7 +105,7 @@ func probabilityForStateAction(m *maze.Maze, state, nextState, a int) (float64, 
 }
 
 // OneStepLookAhead returns a vector of expected values for each action
-func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df float64, state, numActions int) (*mat64.Vector, error) {
+func OneStepLookAhead(m *maze.Maze, endCell *pb.MazeLocation, vf *ValueFunction, df float64, state, numActions int) (*mat64.Vector, error) {
 
 	actionValues := mat64.NewVector(numActions, nil)
 
@@ -145,7 +147,7 @@ func OneStepLookAhead(m *maze.Maze, endCell *maze.Cell, vf *ValueFunction, df fl
 // NextState returns the next state (as int) given the current state and action
 // returns nextState, reward, valid, error
 // valid is set to false if the action is not valid for this state
-func NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (nextState int, reward float64, valid bool, err error) {
+func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextState int, reward float64, valid bool, err error) {
 	// For each action, look at the possible next states
 	cell, err := CellFromState(m, state)
 	if err != nil {
@@ -153,7 +155,7 @@ func NextState(m *maze.Maze, endCell *maze.Cell, state, action int) (nextState i
 	}
 
 	// figure out the next state (cell) from here given the action
-	if utils.LocsSame(cell.Location(), endCell.Location()) {
+	if utils.LocsSame(cell.Location(), endCell) {
 		reward = 0
 		nextState = state // don't move anywhere else
 		valid = true
