@@ -545,102 +545,27 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			r := in.Request
 			direction := r.request.(string)
 
-			client, err := m.Client(in.ClientID)
+			client, err := m.MoveClient(in.ClientID, direction)
 			if err != nil {
-				in.Reply <- commandReply{error: fmt.Errorf("failed to find client: %v", err)}
+				in.Reply <- commandReply{
+					error: fmt.Errorf("error moving: %v", err),
+				}
 			}
 
-			switch direction {
-			case "north":
-				if client.CurrentLocation().Linked(client.CurrentLocation().North()) {
-					client.SetCurrentLocation(client.CurrentLocation().North())
-					s := maze.NewSegment(client.CurrentLocation(), "north", true)
-					client.TravelPath.AddSegement(s)
-					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetClientPath(client)
-
-					in.Reply <- commandReply{
-						answer: &moveReply{
-							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
-						},
-					}
-				} else {
-					in.Reply <- commandReply{
-						error: fmt.Errorf("cannot move 'north' from %v", client.CurrentLocation().String()),
-					}
-				}
-			case "south":
-				if client.CurrentLocation().Linked(client.CurrentLocation().South()) {
-					client.SetCurrentLocation(client.CurrentLocation().South())
-					s := maze.NewSegment(client.CurrentLocation(), "south", true)
-					client.TravelPath.AddSegement(s)
-					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetClientPath(client)
-
-					in.Reply <- commandReply{
-						answer: &moveReply{
-							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
-						},
-					}
-				} else {
-					in.Reply <- commandReply{
-						error: fmt.Errorf("cannot move 'south' from %v", client.CurrentLocation().String()),
-					}
-				}
-			case "west":
-				if client.CurrentLocation().Linked(client.CurrentLocation().West()) {
-					client.SetCurrentLocation(client.CurrentLocation().West())
-					s := maze.NewSegment(client.CurrentLocation(), "west", true)
-					client.TravelPath.AddSegement(s)
-					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetClientPath(client)
-
-					in.Reply <- commandReply{
-						answer: &moveReply{
-							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
-						},
-					}
-				} else {
-					in.Reply <- commandReply{
-						error: fmt.Errorf("cannot move 'west' from %v", client.CurrentLocation().String()),
-					}
-				}
-			case "east":
-				if client.CurrentLocation().Linked(client.CurrentLocation().East()) {
-					client.SetCurrentLocation(client.CurrentLocation().East())
-					s := maze.NewSegment(client.CurrentLocation(), "east", true)
-					client.TravelPath.AddSegement(s)
-					client.CurrentLocation().SetVisited(in.ClientID)
-					m.SetClientPath(client)
-
-					in.Reply <- commandReply{
-						answer: &moveReply{
-							current:             client.CurrentLocation().Location(),
-							availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-							solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
-						},
-					}
-				} else {
-					in.Reply <- commandReply{
-						error: fmt.Errorf("cannot move 'east' from %v", client.CurrentLocation().String()),
-					}
-				}
-			default:
-				log.Printf("invalid direction: %v", direction)
-				in.Reply <- commandReply{error: fmt.Errorf("invalid direction: %v", direction)}
+			in.Reply <- commandReply{
+				answer: &moveReply{
+					current:             client.CurrentLocation().Location(),
+					availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
+					solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
+				},
 			}
+
 			t.UpdateSince(start)
-
 		default:
 			log.Printf("unknown command: %#v", in)
 			in.Reply <- commandReply{error: fmt.Errorf("unknown command: %v", in)}
 		}
+
 		// when the client disconnects, this will block until the timer fires
 		// if this is just a 'default' fall through, much cpu is used as multiple mazes are run
 	case <-time.After(5 * time.Second):

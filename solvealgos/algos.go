@@ -12,8 +12,6 @@ import (
 	"mazes/ml"
 	pb "mazes/proto"
 
-	"mazes/ml/dp"
-
 	"github.com/rcrowley/go-metrics"
 )
 
@@ -28,7 +26,7 @@ type Algorithmer interface {
 	SolvePath() *maze.Path                                                        // final path
 	SolveSteps() int
 	SolveTime() time.Duration
-	SetPolicy(p *dp.Policy)
+	SetPolicy(p *ml.Policy)
 	SetSolvePath(p *maze.Path)
 	SetSolveSteps(s int)
 	SetSolveTime(t time.Duration)

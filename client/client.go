@@ -12,6 +12,7 @@ import (
 
 	"mazes/algos"
 	"mazes/colors"
+	"mazes/ml"
 	pb "mazes/proto"
 	lsdl "mazes/sdl"
 
@@ -134,7 +135,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 }
 
 // addClient creates a new client in the maze and runs the solver, the m value is the *local* maze for display
-func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze, p *dp.Policy) error {
+func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze, p *ml.Policy) error {
 	log.Printf("registering and running new client in maze %v...", mazeID)
 	c := NewClient()
 
@@ -383,7 +384,7 @@ func opCreateSolveMlDpPolicyIteration() error {
 	log.Printf("Determining optimal policy.using policy iteration..")
 	m.AddClient(clientID, clientConfig)
 	// runs through the *local* maze to find optimal path
-	policy, _, err := dp.PolicyImprovement(m, clientID, df, theta, dp.DefaultActions)
+	policy, _, err := dp.PolicyImprovement(m, clientID, df, theta, ml.DefaultActions)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}
@@ -446,7 +447,7 @@ func opCreateSolveMlDpValueIteration() error {
 	log.Printf("Determining optimal policy using value iteration...")
 	m.AddClient(clientID, clientConfig)
 	// runs through the *local* maze to find optimal path
-	policy, _, err := dp.ValueIteration(m, clientID, df, theta, dp.DefaultActions)
+	policy, _, err := dp.ValueIteration(m, clientID, df, theta, ml.DefaultActions)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}
@@ -519,7 +520,7 @@ func opList() (*pb.ListMazeReply, error) {
 }
 
 // opSolve solves the maze with mazeID, m is the *local* maze for display only
-func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze, p *dp.Policy) error {
+func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze, p *ml.Policy) error {
 	log.Printf("in opSolve, client: %v", clientID)
 	c := NewClient()
 

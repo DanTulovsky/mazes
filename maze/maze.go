@@ -521,6 +521,65 @@ func (m *Maze) ClientsSorted() []*client {
 	return r
 }
 
+// MoveClient moves a client in the requested direction
+func (m *Maze) MoveClient(clientID, direction string) (*client, error) {
+
+	client, err := m.Client(clientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find client: %v", err)
+	}
+
+	switch direction {
+	case "north":
+		if client.CurrentLocation().Linked(client.CurrentLocation().North()) {
+			client.SetCurrentLocation(client.CurrentLocation().North())
+			s := NewSegment(client.CurrentLocation(), "north", true)
+			client.TravelPath.AddSegement(s)
+			client.CurrentLocation().SetVisited(clientID)
+			m.SetClientPath(client)
+		} else {
+			err = fmt.Errorf("cannot move 'north' from %v", client.CurrentLocation().String())
+		}
+	case "south":
+		if client.CurrentLocation().Linked(client.CurrentLocation().South()) {
+			client.SetCurrentLocation(client.CurrentLocation().South())
+			s := NewSegment(client.CurrentLocation(), "south", true)
+			client.TravelPath.AddSegement(s)
+			client.CurrentLocation().SetVisited(clientID)
+			m.SetClientPath(client)
+		} else {
+			err = fmt.Errorf("cannot move 'south' from %v", client.CurrentLocation().String())
+		}
+	case "west":
+		if client.CurrentLocation().Linked(client.CurrentLocation().West()) {
+			client.SetCurrentLocation(client.CurrentLocation().West())
+			s := NewSegment(client.CurrentLocation(), "west", true)
+			client.TravelPath.AddSegement(s)
+			client.CurrentLocation().SetVisited(clientID)
+			m.SetClientPath(client)
+		} else {
+			err = fmt.Errorf("cannot move 'west' from %v", client.CurrentLocation().String())
+
+		}
+	case "east":
+		if client.CurrentLocation().Linked(client.CurrentLocation().East()) {
+			client.SetCurrentLocation(client.CurrentLocation().East())
+			s := NewSegment(client.CurrentLocation(), "east", true)
+			client.TravelPath.AddSegement(s)
+			client.CurrentLocation().SetVisited(clientID)
+			m.SetClientPath(client)
+		} else {
+			err = fmt.Errorf("cannot move 'east' from %v", client.CurrentLocation().String())
+
+		}
+	default:
+		log.Printf("invalid direction: %v", direction)
+		err = fmt.Errorf("invalid direction: %v", direction)
+	}
+
+	return client, err
+}
+
 // Link links c1 to c2 to its neighbor (adds passage)
 func (m *Maze) Link(c1, c2 *Cell) {
 	if c1 == nil || c2 == nil {
