@@ -2,6 +2,7 @@ package dp
 
 import (
 	"mazes/maze"
+	"mazes/ml"
 	"testing"
 
 	pb "mazes/proto"
@@ -31,8 +32,8 @@ var valueiterationtests = []struct {
 		clientID: "client-empty-dp-value-iteration",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  DefaultActions,
-	},{
+		actions:  ml.DefaultActions,
+	}, {
 		config: &pb.MazeConfig{
 			Columns:    3,
 			Rows:       2,
@@ -46,8 +47,8 @@ var valueiterationtests = []struct {
 		clientID: "client-full-dp-value-iteration",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  DefaultActions,
-	},{
+		actions:  ml.DefaultActions,
+	}, {
 		config: &pb.MazeConfig{
 			Columns:    5,
 			Rows:       4,
@@ -61,8 +62,8 @@ var valueiterationtests = []struct {
 		clientID: "client-ellers-dp-value-iteration",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  DefaultActions,
-	},{
+		actions:  ml.DefaultActions,
+	}, {
 		config: &pb.MazeConfig{
 			Columns:    6,
 			Rows:       3,
@@ -76,7 +77,7 @@ var valueiterationtests = []struct {
 		clientID: "client-bintree-dp-value-iteration",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    20,
@@ -91,7 +92,7 @@ var valueiterationtests = []struct {
 		clientID: "client-prim-dp-value-iteration",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	},
 }
 
@@ -104,7 +105,7 @@ func TestValueIteration(t *testing.T) {
 		}
 
 		// apply any algorithm to it
-		algo := Algorithms[tt.config.CreateAlgo]
+		algo := ml.Algorithms[tt.config.CreateAlgo]
 		generating := abool.New()
 		generating.Set()
 		if err := algo.Apply(m, 0, generating); err != nil {

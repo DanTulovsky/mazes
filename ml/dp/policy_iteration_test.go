@@ -2,6 +2,7 @@ package dp
 
 import (
 	"mazes/maze"
+	"mazes/ml"
 	"testing"
 
 	pb "mazes/proto"
@@ -31,7 +32,7 @@ var policyiterationtests = []struct {
 		clientID: "client-empty-dp-policy-iteration",
 		df:       0.99,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	},
 	{
 		config: &pb.MazeConfig{
@@ -47,7 +48,7 @@ var policyiterationtests = []struct {
 		clientID: "client-full-dp-policy-iteration",
 		df:       0.5,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    5,
@@ -62,7 +63,7 @@ var policyiterationtests = []struct {
 		clientID: "client-ellers-dp-policy-iteration",
 		df:       0.9,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    6,
@@ -77,7 +78,7 @@ var policyiterationtests = []struct {
 		clientID: "client-bintree-dp-policy-iteration",
 		df:       0.9,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
 			Columns:    4,
@@ -92,7 +93,7 @@ var policyiterationtests = []struct {
 		clientID: "client-prim-dp-policy-iteration",
 		df:       0.9,
 		theta:    0.00001,
-		actions:  DefaultActions,
+		actions:  ml.DefaultActions,
 	},
 }
 
@@ -105,7 +106,7 @@ func TestPolicyImprovement(t *testing.T) {
 		}
 
 		// apply any algorithm to it
-		algo := Algorithms[tt.config.CreateAlgo]
+		algo := ml.Algorithms[tt.config.CreateAlgo]
 		generating := abool.New()
 		generating.Set()
 		if err := algo.Apply(m, 0, generating); err != nil {

@@ -3,7 +3,7 @@ package mc
 import (
 	"math"
 	"mazes/maze"
-	"mazes/ml/dp"
+	"mazes/ml"
 
 	"mazes/utils"
 
@@ -28,7 +28,7 @@ type Policy struct {
 }
 
 // Prediction returns the value function for the given policy
-func Prediction(m *maze.Maze, policy *dp.Policy, numEpisodes int) (*dp.ValueFunction, error) {
+func Prediction(m *maze.Maze, policy *ml.Policy, numEpisodes int) (*ml.ValueFunction, error) {
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -37,7 +37,7 @@ func Prediction(m *maze.Maze, policy *dp.Policy, numEpisodes int) (*dp.ValueFunc
 	// map of state -> count of all returns
 	returnsCount := make(map[int]float64)
 
-	vf := dp.NewValueFunction(numStates)
+	vf := ml.NewValueFunction(numStates)
 	episodes := []episode{}
 
 	// run through the policy this many times

@@ -3,15 +3,16 @@ package dp
 import (
 	"log"
 	"mazes/maze"
+	"mazes/ml"
 )
 
 // PolicyImprovement Algorithm. Iteratively evaluates and improves a policy
 // until an optimal policy is found.
-func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions []int) (*Policy, *ValueFunction, error) {
+func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions []int) (*ml.Policy, *ml.ValueFunction, error) {
 	numStates := int(m.Config().Columns * m.Config().Rows)
 	// start with a random policy
-	policy := NewRandomPolicy(numStates, actions)
-	vf := NewValueFunction(numStates)
+	policy := ml.NewRandomPolicy(numStates, actions)
+	vf := ml.NewValueFunction(numStates)
 
 	// get the cell that is the end (reward = 0)
 	client, err := m.Client(clientID)
@@ -42,11 +43,11 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 			// The best action we would take under the current policy
 			chosenAction := policy.BestRandomActionsForState(state)
 
-			actionValues, err := OneStepLookAhead(m, endCell, vf, df, state, len(actions))
+			actionValues, err := ml.OneStepLookAhead(m, endCell, vf, df, state, len(actions))
 			if err != nil {
 				return nil, nil, err
 			}
-			bestAction := MaxInVectorIndex(actionValues)
+			bestAction := ml.MaxInVectorIndex(actionValues)
 			//log.Printf("state: %v; bestAction: %v; chosenAction: %v", state, ActionToText[bestAction], ActionToText[chosenAction])
 
 			// Greedily update the policy

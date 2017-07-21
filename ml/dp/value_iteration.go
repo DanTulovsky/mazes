@@ -4,11 +4,12 @@ import (
 	"log"
 	"math"
 	"mazes/maze"
+	"mazes/ml"
 
 	"github.com/gonum/matrix/mat64"
 )
 
-func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []int) (*Policy, *ValueFunction, error) {
+func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []int) (*ml.Policy, *ml.ValueFunction, error) {
 
 	// Used to construct value function V
 	numStates := int(m.Config().Columns * m.Config().Rows)
@@ -21,7 +22,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 	endCell := m.ToCell(client).Location()
 
 	// new random value function
-	vf := NewValueFunction(numStates)
+	vf := ml.NewValueFunction(numStates)
 
 	vfEvaluated := 0
 
@@ -33,7 +34,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 		// For each state...
 		for state := 0; state < numStates; state++ {
 
-			actionValues, err := OneStepLookAhead(m, endCell, vf, df, state, len(actions))
+			actionValues, err := ml.OneStepLookAhead(m, endCell, vf, df, state, len(actions))
 			if err != nil {
 				return nil, nil, err
 			}
@@ -60,7 +61,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 	log.Printf("value functions evaluated: %v", vfEvaluated)
 
 	// Build policy based on value function
-	policy, err := NewPolicyFromValuFunction(m, endCell, vf, df, numStates, actions)
+	policy, err := ml.NewPolicyFromValuFunction(m, endCell, vf, df, numStates, actions)
 	if err != nil {
 		return nil, nil, err
 	}
