@@ -338,6 +338,69 @@ func opCreateSolve() error {
 	}, m, nil)
 }
 
+// opCreateSolveMlDpPolicyIteration creates and solves a maze using DP Policy Iteration
+func opCreateSolveMlDpPolicyIteration() error {
+	log.Print("creating maze...")
+
+	// always return maze from server
+	*returnMaze = true
+	*solveAlgo = "follow-policy"
+
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
+	clientConfig := &pb.ClientConfig{
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         *drawPathLength,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}
+
+	r, m, err := opCreate()
+	if err != nil {
+		return err
+	}
+
+	log.Print("figuring out optimal policy using dp policy iteration...")
+	algo := &from_encoded_string.FromEncodedString{}
+	if err := algo.Apply(m, 0, nil); err != nil {
+		return fmt.Errorf("error applying algorithm: %v", err)
+	}
+
+	df := 0.99
+	theta := 0.000000001
+	clientID := "clientID"
+	log.Printf("Determining optimal policy.using policy iteration..")
+	m.AddClient(clientID, clientConfig)
+	// runs through the *local* maze to find optimal path
+	policy, _, err := dp.PolicyImprovement(m, clientID, df, theta, dp.DefaultActions)
+	if err != nil {
+		return fmt.Errorf("error calculating optimal policy: %v", err)
+	}
+
+	// we must pass the same from/to to the server as we used locally
+	c, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+	clientConfig.FromCell = c.FromCell().StringXY()
+	clientConfig.ToCell = c.ToCell().StringXY()
+	m.Reset()
+
+	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+
+}
+
 // opCreateSolveMlDpValueIteration creates and solves a maze using DP Value Iteration
 func opCreateSolveMlDpValueIteration() error {
 	log.Print("creating maze...")
@@ -380,7 +443,7 @@ func opCreateSolveMlDpValueIteration() error {
 	df := 1.0
 	theta := 0.000000001
 	clientID := "clientID"
-	log.Printf("Determining optimal policy...")
+	log.Printf("Determining optimal policy using value iteration...")
 	m.AddClient(clientID, clientConfig)
 	// runs through the *local* maze to find optimal path
 	policy, _, err := dp.ValueIteration(m, clientID, df, theta, dp.DefaultActions)
@@ -691,6 +754,10 @@ func run() {
 		}
 	case "create_solve_ml_dp_value_iteration":
 		if err := opCreateSolveMlDpValueIteration(); err != nil {
+			log.Print(err.Error())
+		}
+	case "create_solve_ml_dp_policy_iteration":
+		if err := opCreateSolveMlDpPolicyIteration(); err != nil {
 			log.Print(err.Error())
 		}
 	case "create_solve_multi":
