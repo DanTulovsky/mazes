@@ -462,7 +462,6 @@ func opCreateSolveMlDpValueIteration() error {
 	m.Reset()
 
 	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
-
 }
 
 // opCreate creates a new maze

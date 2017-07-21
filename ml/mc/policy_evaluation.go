@@ -18,14 +18,45 @@ func printProgress(e, numEpisodes int) {
 	}
 }
 
-type episode struct {
+// stateReturn is the information for a single state
+// an episode is a list of stateReturn structs
+type stateReturn struct {
 	state  int
 	action int
 	reward float64
 }
 
+type episode struct {
+	sr []stateReturn
+}
+
+// RunEpisode runs through the maze once, following the policy.
+// Returns a list of
+func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string) (e episode, err error) {
+	numStates := int(m.Config().Columns * m.Config().Rows)
+
+	// pick a random state to start at (fromCell and action)
+	state := int64(utils.Random(0, numStates))
+	fromCell, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, state)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := m.Client(clientID)
+	c.SetCurrentLocation(fromCell)
+
+	solved := false
+
+	for !solved {
+		// get the action, according to policy, for this state
+		action := p.BestRandomActionsForState(int(state))
+	}
+
+	return e, err
+}
+
 // Evaluate returns the value function for the given policy
-func Evaluate(policy *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, theta float64) (*ml.ValueFunction, error) {
+func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, theta float64) (*ml.ValueFunction, error) {
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -44,16 +75,11 @@ func Evaluate(policy *ml.Policy, m *maze.Maze, clientID string, numEpisodes int,
 
 		// generate an episode (wonder through the maze following policy)
 		// An episode is an array of (state, action, reward) tuples
-
-		// pick a random state to start at (fromCell and action)
-		state := int64(utils.Random(0, numStates))
-		fromCell, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, state)
+		e, err := RunEpisode(m, p, clientID)
 		if err != nil {
 			return nil, err
 		}
-
-		// get the action, according to policy, for this state
-		action := policy.BestRandomActionsForState(int(state))
+		episodes = append(episodes, e)
 
 	}
 	return vf, nil
