@@ -1,6 +1,7 @@
 package mc
 
 import (
+	"log"
 	"math"
 	"mazes/maze"
 	"mazes/ml"
@@ -10,15 +11,14 @@ import (
 	"fmt"
 
 	"sort"
-
-	"github.com/nsf/termbox-go"
 )
 
 func printProgress(e, numEpisodes int) {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 	if math.Mod(float64(e), 100) == 0 {
 		fmt.Printf("Episode %d of %d\n", e, numEpisodes)
 	}
+	// termbox.Flush()
 }
 
 // stateReturn is the information for a single state
@@ -78,6 +78,7 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell, 
 		e.sr = append(e.sr, sr)
 
 		if utils.LocsSame(c.CurrentLocation().Location(), toCell.Location()) {
+			log.Printf("+++ solved in %v steps!", steps)
 			solved = true
 		}
 
@@ -94,6 +95,7 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell, 
 		// log.Printf("current location: %v, current state: %v", c.CurrentLocation().Location(), state)
 
 		if steps > maxSteps {
+			log.Printf("--- not solved in %v steps!", steps)
 			break
 		}
 
@@ -128,7 +130,34 @@ func firstStateInEpisodeIdx(e episode, state int) (int, error) {
 	return -1, fmt.Errorf("unable to find state: %v in episode: %v", state, e)
 }
 
-// sumRewardsSinceIdx returns the sume of all rewards since state at index idx
+// stateActionsInEpisode returns a list of all state,action pairs in an episode
+func stateActionsInEpisode(e episode) []StateAction {
+	stateActionMap := make(map[StateAction]bool)
+	for _, sr := range e.sr {
+		sa := StateAction{sr.state, sr.action}
+		stateActionMap[sa] = true
+	}
+
+	stateActions := make([]StateAction, 0, len(stateActionMap))
+	for k := range stateActionMap {
+		stateActions = append(stateActions, k)
+	}
+	sort.Sort(ByStateAction(stateActions))
+
+	return stateActions
+}
+
+// firstStateActionInEpisodeIdx returns the first index of the state,action in the episode (first time we reached the state)
+func firstStateActionInEpisodeIdx(e episode, state, action int) (int, error) {
+	for idx, sr := range e.sr {
+		if sr.state == state && sr.action == action {
+			return idx, nil
+		}
+	}
+	return -1, fmt.Errorf("unable to find state/action: %v/%v in episode: %v", state, action, e)
+}
+
+// sumRewardsSinceIdx returns the sum of all rewards since state at index idx
 func sumRewardsSinceIdx(e episode, idx int, df float64) (float64, error) {
 	if len(e.sr) <= idx {
 		return 0, fmt.Errorf("idx (%v) is too large for size of e.sr (%v)", idx, len(e.sr))
@@ -142,8 +171,9 @@ func sumRewardsSinceIdx(e episode, idx int, df float64) (float64, error) {
 }
 
 // Evaluate returns the value function for the given policy
-func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, theta float64, toCell *maze.Cell, maxSteps int) (*ml.ValueFunction, error) {
+func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df float64, toCell *maze.Cell, maxSteps int) (*ml.ValueFunction, error) {
 
+	// termbox.Init()
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
 	// map of state -> sum of all returns in that state
@@ -152,7 +182,6 @@ func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, 
 	returnsCount := make(map[int]float64)
 
 	vf := ml.NewValueFunction(numStates)
-	// episodes := []episode{}
 
 	// run through the policy this many times
 	// each run is a walk through the maze until the end (or limit?)
@@ -165,8 +194,6 @@ func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, 
 		if err != nil {
 			return nil, err
 		}
-		// log.Printf("e: %v", episode)
-		// episodes = append(episodes, e)
 
 		// Find all states the we've visited in this episode
 		states := statesInEpisode(episode)

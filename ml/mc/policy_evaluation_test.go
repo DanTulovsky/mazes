@@ -127,8 +127,8 @@ func TestPolicy_Eval(t *testing.T) {
 
 		p := ml.NewRandomPolicy(int(tt.config.Rows*tt.config.Columns), tt.actions)
 		numEpisodes := 1000
-		maxSteps := 1000 // max steps per run through maze
-		vf, err := Evaluate(p, m, tt.clientID, numEpisodes, tt.df, tt.theta, toCell, maxSteps)
+		maxSteps := 10000 // max steps per run through maze
+		vf, err := Evaluate(p, m, tt.clientID, numEpisodes, tt.df, toCell, maxSteps)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
 		}
@@ -285,6 +285,111 @@ func Test_sumRewardsSinceIdx(t *testing.T) {
 
 		if sum != tt.expected {
 			t.Errorf("expected: %v; returned: %v; e: %v", tt.expected, sum, tt.e)
+		}
+	}
+}
+
+var stateactionsepisodetest = []struct {
+	e        episode
+	expected []StateAction
+}{
+	{
+		e:        episode{},
+		expected: []StateAction{},
+	}, {
+		e: episode{
+			sr: []stateReturn{
+				{0, ml.North, -1},
+				{1, ml.South, -1},
+				{3, ml.North, -1},
+			},
+		},
+		expected: []StateAction{
+			{0, ml.North},
+			{1, ml.South},
+			{3, ml.North},
+		},
+	}, {
+		e: episode{
+			sr: []stateReturn{
+				{0, ml.North, -1},
+				{1, ml.South, -1},
+				{3, ml.East, -1},
+				{1, ml.South, -1},
+			},
+		},
+		expected: []StateAction{
+			{0, ml.North},
+			{1, ml.South},
+			{3, ml.East},
+		},
+	},
+}
+
+func Test_stateActionsInEpisode(t *testing.T) {
+	for _, tt := range stateactionsepisodetest {
+		stateActions := stateActionsInEpisode(tt.e)
+
+		if !reflect.DeepEqual(tt.expected, stateActions) {
+			t.Errorf("expected: %#v; returned: %#v; episode: %#v", tt.expected, stateActions, tt.e)
+		}
+	}
+}
+
+var stateactionsepisodeindextest = []struct {
+	e        episode
+	s        int
+	a        int
+	expected int
+	wantErr  bool
+}{
+	{
+		e:        episode{},
+		s:        0,
+		a:        ml.North,
+		expected: -1,
+		wantErr:  true,
+	}, {
+		e: episode{
+			sr: []stateReturn{
+				{0, ml.North, -1},
+				{1, ml.North, -1},
+				{3, ml.East, -1},
+			},
+		},
+		s:        1,
+		a:        ml.North,
+		expected: 1,
+		wantErr:  false,
+	}, {
+		e: episode{
+			sr: []stateReturn{
+				{0, ml.North, -1},
+				{1, ml.North, -1},
+				{3, ml.East, -1},
+				{1, ml.North, -1},
+			},
+		},
+		s:        3,
+		a:        ml.East,
+		expected: 2,
+		wantErr:  false,
+	},
+}
+
+func Test_firstStateActionInEpisodeIdx(t *testing.T) {
+	for _, tt := range stateactionsepisodeindextest {
+		idx, err := firstStateActionInEpisodeIdx(tt.e, tt.s, tt.a)
+		if err != nil {
+			if tt.wantErr {
+				continue
+			}
+			t.Errorf("dit not expect error, received: %v", err)
+			continue
+		}
+
+		if idx != tt.expected {
+			t.Errorf("expected: %v; returned: %v", tt.expected, idx)
 		}
 	}
 }

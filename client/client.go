@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"mazes/ml/dp"
+	"mazes/ml/mc"
 
 	"mazes/genalgos/from_encoded_string"
 
@@ -382,6 +383,7 @@ func opCreateSolveMlDpPolicyIteration() error {
 	theta := 0.000000001
 	clientID := "clientID"
 	log.Printf("Determining optimal policy.using policy iteration..")
+	clientConfig.DrawPathLength = 0 // don't draw on the client
 	m.AddClient(clientID, clientConfig)
 	// runs through the *local* maze to find optimal path
 	policy, _, err := dp.PolicyImprovement(m, clientID, df, theta, ml.DefaultActions)
@@ -398,6 +400,7 @@ func opCreateSolveMlDpPolicyIteration() error {
 	clientConfig.ToCell = c.ToCell().StringXY()
 	m.Reset()
 
+	clientConfig.DrawPathLength = *drawPathLength // restore for the server
 	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
 
 }
@@ -425,7 +428,7 @@ func opCreateSolveMlDpValueIteration() error {
 		ShowFromToColors:       *showFromToColors,
 		VisitedCellColor:       *visitedCellColor,
 		CurrentLocationColor:   *currentLocationColor,
-		DrawPathLength:         *drawPathLength,
+		DrawPathLength:         0, // don't draw on the client
 		MarkVisitedCells:       *markVisitedCells,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}
@@ -461,6 +464,75 @@ func opCreateSolveMlDpValueIteration() error {
 	clientConfig.ToCell = c.ToCell().StringXY()
 	m.Reset()
 
+	clientConfig.DrawPathLength = *drawPathLength // restore for the server
+	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+}
+
+// opCreateSolveMlMCEpsilonGreedyControl creates and solves a maze using MC Epsilon Greedy Control
+func opCreateSolveMlMCEpsilonGreedyControl() error {
+	log.Print("creating maze...")
+
+	// always return maze from server
+	*returnMaze = true
+	*solveAlgo = "follow-policy"
+
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
+	clientConfig := &pb.ClientConfig{
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         0,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}
+
+	r, m, err := opCreate()
+	if err != nil {
+		return err
+	}
+
+	algo := &from_encoded_string.FromEncodedString{}
+	if err := algo.Apply(m, 0, nil); err != nil {
+		return fmt.Errorf("error applying algorithm: %v", err)
+	}
+
+	df := 0.99
+	epsilon := 0.1      // chance of picking random action, to explore
+	numEpisodes := 1000 // number of times to run through maze
+	maxSteps := 100000  // max steps per run through maze
+	clientID := "clientID"
+	m.AddClient(clientID, clientConfig)
+
+	// we must pass the same from/to to the server as we used locally
+	c, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+	clientConfig.FromCell = c.FromCell().StringXY()
+	clientConfig.ToCell = c.ToCell().StringXY()
+
+	// runs through the *local* maze to find optimal path
+	log.Print("figuring out optimal policy using mc epsilon greedy control...")
+	_, policy, err := mc.ControlEpsilonGreedy(m, clientID, numEpisodes, df, c.ToCell(), maxSteps, epsilon)
+	if err != nil {
+		return fmt.Errorf("error calculating optimal policy: %v", err)
+	}
+
+	log.Printf("policy:\n%v", policy)
+	m.Reset()
+
+	clientConfig.DrawPathLength = *drawPathLength // restore for the server
+	policy.SetType("deterministic")               // follow this policy exactly
 	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
 }
 
@@ -758,6 +830,10 @@ func run() {
 		}
 	case "create_solve_ml_dp_policy_iteration":
 		if err := opCreateSolveMlDpPolicyIteration(); err != nil {
+			log.Print(err.Error())
+		}
+	case "create_solve_ml_mc_epsilon_greedy_control":
+		if err := opCreateSolveMlMCEpsilonGreedyControl(); err != nil {
 			log.Print(err.Error())
 		}
 	case "create_solve_multi":

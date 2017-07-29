@@ -61,7 +61,7 @@ func ValueIteration(m *maze.Maze, clientID string, df, theta float64, actions []
 	log.Printf("value functions evaluated: %v", vfEvaluated)
 
 	// Build policy based on value function
-	policy, err := ml.NewPolicyFromValuFunction(m, endCell, vf, df, numStates, actions)
+	policy, err := ml.NewPolicyFromValueFunction(m, endCell, vf, df, numStates, actions)
 	if err != nil {
 		return nil, nil, err
 	}

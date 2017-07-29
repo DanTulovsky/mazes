@@ -3,9 +3,12 @@ package ml
 import (
 	"fmt"
 
+	"encoding/csv"
 	"github.com/gonum/matrix/mat64"
+	"os"
 )
 
+// ValueFunction is a vector mapping int state to value
 type ValueFunction struct {
 	// should be a vector, but required to be interface for T() to work properly
 	v *mat64.Vector
@@ -26,6 +29,11 @@ func (vf *ValueFunction) String() string {
 		excerpt = 5
 	}
 	return fmt.Sprintf("%v\n\n", mat64.Formatted(vf.v, mat64.Prefix(""), mat64.Excerpt(excerpt)))
+}
+
+// Vector returns the underlying vector
+func (vf *ValueFunction) Vector() *mat64.Vector {
+	return vf.v
 }
 
 func (vf *ValueFunction) Reshape(rows, columns int) string {
@@ -50,4 +58,20 @@ func (vf *ValueFunction) Get(l int) (float64, error) {
 	}
 
 	return vf.v.At(l, 0), nil
+}
+
+func (vf *ValueFunction) ToCSV(filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// output titles
+	// TODO: write this if needed
+
+	return nil
 }

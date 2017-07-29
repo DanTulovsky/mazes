@@ -327,6 +327,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 		log.Printf("client comm thread died...")
 	}()
 
+	showMazeStats(m)
 	for running.IsSet() {
 		start := time.Now()
 		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
@@ -367,12 +368,12 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 	log.Printf("maze is done...")
 
-	showMazeStats(m)
 	wd.Wait()
 
 }
 
 func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
+	log.Printf("checking comm")
 	select {
 	case in := <-comm: // type == commandData
 		switch in.Action {
@@ -550,6 +551,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				in.Reply <- commandReply{
 					error: fmt.Errorf("error moving: %v", err),
 				}
+				return
 			}
 
 			in.Reply <- commandReply{

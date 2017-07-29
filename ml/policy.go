@@ -17,6 +17,8 @@ import (
 type Policy struct {
 	M       *mat64.Dense // the policy matrix
 	actions []int
+	t       string  // policy type (probably redo as interface)
+	epsilon float64 // The probability to select a random action. float between 0 and 1.
 }
 
 func reshape(m mat64.Matrix, rows, columns int) *mat64.Dense {
@@ -54,11 +56,27 @@ func NewRandomPolicy(numStates int, actions []int) *Policy {
 	return &Policy{
 		M:       m,
 		actions: actions,
+		t:       "random",
 	}
 }
 
-// NewPolicyFromValuFunction returns a policy based on the provided value function
-func NewPolicyFromValuFunction(m *maze.Maze, endCell *pb.MazeLocation, vf *ValueFunction, df float64, numStates int, actions []int) (*Policy, error) {
+func NewEpsilonGreedyPolicy(numStates int, actions []int, epsilon float64) *Policy {
+	m := mat64.NewDense(numStates, len(actions), nil)
+
+	setOne := func(i, j int, v float64) float64 {
+		return 1.0 / float64(len(actions))
+	}
+	m.Apply(setOne, m)
+	return &Policy{
+		M:       m,
+		actions: actions,
+		t:       "epsilon_greedy",
+		epsilon: epsilon,
+	}
+}
+
+// NewPolicyFromValueFunction returns a policy based on the provided value function
+func NewPolicyFromValueFunction(m *maze.Maze, endCell *pb.MazeLocation, vf *ValueFunction, df float64, numStates int, actions []int) (*Policy, error) {
 	policy := NewZeroPolicy(numStates, actions)
 
 	for state := 0; state < numStates; state++ {
@@ -84,16 +102,31 @@ func (p *Policy) SetStateAction(state, action int, value float64) {
 	p.M.Set(state, action, value)
 }
 
+// GetStateActionValue returns the value of state/action
+func (p *Policy) GetStateActionValue(state, action int) float64 {
+	return p.M.At(state, action)
+}
+
 func (p *Policy) ActionsForState(s int) *mat64.Vector {
 	return p.M.RowView(s)
 }
 
+// SetType sets the type of the policy
+func (p *Policy) SetType(t string) {
+	p.t = t
+}
+
+// BestRandomActionsForState returns the best action base don policy, ties are broken arbitrarily
+// Supports epsilon-greedy policy where a random action is chosen with probability epsilon
 func (p *Policy) BestRandomActionsForState(s int) int {
 	actions := p.M.RowView(s)
 	max := math.Inf(-1)
 	var bestActions []int
+	var allActions []int
 
 	for x := 0; x < actions.Len(); x++ {
+		allActions = append(allActions, x)
+
 		a := actions.At(x, 0)
 		if a >= max {
 			if a == max {
@@ -102,6 +135,12 @@ func (p *Policy) BestRandomActionsForState(s int) int {
 				bestActions = []int{x}
 			}
 			max = a
+		}
+	}
+	if p.t == "epsilon_greedy" {
+		if float64(utils.Random(0, 100))/100.0 > p.epsilon {
+			// pick random action
+			return allActions[utils.Random(0, len(allActions))]
 		}
 	}
 	return bestActions[utils.Random(0, len(bestActions))]
