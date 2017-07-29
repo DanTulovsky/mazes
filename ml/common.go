@@ -183,18 +183,20 @@ func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextS
 	if err != nil {
 		return nextState, reward, valid, err
 	}
+	// log.Printf("> in cell: %v; in state: %v, action: %v", cell, state, ActionToText[action])
+
+	// default to staying in one place
+	nextState = state
 
 	// figure out the next state (cell) from here given the action
 	if utils.LocsSame(cell.Location(), endCell) {
 		reward = 0
-		nextState = state // don't move anywhere else
 		valid = true
 	} else {
 		reward = -1
 		// find next cell given the action and get its state number
 		switch {
 		case action == None:
-			nextState = state
 			valid = true
 		case action == North:
 			if cell.Linked(cell.North()) {

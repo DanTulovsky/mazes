@@ -1006,6 +1006,16 @@ func (m *Maze) Cell(column, row, z int64) (*Cell, error) {
 	return m.cells[column][row], nil
 }
 
+// CellFromLocation returns the cell at r,c
+func (m *Maze) CellFromLocation(l *pb.MazeLocation) (*Cell, error) {
+	column, row := l.X, l.Y
+
+	if column < 0 || column >= m.columns || row < 0 || row >= m.rows {
+		return nil, fmt.Errorf("(%v, %v) is outside the grid (%v, %v)", column, row, m.columns, m.rows)
+	}
+	return m.cells[column][row], nil
+}
+
 func CellMapKeys(m map[*Cell]bool) []*Cell {
 	var keys []*Cell
 	for key := range m {
