@@ -11,14 +11,13 @@ import (
 
 	"sort"
 
-	"github.com/buger/goterm"
+	"github.com/nsf/termbox-go"
 )
 
 func printProgress(e, numEpisodes int) {
-	goterm.Clear()
-	if math.Mod(float64(e), 1000) == 0 {
-		goterm.Printf("\nEpisode %d of %d\n", e, numEpisodes)
-		goterm.Flush()
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	if math.Mod(float64(e), 100) == 0 {
+		fmt.Printf("Episode %d of %d\n", e, numEpisodes)
 	}
 }
 
@@ -36,7 +35,7 @@ type episode struct {
 
 // RunEpisode runs through the maze once, following the policy.
 // Returns a list of
-func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell) (e episode, err error) {
+func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell, maxSteps int) (e episode, err error) {
 	// log.Printf("\nStarting episode...\n")
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -56,8 +55,10 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell) 
 	// log.Printf("initial state: %v, initial location: %v", state, c.CurrentLocation().Location())
 
 	solved := false
+	steps := 0
 
 	for !solved {
+		steps++
 		// get the action, according to policy, for this state
 		action := p.BestRandomActionsForState(state)
 		// log.Printf("state: %v; action: %v", state, ml.ActionToText[action])
@@ -91,6 +92,10 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell) 
 
 		state = nextState
 		// log.Printf("current location: %v, current state: %v", c.CurrentLocation().Location(), state)
+
+		if steps > maxSteps {
+			break
+		}
 
 	}
 
@@ -137,7 +142,7 @@ func sumRewardsSinceIdx(e episode, idx int, df float64) (float64, error) {
 }
 
 // Evaluate returns the value function for the given policy
-func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, theta float64, toCell *maze.Cell) (*ml.ValueFunction, error) {
+func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, theta float64, toCell *maze.Cell, maxSteps int) (*ml.ValueFunction, error) {
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -156,7 +161,7 @@ func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df, 
 
 		// generate an episode (wonder through the maze following policy)
 		// An episode is an array of (state, action, reward) tuples
-		episode, err := RunEpisode(m, p, clientID, toCell)
+		episode, err := RunEpisode(m, p, clientID, toCell, maxSteps)
 		if err != nil {
 			return nil, err
 		}

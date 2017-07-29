@@ -50,56 +50,59 @@ var policytests = []struct {
 	//	df:       0.5,
 	//	theta:    0.00001,
 	//	actions:  ml.DefaultActions,
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    5,
-	//		Rows:       4,
-	//		CreateAlgo: "ellers",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-ellers-dp-eval-only",
-	//	df:       0.9,
-	//	theta:    0.00001,
-	//	actions:  ml.DefaultActions,
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    6,
-	//		Rows:       3,
-	//		CreateAlgo: "bintree",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-bintree-dp-eval-only",
-	//	df:       0.9,
-	//	theta:    0.00001,
-	//	actions:  ml.DefaultActions,
-	//}, {
-	//	config: &pb.MazeConfig{
-	//		Columns:    4,
-	//		Rows:       5,
-	//		CreateAlgo: "prim",
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",
-	//		ToCell:    "3,4",
-	//	},
-	//	clientID: "client-prim-dp-eval-only",
-	//	df:       0.9,
-	//	theta:    0.00001,
-	//	actions:  ml.DefaultActions,
 	//},
+	{
+		config: &pb.MazeConfig{
+			Columns:    5,
+			Rows:       4,
+			CreateAlgo: "ellers",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "2,1",
+		},
+		clientID: "client-ellers-dp-eval-only",
+		df:       0.9,
+		theta:    0.00001,
+		actions:  ml.DefaultActions,
+	},
+	{
+		config: &pb.MazeConfig{
+			Columns:    6,
+			Rows:       3,
+			CreateAlgo: "bintree",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "2,1",
+		},
+		clientID: "client-bintree-dp-eval-only",
+		df:       0.9,
+		theta:    0.00001,
+		actions:  ml.DefaultActions,
+	}, {
+		config: &pb.MazeConfig{
+			Columns:    4,
+			Rows:       5,
+			CreateAlgo: "prim",
+		},
+		clientConfig: &pb.ClientConfig{
+			SolveAlgo: "ml_dp_policy_eval", // no op yet
+			FromCell:  "0,0",
+			ToCell:    "3,4",
+		},
+		clientID: "client-prim-dp-eval-only",
+		df:       0.9,
+		theta:    0.00001,
+		actions:  ml.DefaultActions,
+	},
 }
 
 func TestPolicy_Eval(t *testing.T) {
 	for _, tt := range policytests {
+		t.Logf("running maze size (%v, %v): %v (-> (%v)", tt.config.Columns, tt.config.Rows, tt.config.CreateAlgo, tt.clientConfig.ToCell)
 		// create empty maze
 		m, err := maze.NewMaze(tt.config, nil)
 		if err != nil {
@@ -124,7 +127,8 @@ func TestPolicy_Eval(t *testing.T) {
 
 		p := ml.NewRandomPolicy(int(tt.config.Rows*tt.config.Columns), tt.actions)
 		numEpisodes := 1000
-		vf, err := Evaluate(p, m, tt.clientID, numEpisodes, tt.df, tt.theta, toCell)
+		maxSteps := 1000 // max steps per run through maze
+		vf, err := Evaluate(p, m, tt.clientID, numEpisodes, tt.df, tt.theta, toCell, maxSteps)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
 		}
