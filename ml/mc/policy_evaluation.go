@@ -1,22 +1,21 @@
 package mc
 
 import (
-	"log"
 	"math"
 	"mazes/maze"
 	"mazes/ml"
 
-	"mazes/utils"
-
 	"fmt"
+	pb "mazes/proto"
+	"mazes/utils"
 
 	"sort"
 )
 
-func printProgress(e, numEpisodes int) {
+func printProgress(e, numEpisodes int, epsilon, delta float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 100) == 0 {
-		fmt.Printf("Episode %d of %d\n", e, numEpisodes)
+	if math.Mod(float64(e), 10) == 0 {
+		fmt.Printf("Episode %d of %d (epsilon = %v; delta = %v)\n", e, numEpisodes, epsilon, delta)
 	}
 	// termbox.Flush()
 }
@@ -35,17 +34,20 @@ type episode struct {
 
 // RunEpisode runs through the maze once, following the policy.
 // Returns a list of
-func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell, maxSteps int) (e episode, err error) {
-	// log.Printf("\nStarting episode...\n")
-	numStates := int(m.Config().Columns * m.Config().Rows)
-
-	// pick a random state to start at (fromCell), toCell is always the same
-	state := int(utils.Random(0, numStates))
-	fromCell, err := utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(state))
+func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int) (e episode, err error) {
+	if fromCell == nil {
+		numStates := int(m.Config().Columns * m.Config().Rows)
+		// pick a random state to start at (fromCell), toCell is always the same
+		s := int(utils.Random(0, numStates))
+		fromCell, err = utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(s))
+		if err != nil {
+			return e, err
+		}
+	}
+	state, err := utils.StateFromLocation(m.Config().Rows, m.Config().Columns, fromCell)
 	if err != nil {
 		return e, err
 	}
-
 	c, err := m.Client(clientID)
 	cell, err := m.CellFromLocation(fromCell)
 	if err != nil {
@@ -57,28 +59,30 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell, 
 	solved := false
 	steps := 0
 
+	// log.Printf("Solving...")
+	// log.Printf("policy:\n%v", p)
 	for !solved {
-		steps++
 		// get the action, according to policy, for this state
-		action := p.BestRandomActionsForState(state)
-		// log.Printf("state: %v; action: %v", state, ml.ActionToText[action])
+		action := p.BestWeightedActionsForState(m, state)
+		//log.Printf("state: %v; action: %v", state, ml.ActionToText[action])
 
 		// get the next state
 		nextState, reward, valid, err := ml.NextState(m, toCell.Location(), state, action)
 		if err != nil {
 			return e, err
 		}
-		// log.Printf("nextState: %v, reward: %v, valid: %v, err: %v", nextState, reward, valid, err)
+		//log.Printf("nextState: %v, reward: %v, valid: %v, err: %v", nextState, reward, valid, err)
 
 		sr := stateReturn{
 			state:  state,
 			action: action,
 			reward: reward,
 		}
+
 		e.sr = append(e.sr, sr)
 
 		if utils.LocsSame(c.CurrentLocation().Location(), toCell.Location()) {
-			log.Printf("+++ solved in %v steps!", steps)
+			// log.Printf("+++ solved in %v steps!", steps)
 			solved = true
 		}
 
@@ -89,13 +93,14 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, toCell *maze.Cell, 
 			if err != nil {
 				return e, err
 			}
+			steps++
 		}
 
 		state = nextState
 		// log.Printf("current location: %v, current state: %v", c.CurrentLocation().Location(), state)
 
 		if steps > maxSteps {
-			log.Printf("--- not solved in %v steps!", steps)
+			// log.Printf("--- not solved in %v steps!", steps)
 			break
 		}
 
@@ -186,11 +191,11 @@ func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df f
 	// run through the policy this many times
 	// each run is a walk through the maze until the end (or limit?)
 	for e := 1; e <= numEpisodes; e++ {
-		printProgress(e, numEpisodes)
+		printProgress(e, numEpisodes, -1, -1)
 
 		// generate an episode (wonder through the maze following policy)
 		// An episode is an array of (state, action, reward) tuples
-		episode, err := RunEpisode(m, p, clientID, toCell, maxSteps)
+		episode, err := RunEpisode(m, p, clientID, nil, toCell, maxSteps)
 		if err != nil {
 			return nil, err
 		}

@@ -8,7 +8,13 @@ import (
 	"fmt"
 	"math"
 	pb "mazes/proto"
+
+	"github.com/gonum/matrix/mat64"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 // Random returns a random number in [min, max)
 func Random(min, max int) int {
@@ -129,4 +135,26 @@ func ModDiv(x, y int64) (int64, int64) {
 	rpart := math.Mod(float64(x), float64(y))
 
 	return ipart, int64(rpart)
+}
+
+// WeightedChoice returns the index of randomly chosen element in the vector based on the weight
+// e.g. [1, 0, 3, 4, 0] -> will most often return 3 (the index of value 4)
+func WeightedChoice(v *mat64.Vector) int {
+	totals := []float64{}
+	runningTotal := 0.0
+
+	for i := 0; i < v.Len(); i++ {
+		w := v.At(i, 0)
+		runningTotal += float64(w)
+		totals = append(totals, runningTotal)
+	}
+
+	rnd := float64(Random(0, 100)) / 100.0 * runningTotal
+
+	for i, total := range totals {
+		if rnd < total {
+			return i
+		}
+	}
+	return -1
 }

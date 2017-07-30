@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"log"
 	pb "mazes/proto"
 	"testing"
+
+	"github.com/gonum/matrix/mat64"
 )
 
 var affinetransformtests = []struct {
@@ -198,6 +201,39 @@ func TestModDiv(t *testing.T) {
 
 		if w != tt.expWhole || r != tt.expRemainder {
 			t.Errorf("expected: %vr%v; got %vr%v", tt.expWhole, tt.expRemainder, w, r)
+		}
+
+	}
+}
+
+var weightedchoicetest = []struct {
+	v *mat64.Vector
+}{
+	{v: mat64.NewVector(5, []float64{.1, 0, 0, 0, 0})},
+	{v: mat64.NewVector(5, []float64{0, 10, 0, 0, 0})},
+	{v: mat64.NewVector(5, []float64{.2, 10, .2, 10, .2})},
+	{v: mat64.NewVector(5, []float64{.2, .3, .2, .2, .2})},
+}
+
+func TestWeightedChoice(t *testing.T) {
+	for _, tt := range weightedchoicetest {
+		c := WeightedChoice(tt.v)
+		log.Printf("index: %v; value: %v; vector: %v", c, tt.v.At(c, 0), tt.v)
+
+	}
+}
+
+var weightedchoicebench = []struct {
+	v *mat64.Vector
+}{
+	{v: mat64.NewVector(4, []float64{0, 0, 0.1, 0})},
+}
+
+func BenchmarkWeightedChoice(t *testing.B) {
+	for _, tt := range weightedchoicebench {
+		c := WeightedChoice(tt.v)
+		if c != 2 {
+			t.Errorf("picked element with probability 0: %v", c)
 		}
 
 	}

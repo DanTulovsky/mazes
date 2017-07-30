@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"mazes/maze"
 
-	"math"
-
-	"mazes/utils"
-
 	"github.com/gonum/matrix"
 	"github.com/gonum/matrix/mat64"
 
+	"math"
 	pb "mazes/proto"
+	"mazes/utils"
 )
 
 type Policy struct {
@@ -116,9 +114,8 @@ func (p *Policy) SetType(t string) {
 	p.t = t
 }
 
-// BestRandomActionsForState returns the best action base don policy, ties are broken arbitrarily
-// Supports epsilon-greedy policy where a random action is chosen with probability epsilon
-func (p *Policy) BestRandomActionsForState(s int) int {
+// BestDeterministicActionsForState returns the best action based on policy, ties are broken arbitrarily
+func (p *Policy) BestDeterministicActionsForState(s int) int {
 	actions := p.M.RowView(s)
 	max := math.Inf(-1)
 	var bestActions []int
@@ -137,13 +134,24 @@ func (p *Policy) BestRandomActionsForState(s int) int {
 			max = a
 		}
 	}
-	if p.t == "epsilon_greedy" {
-		if float64(utils.Random(0, 100))/100.0 > p.epsilon {
-			// pick random action
-			return allActions[utils.Random(0, len(allActions))]
-		}
-	}
+
 	return bestActions[utils.Random(0, len(bestActions))]
+}
+
+// BestActionsForState returns the best action based on the probabilities in the policy
+// state -> [0.5, 0, 0, 0.5, 0] picks the 1st and 3rd action with 50% probability
+func (p *Policy) BestWeightedActionsForState(m *maze.Maze, s int) int {
+	actions := p.M.RowView(s)
+
+	// in MC, you have to pick all state/action pairs with some probability
+	//for a := 0; a < actions.Len(); a++ {
+	//	isValid, _ := ActionIsValid(m, s, a)
+	//	if !isValid {
+	//		actions.SetVec(a, 0)
+	//	}
+	//}
+
+	return utils.WeightedChoice(actions)
 }
 
 func (p *Policy) String() string {

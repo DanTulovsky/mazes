@@ -41,7 +41,7 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		// For each state...
 		for state := 0; state < numStates; state++ {
 			// The best action we would take under the current policy
-			chosenAction := policy.BestRandomActionsForState(state)
+			chosenAction := policy.BestWeightedActionsForState(m, state)
 
 			actionValues, err := ml.OneStepLookAhead(m, endCell, vf, df, state, len(actions))
 			if err != nil {

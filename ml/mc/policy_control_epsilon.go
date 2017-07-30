@@ -1,8 +1,14 @@
 package mc
 
 import (
+	"log"
 	"mazes/maze"
 	"mazes/ml"
+	pb "mazes/proto"
+
+	"math"
+
+	"github.com/gonum/matrix/mat64"
 )
 
 type StateAction struct {
@@ -23,7 +29,7 @@ func (sa ByStateAction) Less(i, j int) bool {
 }
 
 // ControlEpsilonGreedy returns the optimal state-value function and policy
-func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, df float64, toCell *maze.Cell, maxSteps int, epsilon float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
+func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, theta float64, df float64, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int, epsilon float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
 	// map of state, action -> sum of all returns in that state
 	returnsSum := make(map[StateAction]float64)
 	// map of state,action -> count of all returns
@@ -37,12 +43,13 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, df flo
 	// policy
 	p := ml.NewEpsilonGreedyPolicy(numStates, ml.DefaultActions, epsilon)
 
-	for e := 1; e <= numEpisodes; e++ {
-		printProgress(e, numEpisodes)
+	// Run this many epsidoes, or until delta < theta
+	for e := 0; e < numEpisodes; e++ {
+		delta := 0.0
 
 		// generate an episode (wonder through the maze following policy)
 		// An episode is an array of (state, action, reward) tuples
-		episode, err := RunEpisode(m, p, clientID, toCell, maxSteps)
+		episode, err := RunEpisode(m, p, clientID, fromCell, toCell, maxSteps)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -51,6 +58,7 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, df flo
 		stateActions := stateActionsInEpisode(episode)
 		//log.Printf("stateActions: %v", stateActions)
 
+		// log.Printf("Processing...")
 		for _, sa := range stateActions {
 			// Find the first occurrence of the state,action in the episode
 			stateActionIdx, err := firstStateActionInEpisodeIdx(episode, sa.state, sa.action)
@@ -63,8 +71,9 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, df flo
 			if err != nil {
 				return nil, nil, err
 			}
+			// log.Printf("processing state-action: %v; all_rewards: %v", sa, sum)
 
-			// Calculate average return for this state over all sampled episodes
+			// Calculate average return for this state/action over all sampled episodes
 			if _, ok := returnsSum[sa]; !ok {
 				returnsSum[sa] = 0
 			}
@@ -76,15 +85,46 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, df flo
 			returnsCount[sa]++
 
 			svf.Set(sa.state, sa.action, returnsSum[sa]/returnsCount[sa])
+		}
 
-			actionValues := svf.ValuesForState(sa.state)
-			// log.Printf("actionValues: %v", actionValues)
+		for _, s := range statesInEpisode(episode) {
+			actionValues := svf.ValuesForState(s)
+			//log.Printf("state: %v, actionValues: %v", s, actionValues)
 			// improve policy for state, action
 			bestAction := ml.MaxInVectorIndex(actionValues)
-			if sa.action == bestAction {
-				old := p.GetStateActionValue(sa.state, sa.action)
-				p.SetStateAction(sa.state, sa.action, old+1)
+			bestActionValue := mat64.Max(actionValues)
+
+			var newValue float64
+
+			for a := 0; a < actionValues.Len(); a++ {
+				prevActionValue, err := svf.Get(s, a)
+				if err != nil {
+					return nil, nil, err
+				}
+				if a == bestAction {
+					// log.Printf("found best action: %v", ml.ActionToText[bestAction])
+					newValue = 1 - epsilon + epsilon/float64(actionValues.Len())
+				} else {
+					newValue = epsilon / float64(actionValues.Len())
+				}
+				p.SetStateAction(s, a, newValue)
+
+				delta = math.Max(delta, math.Abs(bestActionValue-prevActionValue))
 			}
+		}
+		// log.Printf("...done processing")
+
+		// slowly decrease epsilon, do less exploration over time
+		epsilon = epsilon - epsilon/float64(numEpisodes)*(float64(e))
+		if epsilon < 0.1 {
+			epsilon = 0.1
+		}
+
+		printProgress(e, numEpisodes, epsilon, delta)
+
+		if delta < theta {
+			log.Printf("stopping, change in value function (%v) less than %v", delta, theta)
+			break
 		}
 	}
 

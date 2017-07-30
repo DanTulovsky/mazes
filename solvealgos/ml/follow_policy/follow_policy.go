@@ -28,6 +28,7 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 	steps := 0
 
 	currentCell := fromCell
+	var action int
 
 	for !solved {
 		// animation delay
@@ -38,8 +39,9 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 		if err != nil {
 			return fmt.Errorf("error converting [%v] to location: %v", state, err)
 		}
-		// not random because only one action is 1, the rest 0
-		action := a.Policy().BestRandomActionsForState(state)
+
+		action = a.Policy().BestDeterministicActionsForState(state)
+
 		// log.Printf("At: %v (state=%v); moving to: %v", loc, state, dp.ActionToText[action])
 
 		reply, err := a.Move(mazeID, clientID, ml.ActionToText[action])

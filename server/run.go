@@ -277,13 +277,16 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 	///////////////////////////////////////////////////////////////////////////
 	log.Printf("finished creating maze...")
 
+	encoded, err := m.Encode()
+	if err != nil {
+		encoded = err.Error()
+	}
+
 	if m.Config().GetReturnMaze() {
-		encoded, err := m.Encode()
-		if err != nil {
-			encoded = err.Error()
-		}
 		m.SetEncodedString(encoded)
 	}
+
+	log.Printf("Maze is:\n%v\n", encoded)
 
 	return m, r, w, nil
 }
@@ -373,7 +376,6 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 }
 
 func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
-	log.Printf("checking comm")
 	select {
 	case in := <-comm: // type == commandData
 		switch in.Action {

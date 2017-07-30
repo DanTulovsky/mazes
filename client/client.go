@@ -491,7 +491,7 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 		ShowFromToColors:       *showFromToColors,
 		VisitedCellColor:       *visitedCellColor,
 		CurrentLocationColor:   *currentLocationColor,
-		DrawPathLength:         0,
+		DrawPathLength:         100,
 		MarkVisitedCells:       *markVisitedCells,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}
@@ -506,10 +506,11 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 		return fmt.Errorf("error applying algorithm: %v", err)
 	}
 
-	df := 0.99
-	epsilon := 0.1      // chance of picking random action, to explore
-	numEpisodes := 1000 // number of times to run through maze
-	maxSteps := 100000  // max steps per run through maze
+	df := 1.0
+	epsilon := 1.0                                                // chance of picking random action, to explore
+	theta := 0.000000001                                          // stop running episodes when value function change is less than this
+	numEpisodes := 100000                                         // number of times to run through maze
+	maxSteps := int(m.Config().Rows * m.Config().Columns * 10000) // max steps per run through maze
 	clientID := "clientID"
 	m.AddClient(clientID, clientConfig)
 
@@ -523,7 +524,7 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 
 	// runs through the *local* maze to find optimal path
 	log.Print("figuring out optimal policy using mc epsilon greedy control...")
-	_, policy, err := mc.ControlEpsilonGreedy(m, clientID, numEpisodes, df, c.ToCell(), maxSteps, epsilon)
+	_, policy, err := mc.ControlEpsilonGreedy(m, clientID, numEpisodes, theta, df, c.FromCell().Location(), c.ToCell(), maxSteps, epsilon)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}

@@ -35,7 +35,7 @@ func TestControlEpsilonGreedy(t *testing.T) {
 		epsilon := 0.1      // chance of picking random action, to explore
 		numEpisodes := 1000 // number of times to run through maze
 		maxSteps := 10000   // max steps per run through maze
-		svf, policy, err := ControlEpsilonGreedy(m, tt.clientID, numEpisodes, tt.df, toCell, maxSteps, epsilon)
+		svf, policy, err := ControlEpsilonGreedy(m, tt.clientID, numEpisodes, tt.theta, tt.df, nil, toCell, maxSteps, epsilon)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
 		}
