@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	MIN_ROOM_HEIGHT = 1
-	MIN_ROOM_WIDTH  = 1
-	// 1 / 4 chances a room with above size will be left alone and not subdivided further
-	ROOM_SIZE_CHANCE_RATIO = 4
+	MIN_ROOM_HEIGHT = 10
+	MIN_ROOM_WIDTH  = 5
+	// 1 / 3 chances a room with above size will be left alone and not subdivided further
+	ROOM_SIZE_CHANCE_RATIO = 3
 )
 
 type RecursiveDivision struct {

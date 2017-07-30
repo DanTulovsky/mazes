@@ -40,7 +40,7 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 			return fmt.Errorf("error converting [%v] to location: %v", state, err)
 		}
 
-		action = a.Policy().BestDeterministicActionsForState(state)
+		action = a.Policy().BestDeterministicActionForState(state)
 
 		// log.Printf("At: %v (state=%v); moving to: %v", loc, state, dp.ActionToText[action])
 

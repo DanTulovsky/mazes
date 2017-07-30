@@ -114,8 +114,8 @@ func (p *Policy) SetType(t string) {
 	p.t = t
 }
 
-// BestDeterministicActionsForState returns the best action based on policy, ties are broken arbitrarily
-func (p *Policy) BestDeterministicActionsForState(s int) int {
+// BestDeterministicActionForState returns the best action based on policy, ties are broken arbitrarily
+func (p *Policy) BestDeterministicActionForState(s int) int {
 	actions := p.M.RowView(s)
 	max := math.Inf(-1)
 	var bestActions []int

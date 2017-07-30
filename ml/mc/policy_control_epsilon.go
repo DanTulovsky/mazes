@@ -8,6 +8,8 @@ import (
 
 	"math"
 
+	"mazes/utils"
+
 	"github.com/gonum/matrix/mat64"
 )
 
@@ -29,7 +31,8 @@ func (sa ByStateAction) Less(i, j int) bool {
 }
 
 // ControlEpsilonGreedy returns the optimal state-value function and policy
-func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, theta float64, df float64, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int, epsilon float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
+func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int64, theta float64, df float64,
+	fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, epsilon float64, epsilonDecay float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
 	// map of state, action -> sum of all returns in that state
 	returnsSum := make(map[StateAction]float64)
 	// map of state,action -> count of all returns
@@ -44,8 +47,12 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, theta 
 	p := ml.NewEpsilonGreedyPolicy(numStates, ml.DefaultActions, epsilon)
 
 	// Run this many epsidoes, or until delta < theta
-	for e := 0; e < numEpisodes; e++ {
+	for e := int64(0); e < numEpisodes; e++ {
 		delta := 0.0
+
+		if err := m.ResetClient(clientID); err != nil {
+			return nil, nil, err
+		}
 
 		// generate an episode (wonder through the maze following policy)
 		// An episode is an array of (state, action, reward) tuples
@@ -115,7 +122,8 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, theta 
 		// log.Printf("...done processing")
 
 		// slowly decrease epsilon, do less exploration over time
-		epsilon = epsilon - epsilon/float64(numEpisodes)*(float64(e))
+		epsilon = utils.Decay(epsilon, float64(e), epsilonDecay)
+		// epsilon = epsilon - epsilon/float64(numEpisodes)*(float64(e))
 		if epsilon < 0.1 {
 			epsilon = 0.1
 		}
@@ -126,6 +134,7 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int, theta 
 			log.Printf("stopping, change in value function (%v) less than %v", delta, theta)
 			break
 		}
+
 	}
 
 	return svf, p, nil

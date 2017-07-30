@@ -86,24 +86,31 @@ var (
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
 	solveAlgo     = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
-	skipGridCheck = flag.Bool("skip_grid_check", false, "set to true to skip grid check (disable spanning tree check)")
+	skipGridCheck = flag.Bool("skip_grid_check", true, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
 	mazeID        = flag.String("maze_id", "", "maze id")
 	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
+	fromCellStr   = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
+	toCellStr     = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
+	returnMaze    = flag.Bool("return_maze", false, "return the encoded maze in the create reply, used for ML DP algorithms")
+
+	// ml params
+	df                 = flag.Float64("df", 1, "discount factor [0-1], at one treats all steps equally")
+	epsilon            = flag.Float64("epsilon", 1, "chance of picking random action [0-1], used to explore")
+	epsilonDecayFactor = flag.Float64("epsilon_decay_factor", -0.001, "decay factor for epsilon, the closer to 0, the slow it decays")
+	theta              = flag.Float64("theta", 0.000000001, "stops evaluation when value function change is less than this")
+	numEpisodes        = flag.Int64("num_episodes", 10000, "for episodic algorithms, run this many episodes")
+	maxSteps           = flag.Int64("max_steps", 0, "run only this many steps per episode, 0 means set automatically")
 
 	// misc
 	exportMaze       = flag.Bool("export_maze", false, "save maze to a file on the server")
 	bgMusic          = flag.String("bg_music", "", "file name of background music to play")
 	enableMonitoring = flag.Bool("enable_monitoring", false, "enable monitoring")
-	returnMaze       = flag.Bool("return_maze", false, "return the encoded maze in the create reply, used for ML DP algorithms")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
-
-	fromCellStr = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
-	toCellStr   = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
 
 	wd sync.WaitGroup
 )
@@ -379,8 +386,8 @@ func opCreateSolveMlDpPolicyIteration() error {
 		return fmt.Errorf("error applying algorithm: %v", err)
 	}
 
-	df := 0.99
-	theta := 0.000000001
+	df := *df
+	theta := *theta
 	clientID := "clientID"
 	log.Printf("Determining optimal policy.using policy iteration..")
 	clientConfig.DrawPathLength = 0 // don't draw on the client
@@ -444,8 +451,8 @@ func opCreateSolveMlDpValueIteration() error {
 		return fmt.Errorf("error applying algorithm: %v", err)
 	}
 
-	df := 1.0
-	theta := 0.000000001
+	df := *df
+	theta := *theta
 	clientID := "clientID"
 	log.Printf("Determining optimal policy using value iteration...")
 	m.AddClient(clientID, clientConfig)
@@ -466,34 +473,7 @@ func opCreateSolveMlDpValueIteration() error {
 
 	clientConfig.DrawPathLength = *drawPathLength // restore for the server
 
-	mazeId := r.GetMazeId()
-	var wd sync.WaitGroup
-
-	// for comparison
-	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:              "recursive-backtracker",
-		PathColor:              "purple",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "purple",
-		CurrentLocationColor:   "purple",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
-
-	wd.Add(1)
-	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
-
-	log.Printf("waiting for clients...")
-	wd.Wait()
-
-	return nil
+	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
 }
 
 // opCreateSolveMlMCEpsilonGreedyControl creates and solves a maze using MC Epsilon Greedy Control
@@ -534,11 +514,10 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 		return fmt.Errorf("error applying algorithm: %v", err)
 	}
 
-	df := 1.0
-	epsilon := 1.0                                                // chance of picking random action, to explore
-	theta := 200.0                                                // stop running episodes when value function change is less than this
-	numEpisodes := 100000                                         // number of times to run through maze
-	maxSteps := int(m.Config().Rows * m.Config().Columns * 10000) // max steps per run through maze
+	// max steps per run through maze
+	if *maxSteps == 0 {
+		*maxSteps = m.Config().Rows * m.Config().Columns * 10000
+	}
 	clientID := "clientID"
 	m.AddClient(clientID, clientConfig)
 
@@ -573,7 +552,8 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 
 	// runs through the *local* maze to find optimal path
 	log.Print("figuring out optimal policy using mc epsilon greedy control...")
-	_, policy, err := mc.ControlEpsilonGreedy(m, clientID, numEpisodes, theta, df, c.FromCell().Location(), c.ToCell(), maxSteps, epsilon)
+	_, policy, err := mc.ControlEpsilonGreedy(m, clientID, *numEpisodes, *theta, *df, c.FromCell().Location(),
+		c.ToCell(), *maxSteps, *epsilon, *epsilonDecayFactor)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}

@@ -238,3 +238,20 @@ func BenchmarkWeightedChoice(t *testing.B) {
 
 	}
 }
+
+var decaytest = []struct {
+	p, r  float64
+	steps int
+}{
+	{p: 1, steps: 1000, r: -0.001},
+}
+
+func TestDecay(t *testing.T) {
+	for _, tt := range decaytest {
+		t.Logf("input: %#v", tt)
+		for s := 0; s < tt.steps; s++ {
+			c := Decay(tt.p, float64(s), tt.r)
+			t.Logf("output: %v", c)
+		}
+	}
+}

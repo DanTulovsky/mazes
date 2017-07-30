@@ -34,6 +34,15 @@ func (p *Path) Segments() []*PathSegment {
 	return p.segments
 }
 
+// Reset sets the path back to empty
+func (p *Path) Reset() {
+	p.Lock()
+	defer p.Unlock()
+	p.segments = make([]*PathSegment, 0)
+	p.cellMap = make(map[*Cell]bool)
+	p.segmentMap = make(map[*PathSegment]bool)
+}
+
 // SegmentInSegmentList returns true if segment is in path
 func (p *Path) SegmentInPath(segment *PathSegment) bool {
 	p.RLock()

@@ -32,10 +32,12 @@ func TestControlEpsilonGreedy(t *testing.T) {
 		}
 
 		encoded, err := m.Encode()
-		epsilon := 0.1      // chance of picking random action, to explore
-		numEpisodes := 1000 // number of times to run through maze
-		maxSteps := 10000   // max steps per run through maze
-		svf, policy, err := ControlEpsilonGreedy(m, tt.clientID, numEpisodes, tt.theta, tt.df, nil, toCell, maxSteps, epsilon)
+		epsilon := 1.0             // chance of picking random action, to explore
+		numEpisodes := int64(1000) // number of times to run through maze
+		maxSteps := int64(10000)   // max steps per run through maze
+		epsilonDecayFactor := -0.001
+		svf, policy, err := ControlEpsilonGreedy(m, tt.clientID, numEpisodes, tt.theta, tt.df,
+			nil, toCell, maxSteps, epsilon, epsilonDecayFactor)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
 		}

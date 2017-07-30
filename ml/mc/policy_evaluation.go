@@ -12,9 +12,9 @@ import (
 	"sort"
 )
 
-func printProgress(e, numEpisodes int, epsilon, delta float64) {
+func printProgress(e, numEpisodes int64, epsilon, delta float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 10) == 0 {
+	if math.Mod(float64(e), 50) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v; delta = %v)\n", e, numEpisodes, epsilon, delta)
 	}
 	// termbox.Flush()
@@ -34,7 +34,8 @@ type episode struct {
 
 // RunEpisode runs through the maze once, following the policy.
 // Returns a list of
-func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int) (e episode, err error) {
+func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLocation,
+	toCell *maze.Cell, maxSteps int64) (e episode, err error) {
 	if fromCell == nil {
 		numStates := int(m.Config().Columns * m.Config().Rows)
 		// pick a random state to start at (fromCell), toCell is always the same
@@ -57,7 +58,7 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLo
 	// log.Printf("initial state: %v, initial location: %v", state, c.CurrentLocation().Location())
 
 	solved := false
-	steps := 0
+	steps := int64(0)
 
 	// log.Printf("Solving...")
 	// log.Printf("policy:\n%v", p)
@@ -176,7 +177,8 @@ func sumRewardsSinceIdx(e episode, idx int, df float64) (float64, error) {
 }
 
 // Evaluate returns the value function for the given policy
-func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df float64, toCell *maze.Cell, maxSteps int) (*ml.ValueFunction, error) {
+func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int64, df float64,
+	toCell *maze.Cell, maxSteps int64) (*ml.ValueFunction, error) {
 
 	// termbox.Init()
 	numStates := int(m.Config().Columns * m.Config().Rows)
@@ -190,7 +192,7 @@ func Evaluate(p *ml.Policy, m *maze.Maze, clientID string, numEpisodes int, df f
 
 	// run through the policy this many times
 	// each run is a walk through the maze until the end (or limit?)
-	for e := 1; e <= numEpisodes; e++ {
+	for e := int64(0); e < numEpisodes; e++ {
 		printProgress(e, numEpisodes, -1, -1)
 
 		// generate an episode (wonder through the maze following policy)

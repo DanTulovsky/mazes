@@ -158,3 +158,9 @@ func WeightedChoice(v *mat64.Vector) int {
 	}
 	return -1
 }
+
+// p is the input, t is the time, r is the decay constant
+func Decay(p float64, t, r float64) float64 {
+	// A = Pe^(rt)
+	return p * math.Exp(r*t)
+}

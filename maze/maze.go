@@ -521,6 +521,19 @@ func (m *Maze) ClientsSorted() []*client {
 	return r
 }
 
+// ResetClient resets client info (path for now)
+func (m *Maze) ResetClient(clientID string) error {
+
+	client, err := m.Client(clientID)
+	if err != nil {
+		return fmt.Errorf("failed to find client: %v", err)
+	}
+
+	client.TravelPath.Reset()
+	m.SetClientPath(client)
+	return nil
+}
+
 // MoveClient moves a client in the requested direction
 func (m *Maze) MoveClient(clientID, direction string) (*client, error) {
 
@@ -1280,11 +1293,11 @@ func (m *Maze) SetClientPath(client *client) {
 func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 	defer utils.TimeTrack(time.Now(), "ShortestPath")
 
-	if path := fromCell.PathTo(toCell); path != nil {
-		return path.Length(), path
+	if p := fromCell.PathTo(toCell); p != nil {
+		return p.Length(), p
 	}
 
-	var path = NewPath()
+	var p = NewPath()
 
 	// Get all distances from this cell
 	d := fromCell.Distances()
@@ -1306,22 +1319,22 @@ func (m *Maze) ShortestPath(fromCell, toCell *Cell) (int, *Path) {
 			}
 		}
 		segment := NewSegment(next, "north", true) // arbitrary facing
-		path.AddSegement(segment)
+		p.AddSegement(segment)
 		if next == nil {
 			log.Fatalf("failed to find next cell from: %v", current)
 		}
 		current = next
 	}
 
-	// add toCell to path
-	path.ReverseCells()
+	// add toCell to p
+	p.ReverseCells()
 	segment := NewSegment(toCell, "north", true) // arbitrary facing
-	path.AddSegement(segment)
+	p.AddSegement(segment)
 
-	// record path for caching
-	fromCell.SetPathTo(toCell, path)
+	// record p for caching
+	fromCell.SetPathTo(toCell, p)
 
-	return toCellDist, path
+	return toCellDist, p
 }
 
 // SetDistanceInfo sets distance info based on fromCell

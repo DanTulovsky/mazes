@@ -126,8 +126,8 @@ func TestPolicy_Eval(t *testing.T) {
 		encoded, err := m.Encode()
 
 		p := ml.NewRandomPolicy(int(tt.config.Rows*tt.config.Columns), tt.actions)
-		numEpisodes := 1000
-		maxSteps := 10000 // max steps per run through maze
+		numEpisodes := int64(1000)
+		maxSteps := int64(10000) // max steps per run through maze
 		vf, err := Evaluate(p, m, tt.clientID, numEpisodes, tt.df, toCell, maxSteps)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
