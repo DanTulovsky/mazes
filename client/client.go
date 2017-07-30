@@ -465,7 +465,35 @@ func opCreateSolveMlDpValueIteration() error {
 	m.Reset()
 
 	clientConfig.DrawPathLength = *drawPathLength // restore for the server
-	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+
+	mazeId := r.GetMazeId()
+	var wd sync.WaitGroup
+
+	// for comparison
+	wd.Add(1)
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		SolveAlgo:              "recursive-backtracker",
+		PathColor:              "purple",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "purple",
+		CurrentLocationColor:   "purple",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}, nil, nil)
+
+	wd.Add(1)
+	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+
+	log.Printf("waiting for clients...")
+	wd.Wait()
+
+	return nil
 }
 
 // opCreateSolveMlMCEpsilonGreedyControl creates and solves a maze using MC Epsilon Greedy Control
@@ -508,7 +536,7 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 
 	df := 1.0
 	epsilon := 1.0                                                // chance of picking random action, to explore
-	theta := 0.000000001                                          // stop running episodes when value function change is less than this
+	theta := 200.0                                                // stop running episodes when value function change is less than this
 	numEpisodes := 100000                                         // number of times to run through maze
 	maxSteps := int(m.Config().Rows * m.Config().Columns * 10000) // max steps per run through maze
 	clientID := "clientID"
@@ -522,6 +550,27 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	clientConfig.FromCell = c.FromCell().StringXY()
 	clientConfig.ToCell = c.ToCell().StringXY()
 
+	mazeId := r.GetMazeId()
+	var wd sync.WaitGroup
+
+	// for comparison
+	wd.Add(1)
+	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		SolveAlgo:              "recursive-backtracker",
+		PathColor:              "purple",
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       "purple",
+		CurrentLocationColor:   "purple",
+		DisableDrawOffset:      *disableOffset,
+		MarkVisitedCells:       *markVisitedCells,
+		DrawPathLength:         *drawPathLength,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}, nil, nil)
+
 	// runs through the *local* maze to find optimal path
 	log.Print("figuring out optimal policy using mc epsilon greedy control...")
 	_, policy, err := mc.ControlEpsilonGreedy(m, clientID, numEpisodes, theta, df, c.FromCell().Location(), c.ToCell(), maxSteps, epsilon)
@@ -532,9 +581,13 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	log.Printf("policy:\n%v", policy)
 	m.Reset()
 
+	wd.Add(1)
 	clientConfig.DrawPathLength = *drawPathLength // restore for the server
 	policy.SetType("deterministic")               // follow this policy exactly
-	return addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+
+	addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+
+	return nil
 }
 
 // opCreate creates a new maze

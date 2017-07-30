@@ -79,7 +79,7 @@ func (a *RecursiveBacktracker) Solve(mazeID, clientID string, fromCell, toCell *
 		return fmt.Errorf("failed to find path through maze from %v to %v", fromCell, toCell)
 	}
 
-	log.Printf("maze solved!")
+	log.Printf("maze solved in %v steps!", steps)
 	a.ShowStats()
 
 	return nil

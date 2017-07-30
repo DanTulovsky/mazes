@@ -43,7 +43,7 @@ type Algorithmer interface {
 
 type Common struct {
 	solvePath  *maze.Path    // path of the final solution
-	solveSteps int           // how many cell visits it tooks (including duplicates)
+	solveSteps int           // how many cell visits it took (including duplicates)
 	solveTime  time.Duration // how long the last solve time took
 	stream     pb.Mazer_SolveMazeClient
 	travelPath *maze.Path // all the cells visited in order
