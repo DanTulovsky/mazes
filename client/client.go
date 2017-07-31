@@ -388,14 +388,18 @@ func opCreateSolveMlDpPolicyIteration() error {
 		return fmt.Errorf("error applying algorithm: %v", err)
 	}
 
-	df := *df
+	if *df == 1.0 {
+		*df = 0.99 // does not complete with df = 1
+		log.Printf("df == 1 with dp policy evaluation, this often does not converge, adjusting to %v", df)
+
+	}
 	theta := *theta
 	clientID := "clientID"
-	log.Printf("Determining optimal policy.using policy iteration..")
+	log.Printf("Determining optimal policy using policy iteration..")
 	clientConfig.DrawPathLength = 0 // don't draw on the client
 	m.AddClient(clientID, clientConfig)
 	// runs through the *local* maze to find optimal path
-	policy, _, err := dp.PolicyImprovement(m, clientID, df, theta, ml.DefaultActions)
+	policy, _, err := dp.PolicyImprovement(m, clientID, *df, theta, ml.DefaultActions)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}

@@ -27,13 +27,12 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		policiesEvaluated++
 
 		// evaluate the current policy
-		//log.Printf("evaluating current policy:\n%v", policy)
+		// log.Printf("evaluating current policy:\n%v", policy)
 		vf, err = Evaluate(policy, m, clientID, df, theta, vf)
 		if err != nil {
 			return nil, nil, err
 		}
-		//log.Printf("Current Policy value function:\n%v",
-		//	vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
+		// log.Printf("Current Policy value function:\n%v",  vf.Reshape(int(m.Config().Rows), int(m.Config().Columns)))
 
 		// Will be set to false if we make any changes to the policy
 		policyStable := true
@@ -42,13 +41,14 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		for state := 0; state < numStates; state++ {
 			// The best action we would take under the current policy
 			chosenAction := policy.BestWeightedActionsForState(m, state)
+			// log.Printf("chosenAction: %v", chosenAction)
 
 			actionValues, err := ml.OneStepLookAhead(m, endCell, vf, df, state, len(actions))
 			if err != nil {
 				return nil, nil, err
 			}
 			bestAction := ml.MaxInVectorIndex(actionValues)
-			//log.Printf("state: %v; bestAction: %v; chosenAction: %v", state, ActionToText[bestAction], ActionToText[chosenAction])
+			// log.Printf("state: %v; bestAction: %v; chosenAction: %v", state, ml.ActionToText[bestAction], ml.ActionToText[chosenAction])
 
 			// Greedily update the policy
 			if chosenAction != bestAction {

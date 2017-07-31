@@ -57,7 +57,7 @@ var (
 		South: "south",
 		East:  "east",
 		West:  "west",
-		// None:  "none",
+		None:  "none",
 	}
 )
 
