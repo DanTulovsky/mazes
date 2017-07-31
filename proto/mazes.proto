@@ -127,6 +127,7 @@ message MazeConfig {
     bool Gui = 29;
     string FromFile = 30;
     bool return_maze = 31; // return encoded maze back to the client
+    string title = 32;
 }
 
 // ClientConfig has all the per-client config settings in it

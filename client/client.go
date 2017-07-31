@@ -50,6 +50,7 @@ var (
 	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
 	showGUI            = flag.Bool("gui", true, "show gui maze")
 	showLocalGUI       = flag.Bool("local_gui", false, "show client's view of the maze")
+	title              = flag.String("title", "", "maze title")
 
 	// dimensions
 	rows    = flag.Int64("r", 15, "number of rows in the maze")
@@ -138,6 +139,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		Gui:                  *showGUI,
 		FromFile:             *mazeID,
 		ReturnMaze:           *returnMaze,
+		Title:                *title,
 	}
 	return config
 }
@@ -529,26 +531,30 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	clientConfig.FromCell = c.FromCell().StringXY()
 	clientConfig.ToCell = c.ToCell().StringXY()
 
-	mazeId := r.GetMazeId()
 	var wd sync.WaitGroup
 
-	// for comparison
-	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
-		SolveAlgo:              "recursive-backtracker",
-		PathColor:              "purple",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "purple",
-		CurrentLocationColor:   "purple",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	comparison := false
+	if comparison {
+		// for comparison
+		mazeId := r.GetMazeId()
+		wd.Add(1)
+
+		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "purple",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "purple",
+			CurrentLocationColor:   "purple",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+	}
 
 	// runs through the *local* maze to find optimal path
 	log.Print("figuring out optimal policy using mc epsilon greedy control...")
@@ -561,11 +567,12 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	log.Printf("policy:\n%v", policy)
 	m.Reset()
 
-	wd.Add(1)
 	clientConfig.DrawPathLength = *drawPathLength // restore for the server
 	policy.SetType("deterministic")               // follow this policy exactly
 
-	addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	wd.Add(1)
+	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	wd.Wait()
 
 	return nil
 }
