@@ -14,7 +14,7 @@ import (
 
 func printProgress(e, numEpisodes int64, epsilon, delta float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 50) == 0 {
+	if math.Mod(float64(e), 30) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v; delta = %v)\n", e, numEpisodes, epsilon, delta)
 	}
 	// termbox.Flush()
@@ -63,6 +63,7 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLo
 	// log.Printf("Solving...")
 	// log.Printf("policy:\n%v", p)
 	for !solved {
+		steps++
 		// get the action, according to policy, for this state
 		action := p.BestWeightedActionsForState(m, state)
 		//log.Printf("state: %v; action: %v", state, ml.ActionToText[action])
@@ -94,7 +95,6 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLo
 			if err != nil {
 				return e, err
 			}
-			steps++
 		}
 
 		state = nextState
@@ -104,7 +104,6 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLo
 			// log.Printf("--- not solved in %v steps!", steps)
 			break
 		}
-
 	}
 
 	return e, err

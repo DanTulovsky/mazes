@@ -581,6 +581,104 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	return nil
 }
 
+func opCreateSolveMlMCOffPolicyImportanceSampling() error {
+	log.Print("creating maze...")
+
+	// always return maze from server
+	*returnMaze = true
+	*solveAlgo = "follow-policy"
+
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
+	clientConfig := &pb.ClientConfig{
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         100,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}
+
+	r, m, err := opCreate()
+	if err != nil {
+		return err
+	}
+
+	algo := &from_encoded_string.FromEncodedString{}
+	if err := algo.Apply(m, 0, nil); err != nil {
+		return fmt.Errorf("error applying algorithm: %v", err)
+	}
+
+	// max steps per run through maze
+	if *maxSteps == 0 {
+		*maxSteps = m.Config().Rows * m.Config().Columns * 10000
+	}
+	clientID := "clientID"
+	m.AddClient(clientID, clientConfig)
+
+	// we must pass the same from/to to the server as we used locally
+	c, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+	clientConfig.FromCell = c.FromCell().StringXY()
+	clientConfig.ToCell = c.ToCell().StringXY()
+
+	var wd sync.WaitGroup
+
+	comparison := false
+	if comparison {
+		// for comparison
+		mazeId := r.GetMazeId()
+		wd.Add(1)
+
+		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "purple",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "purple",
+			CurrentLocationColor:   "purple",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+	}
+
+	// runs through the *local* maze to find optimal path
+	log.Print("figuring out optimal policy using mc off policy importance sampling...")
+	_, policy, err := mc.OffPolicyControlImportanceSampling(m, clientID, *numEpisodes, *theta, *df, c.FromCell().Location(),
+		c.ToCell(), *maxSteps)
+	if err != nil {
+		return fmt.Errorf("error calculating optimal policy: %v", err)
+	}
+
+	log.Printf("policy:\n%v", policy)
+	m.Reset()
+
+	clientConfig.DrawPathLength = *drawPathLength // restore for the server
+	policy.SetType("deterministic")               // follow this policy exactly
+
+	wd.Add(1)
+	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	wd.Wait()
+
+	return nil
+}
+
 // opCreate creates a new maze
 func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
@@ -879,6 +977,10 @@ func run() {
 		}
 	case "create_solve_ml_mc_epsilon_greedy_control":
 		if err := opCreateSolveMlMCEpsilonGreedyControl(); err != nil {
+			log.Print(err.Error())
+		}
+	case "create_solve_ml_mc_off_policy_importance_sampling":
+		if err := opCreateSolveMlMCOffPolicyImportanceSampling(); err != nil {
 			log.Print(err.Error())
 		}
 	case "create_solve_multi":
