@@ -1,6 +1,7 @@
 package mc
 
 import (
+	"log"
 	"mazes/maze"
 	"mazes/ml"
 	pb "mazes/proto"
@@ -24,7 +25,6 @@ func OffPolicyControlImportanceSampling(m *maze.Maze, clientID string, numEpisod
 	behaviorPolicy := ml.NewRandomPolicy(numStates, ml.DefaultActions)
 
 	for e := int64(0); e < numEpisodes; e++ {
-
 		if err := m.ResetClient(clientID); err != nil {
 			return nil, nil, err
 		}
@@ -80,6 +80,7 @@ func OffPolicyControlImportanceSampling(m *maze.Maze, clientID string, numEpisod
 			bestAction := ml.MaxInVectorIndex(actionValues)
 
 			for a := 0; a < actionValues.Len(); a++ {
+				log.Printf("a: %v; bestAction: %v", a, bestAction)
 				newValue := 0.0
 				if a == bestAction {
 					newValue = 1
@@ -90,7 +91,7 @@ func OffPolicyControlImportanceSampling(m *maze.Maze, clientID string, numEpisod
 			// If the action taken by the behavior policy is not the action
 			// taken by the target policy the probability will be 0 and we can break
 			if action != targetPolicy.BestDeterministicActionForState(state) {
-				// log.Printf("break...")
+				log.Printf("break...")
 				break
 			}
 
