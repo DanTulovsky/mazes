@@ -2,10 +2,12 @@ package mc
 
 import (
 	"math"
+
 	"mazes/maze"
 	"mazes/ml"
 
 	"fmt"
+
 	pb "mazes/proto"
 	"mazes/utils"
 
@@ -14,7 +16,7 @@ import (
 
 func printProgress(e, numEpisodes int64, epsilon, delta float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 30) == 0 {
+	if math.Mod(float64(e), 500) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v; delta = %v)\n", e, numEpisodes, epsilon, delta)
 	}
 	// termbox.Flush()
@@ -109,6 +111,15 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, clientID string, fromCell *pb.MazeLo
 	return e, err
 }
 
+// cumulativeRewardSince returns the cumulative reward since step s
+func cumulativeRewardSince(e episode, s int) float64 {
+	var r float64
+	for x := s; x < len(e.sr); x++ {
+		r = r + e.sr[s].reward
+	}
+	return r
+}
+
 // statesInEpisode returns a list of all the states found in the episode
 func statesInEpisode(e episode) []int {
 	statesMap := make(map[int]bool)
@@ -153,9 +164,10 @@ func stateActionsInEpisode(e episode) []StateAction {
 }
 
 // firstStateActionInEpisodeIdx returns the first index of the state,action in the episode (first time we reached the state)
-func firstStateActionInEpisodeIdx(e episode, state, action int) (int, error) {
+// minIndex controls the min location of the return value
+func firstStateActionInEpisodeIdx(e episode, state, action, minIndex int) (int, error) {
 	for idx, sr := range e.sr {
-		if sr.state == state && sr.action == action {
+		if sr.state == state && sr.action == action && idx >= minIndex {
 			return idx, nil
 		}
 	}
@@ -173,6 +185,15 @@ func sumRewardsSinceIdx(e episode, idx int, df float64) (float64, error) {
 		sum = sum + sr.reward*math.Pow(df, float64(i))
 	}
 	return sum, nil
+}
+
+func productWeightProbability(min, max int, state, action int, p *ml.Policy) float64 {
+	w := 1.0
+	for x := min; x <= max; x++ {
+		v := p.GetStateActionValue(state, action)
+		w = w * (1 / v)
+	}
+	return w
 }
 
 // Evaluate returns the value function for the given policy

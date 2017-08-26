@@ -1,14 +1,16 @@
 package mc
 
 import (
+	"testing"
+
 	"mazes/maze"
 	"mazes/ml"
-	"testing"
 
 	"github.com/tevino/abool"
 
-	pb "mazes/proto"
 	"reflect"
+
+	pb "mazes/proto"
 )
 
 var policytests = []struct {
@@ -379,7 +381,7 @@ var stateactionsepisodeindextest = []struct {
 
 func Test_firstStateActionInEpisodeIdx(t *testing.T) {
 	for _, tt := range stateactionsepisodeindextest {
-		idx, err := firstStateActionInEpisodeIdx(tt.e, tt.s, tt.a)
+		idx, err := firstStateActionInEpisodeIdx(tt.e, tt.s, tt.a, 0)
 		if err != nil {
 			if tt.wantErr {
 				continue

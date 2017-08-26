@@ -2,13 +2,13 @@ package mc
 
 import (
 	"log"
-	"mazes/maze"
-	"mazes/ml"
-	pb "mazes/proto"
-
 	"math"
 
+	"mazes/maze"
+	"mazes/ml"
 	"mazes/utils"
+
+	pb "mazes/proto"
 
 	"github.com/gonum/matrix/mat64"
 )
@@ -68,7 +68,7 @@ func ControlEpsilonGreedy(m *maze.Maze, clientID string, numEpisodes int64, thet
 		// log.Printf("Processing...")
 		for _, sa := range stateActions {
 			// Find the first occurrence of the state,action in the episode
-			stateActionIdx, err := firstStateActionInEpisodeIdx(episode, sa.state, sa.action)
+			stateActionIdx, err := firstStateActionInEpisodeIdx(episode, sa.state, sa.action, 0)
 			if err != nil {
 				return nil, nil, err
 			}
