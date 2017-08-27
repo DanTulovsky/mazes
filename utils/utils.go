@@ -7,6 +7,7 @@ import (
 
 	"fmt"
 	"math"
+
 	pb "mazes/proto"
 
 	"github.com/gonum/matrix/mat64"
@@ -54,6 +55,16 @@ func SliceIndex(limit int, predicate func(i int) bool) int {
 func StrInList(l []string, s string) bool {
 	for _, str := range l {
 		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+// DirectionInList returns true if the direction s (e.g. 'north') is in the list of directions
+func DirectionInList(l []*pb.Direction, s string) bool {
+	for _, str := range l {
+		if str.Name == s {
 			return true
 		}
 	}

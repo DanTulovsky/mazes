@@ -13,16 +13,16 @@ import (
 	"mazes/utils"
 )
 
-func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
+func printQProgress(e, numEpisodes int64, epsilon float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 1) == 0 {
+	if math.Mod(float64(e), 100) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v)\n", e, numEpisodes, epsilon)
 	}
 	// termbox.Flush()
 }
 
-// runEpisode runs through the maze, updating the svf and policy on each step
-func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunction,
+// runQEpisode runs through the maze, updating the svf and policy on each step
+func runQEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunction,
 	p *ml.Policy, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, df, alpha, epsilon float64) (err error) {
 	if fromCell == nil {
 		numStates := int(m.Config().Columns * m.Config().Rows)
@@ -49,14 +49,10 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 	solved := false
 	steps := int64(0)
 
-	// get the action, according to policy, for this state
-	action := p.BestWeightedActionsForState(m, state)
-	if err != nil {
-		return err
-	}
-
 	for !solved {
 		steps++
+
+		action := p.BestWeightedActionsForState(m, state)
 
 		// get the next state
 		nextState, reward, valid, err := ml.NextState(m, toCell.Location(), state, action)
@@ -78,18 +74,19 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 			}
 		}
 
-		nextAction := p.BestWeightedActionsForState(m, nextState)
-
 		// TD update
-		// td_target = reward + discount_factor * Q[next_state][next_action]
+		// best_next_action = np.argmax(Q[next_state])
+		// td_target = reward + discount_factor * Q[next_state][best_next_action]
 		// td_delta = td_target - Q[state][action]
 		// Q[state][action] += alpha * td_delta
+		bestNextAction := ml.MaxInVectorIndex(svf.ValuesForState(nextState))
+
 		q, err := svf.Get(state, action)
 		if err != nil {
 			return err
 		}
 
-		nextQ, err := svf.Get(nextState, nextAction)
+		nextQ, err := svf.Get(nextState, bestNextAction)
 		if err != nil {
 			return err
 		}
@@ -115,7 +112,6 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 		}
 
 		// next move
-		action = nextAction
 		state = nextState
 
 		if steps > maxSteps {
@@ -129,7 +125,7 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 }
 
 // ControlEpsilonGreedy returns the optimal state-value function and policy
-func Sarsa(m *maze.Maze, clientID string, numEpisodes int64, alpha float64, df float64,
+func QLearning(m *maze.Maze, clientID string, numEpisodes int64, alpha float64, df float64,
 	fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, epsilon float64, epsilonDecay float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
@@ -152,9 +148,9 @@ func Sarsa(m *maze.Maze, clientID string, numEpisodes int64, alpha float64, df f
 			epsilon = 0.01
 		}
 
-		printSarsaProgress(e, numEpisodes, epsilon)
+		printQProgress(e, numEpisodes, epsilon)
 
-		if err := runSarsaEpisode(m, clientID, svf, p, fromCell, toCell, maxSteps, df, alpha, epsilon); err != nil {
+		if err := runQEpisode(m, clientID, svf, p, fromCell, toCell, maxSteps, df, alpha, epsilon); err != nil {
 			return nil, nil, err
 		}
 

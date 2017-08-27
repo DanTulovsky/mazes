@@ -705,7 +705,7 @@ func opCreateSolveMlTDSarsa() error {
 		ShowFromToColors:       *showFromToColors,
 		VisitedCellColor:       *visitedCellColor,
 		CurrentLocationColor:   *currentLocationColor,
-		DrawPathLength:         1000,
+		DrawPathLength:         100,
 		MarkVisitedCells:       *markVisitedCells,
 		NumberMarkVisitedCells: *numberMarkVisitedCells,
 	}
@@ -763,6 +763,104 @@ func opCreateSolveMlTDSarsa() error {
 	// runs through the *local* maze to find optimal path
 	log.Print("figuring out optimal policy using td sarsa...")
 	_, policy, err := td.Sarsa(m, clientID, *numEpisodes, *alpha, *df, c.FromCell().Location(),
+		c.ToCell(), *maxSteps, *epsilon, *epsilonDecayFactor)
+	if err != nil {
+		return fmt.Errorf("error calculating optimal policy: %v", err)
+	}
+
+	log.Printf("policy:\n%v", policy)
+	m.Reset()
+
+	clientConfig.DrawPathLength = *drawPathLength // restore for the server
+	policy.SetType("deterministic")               // follow this policy exactly
+
+	wd.Add(1)
+	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	wd.Wait()
+
+	return nil
+}
+
+func opCreateSolveMlTDQLearning() error {
+	log.Print("creating maze...")
+
+	// always return maze from server
+	*returnMaze = true
+	*solveAlgo = "follow-policy"
+
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
+	clientConfig := &pb.ClientConfig{
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         100,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}
+
+	r, m, err := opCreate()
+	if err != nil {
+		return err
+	}
+
+	algo := &from_encoded_string.FromEncodedString{}
+	if err := algo.Apply(m, 0, nil); err != nil {
+		return fmt.Errorf("error applying algorithm: %v", err)
+	}
+
+	// max steps per run through maze
+	if *maxSteps == 0 {
+		*maxSteps = m.Config().Rows * m.Config().Columns * 10000
+	}
+	clientID := "clientID"
+	m.AddClient(clientID, clientConfig)
+
+	// we must pass the same from/to to the server as we used locally
+	c, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+	clientConfig.FromCell = c.FromCell().StringXY()
+	clientConfig.ToCell = c.ToCell().StringXY()
+
+	var wd sync.WaitGroup
+
+	comparison := false
+	if comparison {
+		// for comparison
+		mazeId := r.GetMazeId()
+		wd.Add(1)
+
+		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "purple",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "purple",
+			CurrentLocationColor:   "purple",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+	}
+
+	// runs through the *local* maze to find optimal path
+	log.Print("figuring out optimal policy using td sarsa...")
+	_, policy, err := td.QLearning(m, clientID, *numEpisodes, *alpha, *df, c.FromCell().Location(),
 		c.ToCell(), *maxSteps, *epsilon, *epsilonDecayFactor)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
@@ -1089,6 +1187,10 @@ func run() {
 		if err := opCreateSolveMlTDSarsa(); err != nil {
 			log.Print(err.Error())
 		}
+	case "create_solve_ml_td_q_learning":
+		if err := opCreateSolveMlTDQLearning(); err != nil {
+			log.Print(err.Error())
+		}
 	case "create_solve_multi":
 		if err := opCreateSolveMulti(); err != nil {
 			log.Print(err.Error())
@@ -1112,7 +1214,7 @@ func main() {
 	}
 
 	// run http server for expvars
-	sock, err := net.Listen("tcp", "localhost:8124")
+	sock, err := net.Listen("tcp", "localhost:8125")
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

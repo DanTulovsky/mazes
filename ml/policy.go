@@ -2,12 +2,14 @@ package ml
 
 import (
 	"fmt"
+
 	"mazes/maze"
 
 	"github.com/gonum/matrix"
 	"github.com/gonum/matrix/mat64"
 
 	"math"
+
 	pb "mazes/proto"
 	"mazes/utils"
 )
@@ -122,6 +124,35 @@ func (p *Policy) BestDeterministicActionForState(s int) int {
 	var allActions []int
 
 	for x := 0; x < actions.Len(); x++ {
+		allActions = append(allActions, x)
+
+		a := actions.At(x, 0)
+		if a >= max {
+			if a == max {
+				bestActions = append(bestActions, x)
+			} else {
+				bestActions = []int{x}
+			}
+			max = a
+		}
+	}
+
+	return bestActions[utils.Random(0, len(bestActions))]
+}
+
+// BestValidDeterministicActionForState returns the best action based on policy, ties are broken arbitrarily
+// accepts a list of valid actions
+func (p *Policy) BestValidDeterministicActionForState(s int, validActions []*pb.Direction) int {
+	actions := p.M.RowView(s)
+	max := math.Inf(-1)
+	var bestActions []int
+	var allActions []int
+
+	for x := 0; x < actions.Len(); x++ {
+		if !utils.DirectionInList(validActions, ActionToText[x]) {
+			// skip actions that are not valid moves
+			continue
+		}
 		allActions = append(allActions, x)
 
 		a := actions.At(x, 0)

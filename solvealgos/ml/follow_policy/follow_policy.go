@@ -1,13 +1,15 @@
+// ml_follow_policy implements solving a maze by following a deterministic policy
 package ml_follow_policy
 
 import (
 	"fmt"
 	"log"
+	"time"
+
 	"mazes/maze"
 	"mazes/ml"
 	"mazes/solvealgos"
 	"mazes/utils"
-	"time"
 
 	pb "mazes/proto"
 )
@@ -30,6 +32,8 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 	currentCell := fromCell
 	var action int
 
+	availableDirections := directions
+
 	for !solved {
 		// animation delay
 		time.Sleep(delay)
@@ -40,7 +44,9 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 			return fmt.Errorf("error converting [%v] to location: %v", state, err)
 		}
 
-		action = a.Policy().BestDeterministicActionForState(state)
+		// Pick out of the valid directions only.  This resolves the problem of an unvisited state
+		// that still has the same value of all actions
+		action = a.Policy().BestValidDeterministicActionForState(state, availableDirections)
 
 		// log.Printf("At: %v (state=%v); moving to: %v", loc, state, dp.ActionToText[action])
 
@@ -51,7 +57,7 @@ func (a *MLFollowPolicy) Solve(mazeID, clientID string, fromCell, toCell *pb.Maz
 
 		previousCell := currentCell
 		currentCell = reply.GetCurrentLocation()
-		// availableDirections := reply.GetAvailableDirections()
+		availableDirections = reply.GetAvailableDirections()
 		steps++
 
 		if err := a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps); err != nil {
