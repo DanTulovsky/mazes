@@ -128,7 +128,7 @@ func TestSarsa(t *testing.T) {
 		numEpisodes := int64(1000) // number of times to run through maze
 		maxSteps := int64(10000)   // max steps per run through maze
 		epsilonDecayFactor := -0.001
-		svf, policy, err := Sarsa(m, tt.clientID, numEpisodes, tt.theta, tt.df,
+		svf, policy, err := OneStepSarsa(m, tt.clientID, numEpisodes, tt.theta, tt.df,
 			nil, toCell, maxSteps, epsilon, epsilonDecayFactor)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)

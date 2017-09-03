@@ -129,7 +129,7 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 }
 
 // ControlEpsilonGreedy returns the optimal state-value function and policy
-func Sarsa(m *maze.Maze, clientID string, numEpisodes int64, alpha float64, df float64,
+func OneStepSarsa(m *maze.Maze, clientID string, numEpisodes int64, alpha float64, df float64,
 	fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, epsilon float64, epsilonDecay float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
 
 	numStates := int(m.Config().Columns * m.Config().Rows)

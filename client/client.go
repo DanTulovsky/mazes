@@ -762,7 +762,7 @@ func opCreateSolveMlTDSarsa() error {
 
 	// runs through the *local* maze to find optimal path
 	log.Print("figuring out optimal policy using td sarsa...")
-	_, policy, err := td.Sarsa(m, clientID, *numEpisodes, *alpha, *df, c.FromCell().Location(),
+	_, policy, err := td.OneStepSarsa(m, clientID, *numEpisodes, *alpha, *df, c.FromCell().Location(),
 		c.ToCell(), *maxSteps, *epsilon, *epsilonDecayFactor)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
