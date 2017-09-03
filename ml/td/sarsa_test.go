@@ -39,7 +39,7 @@ var sarsatests = []struct {
 	//	config: &pb.MazeConfig{
 	//		Columns:    3,
 	//		Rows:       2,
-	//		CreateAlgo: "full", // no passages, with df=1 does not converge
+	//		CreateAlgo: "full", // no passages, with gamma=1 does not converge
 	//	},
 	//	clientConfig: &pb.ClientConfig{
 	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
@@ -47,8 +47,8 @@ var sarsatests = []struct {
 	//		ToCell:    "2,1",
 	//	},
 	//	clientID: "client-full-dp-eval-only",
-	//	df:       0.5,
-	//	theta:    0.00001,
+	//	gamma:       0.5,
+	//	lambda:    0.00001,
 	//	actions:  ml.DefaultActions,
 	//},
 	{
