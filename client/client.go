@@ -104,7 +104,9 @@ var (
 	epsilon            = flag.Float64("epsilon", 1, "chance of picking random action [0-1], used to explore")
 	epsilonDecayFactor = flag.Float64("epsilon_decay_factor", -0.001, "decay factor for epsilon, the closer to 0, the slow it decays")
 	theta              = flag.Float64("theta", 0.000000001, "stops evaluation when value function change is less than this")
-	alpha              = flag.Float64("alpha", 0.5, "TD learning rate")
+	alpha              = flag.Float64("alpha", 0.0001, "TD learning rate")
+	gamma              = flag.Float64("gamma", 1, "discount rate of earlier steps")
+	lambda             = flag.Float64("lambda", 0.99, "trace decay parameter (1 = monte carlo, 0 = TD(0)), used for eligibility traces")
 	numEpisodes        = flag.Int64("num_episodes", 10000, "for episodic algorithms, run this many episodes")
 	maxSteps           = flag.Int64("max_steps", 0, "run only this many steps per episode, 0 means set automatically")
 
@@ -683,7 +685,7 @@ func opCreateSolveMlMCOffPolicy() error {
 	return nil
 }
 
-func opCreateSolveMlTDSarsa() error {
+func opCreateSolveMlTDOneStepSarsa() error {
 	log.Print("creating maze...")
 
 	// always return maze from server
@@ -761,9 +763,107 @@ func opCreateSolveMlTDSarsa() error {
 	}
 
 	// runs through the *local* maze to find optimal path
-	log.Print("figuring out optimal policy using td sarsa...")
+	log.Print("figuring out optimal policy using td one step sarsa...")
 	_, policy, err := td.OneStepSarsa(m, clientID, *numEpisodes, *alpha, *df, c.FromCell().Location(),
 		c.ToCell(), *maxSteps, *epsilon, *epsilonDecayFactor)
+	if err != nil {
+		return fmt.Errorf("error calculating optimal policy: %v", err)
+	}
+
+	log.Printf("policy:\n%v", policy)
+	m.Reset()
+
+	clientConfig.DrawPathLength = *drawPathLength // restore for the server
+	policy.SetType("deterministic")               // follow this policy exactly
+
+	wd.Add(1)
+	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	wd.Wait()
+
+	return nil
+}
+
+func opCreateSolveMlTDSarsaLambda() error {
+	log.Print("creating maze...")
+
+	// always return maze from server
+	*returnMaze = true
+	*solveAlgo = "follow-policy"
+
+	if *randomFromTo {
+		*fromCellStr = "random"
+		*toCellStr = "random"
+	}
+
+	clientConfig := &pb.ClientConfig{
+		SolveAlgo:              *solveAlgo,
+		PathColor:              *pathColor,
+		FromCell:               *fromCellStr,
+		ToCell:                 *toCellStr,
+		FromCellColor:          *fromCellColor,
+		ToCellColor:            *toCellColor,
+		ShowFromToColors:       *showFromToColors,
+		VisitedCellColor:       *visitedCellColor,
+		CurrentLocationColor:   *currentLocationColor,
+		DrawPathLength:         100,
+		MarkVisitedCells:       *markVisitedCells,
+		NumberMarkVisitedCells: *numberMarkVisitedCells,
+	}
+
+	r, m, err := opCreate()
+	if err != nil {
+		return err
+	}
+
+	algo := &from_encoded_string.FromEncodedString{}
+	if err := algo.Apply(m, 0, nil); err != nil {
+		return fmt.Errorf("error applying algorithm: %v", err)
+	}
+
+	// max steps per run through maze
+	if *maxSteps == 0 {
+		*maxSteps = m.Config().Rows * m.Config().Columns * 10000
+	}
+	clientID := "clientID"
+	m.AddClient(clientID, clientConfig)
+
+	// we must pass the same from/to to the server as we used locally
+	c, err := m.Client(clientID)
+	if err != nil {
+		return err
+	}
+	clientConfig.FromCell = c.FromCell().StringXY()
+	clientConfig.ToCell = c.ToCell().StringXY()
+
+	var wd sync.WaitGroup
+
+	comparison := false
+	if comparison {
+		// for comparison
+		mazeId := r.GetMazeId()
+		wd.Add(1)
+
+		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "purple",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "purple",
+			CurrentLocationColor:   "purple",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+	}
+
+	// runs through the *local* maze to find optimal path
+	log.Print("figuring out optimal policy using td sarsa lambda...")
+	_, policy, err := td.SarsaLambda(m, clientID, *numEpisodes, *gamma, *lambda, *alpha, *epsilon, *epsilonDecayFactor,
+		c.FromCell().Location(), c.ToCell(), *maxSteps)
 	if err != nil {
 		return fmt.Errorf("error calculating optimal policy: %v", err)
 	}
@@ -1183,8 +1283,12 @@ func run() {
 		if err := opCreateSolveMlMCOffPolicy(); err != nil {
 			log.Print(err.Error())
 		}
-	case "create_solve_ml_td_sarsa":
-		if err := opCreateSolveMlTDSarsa(); err != nil {
+	case "create_solve_ml_td_one_step_sarsa":
+		if err := opCreateSolveMlTDOneStepSarsa(); err != nil {
+			log.Print(err.Error())
+		}
+	case "create_solve_ml_td_sarsa_lamba":
+		if err := opCreateSolveMlTDSarsaLambda(); err != nil {
 			log.Print(err.Error())
 		}
 	case "create_solve_ml_td_q_learning":

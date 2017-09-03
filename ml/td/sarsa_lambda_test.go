@@ -11,12 +11,13 @@ import (
 	pb "mazes/proto"
 )
 
-var onestepsarsatests = []struct {
+var sarsalambdatests = []struct {
 	actions      []int
 	config       *pb.MazeConfig
 	clientConfig *pb.ClientConfig
-	df           float64 // prefer more recent steps when calculating value (1 = prefer all)
-	theta        float64 // when delta is smaller, eval stops
+	gamma        float64 // discount rate of earlier steps
+	lambda       float64 // trace decay parameter (1 = monte carlo, 0 = TD(0)), used for eligibility traces
+	alpha        float64 // step size for learning, smaller leads to slower learning
 	clientID     string
 }{
 	{
@@ -31,26 +32,11 @@ var onestepsarsatests = []struct {
 			ToCell:    "1,1",
 		},
 		clientID: "client-empty-dp-eval-only",
-		df:       0.99,
-		theta:    0.00001,
+		gamma:    0.99,
+		lambda:   0,
+		alpha:    0.001,
 		actions:  ml.DefaultActions,
 	},
-	//{
-	//	config: &pb.MazeConfig{
-	//		Columns:    3,
-	//		Rows:       2,
-	//		CreateAlgo: "full", // no passages, with gamma=1 does not converge
-	//	},
-	//	clientConfig: &pb.ClientConfig{
-	//		SolveAlgo: "ml_dp_policy_eval", // no op yet
-	//		FromCell:  "0,0",               // doesn't matter
-	//		ToCell:    "2,1",
-	//	},
-	//	clientID: "client-full-dp-eval-only",
-	//	gamma:       0.5,
-	//	lambda:    0.00001,
-	//	actions:  ml.DefaultActions,
-	//},
 	{
 		config: &pb.MazeConfig{
 			Columns:    5,
@@ -63,8 +49,9 @@ var onestepsarsatests = []struct {
 			ToCell:    "2,1",
 		},
 		clientID: "client-ellers-dp-eval-only",
-		df:       0.9,
-		theta:    0.00001,
+		gamma:    0.99,
+		lambda:   0,
+		alpha:    0.001,
 		actions:  ml.DefaultActions,
 	},
 	{
@@ -79,8 +66,9 @@ var onestepsarsatests = []struct {
 			ToCell:    "2,1",
 		},
 		clientID: "client-bintree-dp-eval-only",
-		df:       0.9,
-		theta:    0.00001,
+		gamma:    0.99,
+		lambda:   0,
+		alpha:    0.001,
 		actions:  ml.DefaultActions,
 	}, {
 		config: &pb.MazeConfig{
@@ -94,14 +82,15 @@ var onestepsarsatests = []struct {
 			ToCell:    "3,4",
 		},
 		clientID: "client-prim-dp-eval-only",
-		df:       0.9,
-		theta:    0.00001,
+		gamma:    0.99,
+		lambda:   0,
+		alpha:    0.001,
 		actions:  ml.DefaultActions,
 	},
 }
 
-func TestSarsa(t *testing.T) {
-	for _, tt := range onestepsarsatests {
+func TestSarsaLambda(t *testing.T) {
+	for _, tt := range sarsalambdatests {
 		t.Logf("running maze size (%v, %v): %v; (-> (%v))", tt.config.Columns, tt.config.Rows, tt.config.CreateAlgo, tt.clientConfig.ToCell)
 		// create empty maze
 		m, err := maze.NewMaze(tt.config, nil)
@@ -128,8 +117,8 @@ func TestSarsa(t *testing.T) {
 		numEpisodes := int64(1000) // number of times to run through maze
 		maxSteps := int64(10000)   // max steps per run through maze
 		epsilonDecayFactor := -0.001
-		svf, policy, err := OneStepSarsa(m, tt.clientID, numEpisodes, tt.theta, tt.df,
-			nil, toCell, maxSteps, epsilon, epsilonDecayFactor)
+		svf, policy, err := SarsaLambda(m, tt.clientID, numEpisodes, tt.gamma, tt.lambda, tt.alpha, epsilon, epsilonDecayFactor,
+			nil, toCell, maxSteps)
 		if err != nil {
 			t.Fatalf("error evaluating policy: %v", err)
 		}
