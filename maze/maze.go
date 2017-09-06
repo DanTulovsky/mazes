@@ -698,6 +698,17 @@ func (m *Maze) prepareGrid() error {
 		}
 	}
 
+	for x := int64(0); x < m.columns; x++ {
+		if x == m.columns-1 {
+			continue
+		}
+		for y := int64(0); y < m.rows; y++ {
+			if y == 2 {
+				m.cells[x][y].SetWeight(100)
+			}
+		}
+	}
+
 	return nil
 }
 

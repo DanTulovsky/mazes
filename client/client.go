@@ -83,6 +83,7 @@ var (
 	showFromToColors       = flag.Bool("show_from_to_colors", false, "show from/to colors")
 	showDistanceColors     = flag.Bool("show_distance_colors", false, "show distance colors")
 	showDistanceValues     = flag.Bool("show_distance_values", false, "show distance values")
+	showWeightValues       = flag.Bool("show_weight_values", false, "show weight values")
 	drawPathLength         = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
 	solveDrawDelay         = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 	frameRate              = flag.Uint("frame_rate", 120, "frame rate for animation")
@@ -135,6 +136,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		PathWidth:            *pathWidth,
 		ShowDistanceColors:   *showDistanceColors,
 		ShowDistanceValues:   *showDistanceValues,
+		ShowWeightValues:     *showWeightValues,
 		SkipGridCheck:        *skipGridCheck,
 		CurrentLocationColor: currentLocationColor,
 		GenDrawDelay:         *genDrawDelay,

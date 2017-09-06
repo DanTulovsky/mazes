@@ -113,6 +113,7 @@ message MazeConfig {
     int64 PathWidth = 8;
     bool ShowDistanceValues = 10;
     bool ShowDistanceColors = 11;
+    bool ShowWeightValues = 33;
     bool SkipGridCheck = 12;
     repeated MazeLocation OrphanMask = 13;
     string BgColor = 16;
@@ -128,6 +129,7 @@ message MazeConfig {
     string FromFile = 30;
     bool return_maze = 31; // return encoded maze back to the client
     string title = 32;
+    // next num: 34
 }
 
 // ClientConfig has all the per-client config settings in it

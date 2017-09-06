@@ -676,6 +676,14 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		}
 	}
 
+	if c.config.GetShowWeightValues() {
+		x := c.x*c.width + c.wallWidth + 1 + wallSpace
+		y := c.y*c.width + c.wallWidth + 1 + wallSpace
+		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
+			log.Printf("error: %v", sdl.GetError())
+		}
+	}
+
 	return r
 }
 

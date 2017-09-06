@@ -2,6 +2,7 @@ package ml
 
 import (
 	"math"
+
 	"mazes/maze"
 	"mazes/utils"
 
@@ -70,6 +71,9 @@ func MaxInVectorIndex(v *mat64.Vector) int {
 
 	for x := 0; x < v.Len(); x++ {
 		value := v.At(x, 0)
+		if value == math.Inf(-1) || value == math.Inf(1) {
+			continue
+		}
 		if value >= max {
 			if value == max {
 				best = append(best, x)
@@ -174,37 +178,15 @@ func OneStepLookAhead(m *maze.Maze, endCell *pb.MazeLocation, vf *ValueFunction,
 	return actionValues, nil
 }
 
-// actionIsValid returns true if this action can be made from this state
-func ActionIsValid(m *maze.Maze, state, action int) (bool, error) {
-	cell, err := CellFromState(m, state)
-	if err != nil {
-		return false, err
-	}
-
-	switch {
-	case action == North:
-		if cell.Linked(cell.North()) {
-			return true, nil
-		}
-	case action == South:
-		if cell.Linked(cell.South()) {
-			return true, nil
-		}
-	case action == East:
-		if cell.Linked(cell.East()) {
-			return true, nil
-		}
-	case action == West:
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // NextState returns the next state (as int) given the current state and action
 // returns nextState, reward, valid, error
 // valid is set to false if the action is not valid for this state
+// the reward is the negative weight of the cell
 func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextState int, reward float64, valid bool, err error) {
+	// impossible action
+	invalidActionReward := float64(-100)
+	endStateReward := float64(0)
+
 	// For each action, look at the possible next states
 	cell, err := CellFromState(m, state)
 	if err != nil {
@@ -217,14 +199,14 @@ func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextS
 
 	// figure out the next state (cell) from here given the action
 	if utils.LocsSame(cell.Location(), endCell) {
-		reward = 0
+		reward = endStateReward
 		valid = true
 	} else {
-		reward = -1
+		// reward = -1
 		// find next cell given the action and get its state number
 		switch {
 		case action == None:
-			reward = -5
+			reward = invalidActionReward
 		case action == North:
 			if cell.Linked(cell.North()) {
 				nextState, err = utils.StateFromLocation(m.Config().Rows, m.Config().Columns, cell.North().Location())
@@ -232,8 +214,9 @@ func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextS
 					return nextState, reward, valid, err
 				}
 				valid = true
+				reward = -float64(cell.North().Weight())
 			} else {
-				reward = -5
+				reward = invalidActionReward
 			}
 		case action == South:
 			if cell.Linked(cell.South()) {
@@ -242,8 +225,9 @@ func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextS
 					return nextState, reward, valid, err
 				}
 				valid = true
+				reward = -float64(cell.South().Weight())
 			} else {
-				reward = -5
+				reward = invalidActionReward
 			}
 		case action == East:
 			if cell.Linked(cell.East()) {
@@ -252,8 +236,9 @@ func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextS
 					return nextState, reward, valid, err
 				}
 				valid = true
+				reward = -float64(cell.East().Weight())
 			} else {
-				reward = -5
+				reward = invalidActionReward
 			}
 		case action == West:
 			if cell.Linked(cell.West()) {
@@ -262,8 +247,9 @@ func NextState(m *maze.Maze, endCell *pb.MazeLocation, state, action int) (nextS
 					return nextState, reward, valid, err
 				}
 				valid = true
+				reward = -float64(cell.West().Weight())
 			} else {
-				reward = -5
+				reward = invalidActionReward
 			}
 		}
 	}

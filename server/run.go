@@ -243,14 +243,6 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 			showMazeStats(m)
 		}
 
-		//for x := 0; x < *columns; x++ {
-		//	if x == *columns-1 {
-		//		continue
-		//	}
-		//	c, _ := m.Cell(x, *rows/2)
-		//	c.SetWeight(1000)
-		//}
-
 		generating.UnSet()
 		return nil
 	}
