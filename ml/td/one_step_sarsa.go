@@ -15,7 +15,7 @@ import (
 
 func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 1) == 0 {
+	if math.Mod(float64(e), 100) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v)\n", e, numEpisodes, epsilon)
 	}
 	// termbox.Flush()

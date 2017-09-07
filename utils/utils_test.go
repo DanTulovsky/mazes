@@ -2,8 +2,9 @@ package utils
 
 import (
 	"log"
-	pb "mazes/proto"
 	"testing"
+
+	pb "mazes/proto"
 
 	"github.com/gonum/matrix/mat64"
 )
@@ -64,7 +65,7 @@ var oddtests = []struct {
 
 func TestIsOdd(t *testing.T) {
 	for _, tt := range oddtests {
-		r := isOdd(tt.in)
+		r := IsOdd(tt.in)
 		if r != tt.expected {
 			t.Errorf("expected %v for input %v, but got %v", tt.expected, tt.in, r)
 		}

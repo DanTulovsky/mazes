@@ -71,7 +71,7 @@ func DirectionInList(l []*pb.Direction, s string) bool {
 	return false
 }
 
-func isOdd(n int) bool {
+func IsOdd(n int) bool {
 	return !(n%2 == 0)
 }
 
@@ -85,7 +85,7 @@ func DrawOffset(n int) int {
 		return 1
 	}
 
-	if isOdd(n) {
+	if IsOdd(n) {
 		return (n + 1) / 2
 	}
 	return -(n / 2)

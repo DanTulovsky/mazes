@@ -398,7 +398,7 @@ func opCreateSolveMlDpPolicyIteration() error {
 
 	if *df == 1.0 {
 		*df = 0.99 // does not complete with df = 1
-		log.Printf("df == 1 with dp policy evaluation, this often does not converge, adjusting to %v", df)
+		log.Printf("df == 1 with dp policy evaluation, this often does not converge, adjusting to %v", *df)
 
 	}
 	theta := *theta

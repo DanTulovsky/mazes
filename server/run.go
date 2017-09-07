@@ -260,6 +260,7 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 				m.DrawMazeBackground(r)
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
+				ResetFontCache()
 			})
 		}
 	}

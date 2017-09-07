@@ -197,6 +197,11 @@ func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 	if err := m.prepareGrid(); err != nil {
 		return nil, err
 	}
+
+	if err := m.setWeights(); err != nil {
+		return nil, err
+	}
+
 	m.configureCells()
 
 	return m, nil
@@ -698,14 +703,17 @@ func (m *Maze) prepareGrid() error {
 		}
 	}
 
+	return nil
+}
+
+func (m *Maze) setWeights() error {
 	for x := int64(0); x < m.columns; x++ {
-		if x == m.columns-1 {
-			continue
-		}
 		for y := int64(0); y < m.rows; y++ {
-			if y == 2 {
-				m.cells[x][y].SetWeight(100)
+			weight := 1
+			if utils.IsOdd(int(x)) && utils.IsOdd(int(y)) && y != m.columns-1 || (y > m.columns/2 && x != 0 && y != m.columns-1) {
+				weight = 20
 			}
+			m.cells[x][y].SetWeight(weight)
 		}
 	}
 
