@@ -28,6 +28,7 @@ import (
 	"mazes/ml/td"
 
 	"github.com/cyberdelia/go-metrics-graphite"
+	"github.com/nsf/termbox-go"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
@@ -1310,6 +1311,14 @@ func run() {
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
+	}
+	// defer termbox.Close()
+
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
 	if *enableMonitoring {
 		// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))

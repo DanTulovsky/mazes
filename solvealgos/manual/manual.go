@@ -1,97 +1,72 @@
 package manual
 
 import (
-	"errors"
-	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"mazes/maze"
 	"mazes/solvealgos"
+
+	pb "mazes/proto"
+
+	"github.com/nsf/termbox-go"
 )
 
 type Manual struct {
 	solvealgos.Common
 }
 
-func getNextCell(currentCell *maze.Cell, key string) (*maze.Cell, error) {
-	switch key {
-	case "Up":
-		if currentCell.Linked(currentCell.North()) {
-			return currentCell.North(), nil
-		}
-	case "Down":
-		if currentCell.Linked(currentCell.South()) {
-			return currentCell.South(), nil
-		}
-	case "Left":
-		if currentCell.Linked(currentCell.West()) {
-			return currentCell.West(), nil
-		}
-	case "Right":
-		if currentCell.Linked(currentCell.East()) {
-			return currentCell.East(), nil
-		}
+func getNextCell(key termbox.Key) string {
+	dirMap := map[termbox.Key]string{
+		termbox.KeyArrowUp:    "north",
+		termbox.KeyArrowDown:  "south",
+		termbox.KeyArrowLeft:  "west",
+		termbox.KeyArrowRight: "east",
 	}
-	return nil, fmt.Errorf("unable to move %s, no passage in that direction", key)
 
+	return dirMap[key]
 }
 
-func (a *Manual) Solve(m *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
+func (a *Manual) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
+	directions []*pb.Direction, m *maze.Maze) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	log.Print("Solver is human...")
-	var travelPath = m.TravelPath()
-	var solvePath = m.SolvePath()
 
 	currentCell := fromCell
-	facing := "north"
+	solved := false
+	steps := 0
 
-	// Visit cells
-	for currentCell != toCell {
-		// TODO(dant): Separate travelPath and solvePath
-		currentCell.SetVisited()
-		segment := maze.NewSegment(currentCell, facing)
-		travelPath.AddSegement(segment)
-		solvePath.AddSegement(segment)
+	for !solved {
+		// get nextCell from user input based on key press
 
-		m.SetClientPath(fromCell, currentCell, travelPath)
-
-		var nextCell *maze.Cell
-		var err error = errors.New("no new cell yet")
-
-		for err != nil {
-			// get nextCell from user input based on key press
-			key := <-keyInput
-			switch strings.ToLower(key) {
-			case "q":
-				return m, errors.New("received cancel request, exiting...")
-			default:
-				nextCell, err = getNextCell(currentCell, key)
-
-			}
-
-			if err != nil {
-				log.Print(err)
-				continue
-			}
+		ev := termbox.PollEvent()
+		if ev.Key == termbox.KeyCtrlC {
+			return nil
 		}
-		facing = currentCell.GetFacingDirection(nextCell)
-		currentCell = nextCell
+		direction := getNextCell(ev.Key)
+
+		reply, err := a.Move(mazeID, clientID, direction)
+		if err != nil {
+			log.Printf("error moving: %v", err)
+			continue
+		}
+
+		directions = reply.GetAvailableDirections()
+		previousCell := currentCell
+		currentCell = reply.GetCurrentLocation()
+
+		// set current location in local maze
+		steps++
+		if err := a.UpdateClientViewAndLocation(clientID, m, currentCell, previousCell, steps); err != nil {
+			return err
+		}
+
+		solved = reply.Solved
 	}
 
-	// add the last cell
-	facing = currentCell.GetFacingDirection(toCell)
-	segment := maze.NewSegment(toCell, facing)
-	travelPath.AddSegement(segment)
-	solvePath.AddSegement(segment)
-	m.SetClientPath(fromCell, toCell, travelPath)
+	log.Printf("maze solved in %v steps!", steps)
+	a.ShowStats()
 
-	// Set final paths
-	a.SetSolvePath(solvePath)
-	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(travelPath.Length())
-
-	return m, nil
+	return nil
 }

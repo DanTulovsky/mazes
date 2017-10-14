@@ -22,6 +22,7 @@ import (
 	pb "mazes/proto"
 	"mazes/solvealgos"
 	"mazes/solvealgos/empty"
+	"mazes/solvealgos/manual"
 	"mazes/solvealgos/ml/follow_policy"
 	"mazes/solvealgos/random"
 	"mazes/solvealgos/random_unvisited"
@@ -48,7 +49,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 
 var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func() solvealgos.Algorithmer{
 	//"dijkstra":              &dijkstra.Dijkstra{},
-	//"manual":                &manual.Manual{},
+	"manual":                NewManual,
 	"follow-policy":         NewFollowPolicy,
 	"random":                NewRandom,
 	"random-unvisited":      NewRandomUnvisited,
@@ -71,6 +72,10 @@ func NewWallFollower() solvealgos.Algorithmer {
 
 func NewRandom() solvealgos.Algorithmer {
 	return &random.Random{}
+}
+
+func NewManual() solvealgos.Algorithmer {
+	return &manual.Manual{}
 }
 
 func NewRandomUnvisited() solvealgos.Algorithmer {
