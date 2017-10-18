@@ -171,7 +171,7 @@ func (p *Policy) BestValidDeterministicActionForState(s int, validActions []*pb.
 
 // BestActionsForState returns the best action based on the probabilities in the policy
 // state -> [0.5, 0, 0, 0.5, 0] picks the 1st and 3rd action with 50% probability
-func (p *Policy) BestWeightedActionsForState(m *maze.Maze, s int) int {
+func (p *Policy) BestWeightedActionsForState(s int) int {
 	actions := p.M.RowView(s)
 
 	// in MC, you have to pick all state/action pairs with some probability

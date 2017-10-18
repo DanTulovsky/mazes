@@ -44,7 +44,7 @@ func RunEpisode(m *maze.Maze, p *ml.Policy, vf, et *ml.ValueFunction, clientID s
 	for !solved {
 		steps++
 		// get the action, according to policy, for this state
-		action := p.BestWeightedActionsForState(m, state)
+		action := p.BestWeightedActionsForState(state)
 		// log.Printf("state: %v; action: %v", state, ml.ActionToText[action])
 
 		// get the next state

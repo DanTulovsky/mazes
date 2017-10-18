@@ -998,7 +998,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	var w *sdl.Window
 
 	// create local maze for DP algorithms or local gui
-	if *showLocalGUI || *solveAlgo == "follow-policy" {
+	if *showLocalGUI || *solveAlgo == "follow-policy" || *solveAlgo == "ml-td-one-step-sarsa" {
 		if *showLocalGUI {
 			// if server gui is off, enable this so the client gui works
 			config.Gui = true
@@ -1312,11 +1312,14 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	err := termbox.Init()
-	if err != nil {
-		panic(err)
+	if *solveAlgo == "manual" {
+		err := termbox.Init()
+		if err != nil {
+			panic(err)
+		}
+		// defer termbox.Close()
+
 	}
-	// defer termbox.Close()
 
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 

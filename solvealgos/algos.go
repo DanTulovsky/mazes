@@ -147,12 +147,12 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 	reply, err := stream.Recv()
 	if err != nil {
 		log.Printf(">>> %v", err)
-		return nil, err
+		return reply, err
 	}
 
 	if reply.GetError() {
 		log.Printf(">>>> %v", reply.GetErrorMessage())
-		return nil, fmt.Errorf("%v", reply.GetErrorMessage())
+		return reply, fmt.Errorf("%v", reply.GetErrorMessage())
 	}
 
 	return reply, nil

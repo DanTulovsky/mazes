@@ -48,7 +48,6 @@ func (a *Manual) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 
 		reply, err := a.Move(mazeID, clientID, direction)
 		if err != nil {
-			log.Printf("error moving: %v", err)
 			continue
 		}
 

@@ -22,6 +22,8 @@ import (
 
 	"mazes/genalgos/fromfile"
 
+	"mazes/utils"
+
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
@@ -284,6 +286,7 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 	return m, r, w, nil
 }
 
+// runMaze runs the maze
 func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData) {
 	defer func() {
 		sdl.Do(func() {
@@ -324,48 +327,94 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 	}()
 
 	showMazeStats(m)
+
+	// process background events in the maze
+	ticker := time.NewTicker(time.Second * 1)
+	go func() {
+		for _ = range ticker.C {
+			processMazeEvents(m, r, updateBG)
+			if !running.IsSet() {
+				return
+			}
+		}
+	}()
+
+	// main loop processing and updating the maze
 	for running.IsSet() {
 		start := time.Now()
 		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
 
 		lsdl.CheckQuit(running)
+		updateMazeBackground(m, updateBG)
+		displaymaze(m, r)
 
-		if updateBG.IsSet() {
-			if m.Config().GetGui() {
-				log.Printf("setting background")
-				mTexture, err := m.MakeBGTexture()
-				if err != nil {
-					log.Fatalf("failed to create background: %v", err)
-				}
-				m.SetBGTexture(mTexture)
-			}
-			updateBG.UnSet()
-		}
-
-		if m.Config().GetGui() {
-			// Displays the maze
-			sdl.Do(func() {
-				if err := r.Clear(); err != nil {
-					fmt.Fprintf(os.Stderr, "Failed to clear: %s\n", err)
-					os.Exit(1)
-				}
-
-				m.DrawMaze(r, m.BGTexture())
-
-				r.Present()
-				sdl.Delay(uint32(1000 / *frameRate))
-				ResetFontCache()
-
-			})
-		}
 		t.UpdateSince(start)
 	}
+
 	mazeMap.Delete(m.Config().GetId())
-
 	log.Printf("maze is done...")
-
 	wd.Wait()
+}
 
+// processMazeEvents takes care of periodic events happening in the maze
+func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
+	log.Printf("[%v] processing events...", time.Now())
+
+	c := m.RandomCell()
+	//c.SetBGColor(colors.GetColor("black"))
+	//log.Printf("cell [%v] bgcolor: %v", c, c.BGColor())
+
+	// link a random neighbor
+	//u, err := c.RandomUnLink()
+	//if err == nil {
+	//	c.Link(u)
+	//}
+
+	// unlink a random neighbor
+	//l, err := c.RandomLink()
+	//if err == nil {
+	//	c.UnLink(l)
+	//}
+
+	c.SetWeight(utils.Random(0, 100))
+
+	// redraw the background
+	updateBG.Set()
+
+}
+
+func updateMazeBackground(m *maze.Maze, updateBG *abool.AtomicBool) {
+	if updateBG.IsSet() {
+		if m.Config().GetGui() {
+			log.Printf("setting background")
+			mTexture, err := m.MakeBGTexture()
+			if err != nil {
+				log.Fatalf("failed to create background: %v", err)
+			}
+			m.SetBGTexture(mTexture)
+		}
+		updateBG.UnSet()
+	}
+}
+
+// displaymaze draws the maze
+func displaymaze(m *maze.Maze, r *sdl.Renderer) {
+	if m.Config().GetGui() {
+		// Displays the maze
+		sdl.Do(func() {
+			if err := r.Clear(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to clear: %s\n", err)
+				os.Exit(1)
+			}
+
+			m.DrawMaze(r, m.BGTexture())
+
+			r.Present()
+			sdl.Delay(uint32(1000 / *frameRate))
+			ResetFontCache()
+
+		})
+	}
 }
 
 func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
@@ -542,9 +591,22 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			direction := r.request.(string)
 
 			client, err := m.MoveClient(in.ClientID, direction)
+			solved := client.CurrentLocation().Location().String() == m.ToCell(client).Location().String()
+			log.Printf("solved: %v", solved)
+			reward := 0.0
+			if solved {
+				reward = 1
+			}
+
 			if err != nil {
 				in.Reply <- commandReply{
 					error: fmt.Errorf("error moving: %v", err),
+					answer: &moveReply{
+						current:             client.CurrentLocation().Location(),
+						availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
+						solved:              solved,
+						reward:              -10,
+					},
 				}
 				return
 			}
@@ -553,7 +615,8 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 				answer: &moveReply{
 					current:             client.CurrentLocation().Location(),
 					availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
-					solved:              client.CurrentLocation().Location().String() == m.ToCell(client).Location().String(),
+					solved:              solved,
+					reward:              reward,
 				},
 			}
 
@@ -658,6 +721,7 @@ type moveReply struct {
 	current             *pb.MazeLocation
 	availableDirections []*pb.Direction
 	solved              bool
+	reward              float64
 }
 
 // server is used to implement MazerServer.
@@ -915,10 +979,17 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		comm <- data
 		// get response from maze
 		mazeReply := <-data.Reply
+		moveReply := mazeReply.answer.(*moveReply)
+
 		if err := mazeReply.error; err != nil {
 			r := &pb.SolveMazeResponse{
-				Error:        true,
-				ErrorMessage: err.(error).Error(),
+				Error:               true,
+				ErrorMessage:        err.(error).Error(),
+				MazeId:              in.GetMazeId(),
+				ClientId:            in.ClientId,
+				CurrentLocation:     moveReply.current,
+				AvailableDirections: moveReply.availableDirections,
+				Solved:              moveReply.solved,
 			}
 			if err := stream.Send(r); err != nil {
 				return err
@@ -926,8 +997,6 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			continue
 		}
 		tcomm.UpdateSince(commStart)
-
-		moveReply := mazeReply.answer.(*moveReply)
 
 		r := &pb.SolveMazeResponse{
 			MazeId:              in.GetMazeId(),

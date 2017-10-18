@@ -50,7 +50,7 @@ func runSarsaLambdaEpisode(m *maze.Maze, clientID string, svf, evf *ml.StateActi
 	steps := int64(0)
 
 	// get the action, according to policy, for this state
-	action := p.BestWeightedActionsForState(m, state)
+	action := p.BestWeightedActionsForState(state)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func runSarsaLambdaEpisode(m *maze.Maze, clientID string, svf, evf *ml.StateActi
 			}
 		}
 
-		nextAction := p.BestWeightedActionsForState(m, nextState)
+		nextAction := p.BestWeightedActionsForState(nextState)
 
 		// TD Update
 		q, err := svf.Get(state, action)

@@ -52,7 +52,7 @@ func runQEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunction
 	for !solved {
 		steps++
 
-		action := p.BestWeightedActionsForState(m, state)
+		action := p.BestWeightedActionsForState(state)
 
 		// get the next state
 		nextState, reward, valid, err := ml.NextState(m, toCell.Location(), state, action)

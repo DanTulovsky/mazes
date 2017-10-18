@@ -1,17 +1,23 @@
-package td
+package one_step_sarsa
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"mazes/maze"
 	"mazes/ml"
+	"mazes/solvealgos"
+	"mazes/utils"
 
-	"fmt"
 	"math"
 
 	pb "mazes/proto"
-	"mazes/utils"
 )
+
+type MLTDOneStepSarsa struct {
+	solvealgos.Common
+}
 
 func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
@@ -22,29 +28,21 @@ func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
 }
 
 // runEpisode runs through the maze, updating the svf and policy on each step
-func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunction,
-	p *ml.Policy, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, df, alpha, epsilon float64) (err error) {
+func (a *MLTDOneStepSarsa) runSarsaEpisode(mazeID string, rows, columns int64, clientID string, svf *ml.StateActionValueFunction,
+	p *ml.Policy, fromCell, toCell *pb.MazeLocation, maxSteps int64, df, alpha, epsilon float64) (err error) {
 	if fromCell == nil {
-		numStates := int(m.Config().Columns * m.Config().Rows)
+		numStates := int(columns * rows)
 		// pick a random state to start at (fromCell), toCell is always the same
 		s := int(utils.Random(0, numStates))
-		fromCell, err = utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(s))
+		fromCell, err = utils.LocationFromState(rows, columns, int64(s))
 		if err != nil {
 			return err
 		}
 	}
-	state, err := utils.StateFromLocation(m.Config().Rows, m.Config().Columns, fromCell)
+	state, err := utils.StateFromLocation(rows, columns, fromCell)
 	if err != nil {
 		return err
 	}
-
-	c, err := m.Client(clientID)
-	cell, err := m.CellFromLocation(fromCell)
-	if err != nil {
-		return err
-	}
-
-	c.SetCurrentLocation(cell)
 
 	solved := false
 	steps := int64(0)
@@ -58,25 +56,19 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 	for !solved {
 		steps++
 
-		// get the next state
-		nextState, reward, valid, err := ml.NextState(m, toCell.Location(), state, action)
+		// only actually move if we picked a valid direction, otherwise we stay in the same place
+		// log.Printf("moving: %v", ml.ActionToText[action])
+		reply, err := a.Move(mazeID, clientID, ml.ActionToText[action])
+		//if err != nil {
+		//	return err
+		//}
+
+		nextState, err := utils.StateFromLocation(rows, columns, reply.GetCurrentLocation())
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to extract state from location [%v]: %v", reply.GetCurrentLocation(), err)
 		}
-
-		if utils.LocsSame(c.CurrentLocation().Location(), toCell.Location()) {
-			// log.Printf("+++ solved in %v steps!", steps)
-			solved = true
-		}
-
-		if valid && action != ml.None && !solved {
-			// only actually move if we picked a valid direction, otherwise we stay in the same place
-			// log.Printf("moving: %v", ml.ActionToText[action])
-			c, err = m.MoveClient(clientID, ml.ActionToText[action])
-			if err != nil {
-				return err
-			}
-		}
+		reward := reply.GetReward()
+		solved = reply.GetSolved()
 
 		nextAction := p.BestWeightedActionsForState(nextState)
 
@@ -125,12 +117,22 @@ func runSarsaEpisode(m *maze.Maze, clientID string, svf *ml.StateActionValueFunc
 
 	}
 
+	log.Printf("maze solved in %v steps!", steps)
+
 	return err
 }
 
-// ControlEpsilonGreedy returns the optimal state-value function and policy
-func OneStepSarsa(m *maze.Maze, clientID string, numEpisodes int64, alpha float64, df float64,
-	fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, epsilon float64, epsilonDecay float64) (*ml.StateActionValueFunction, *ml.Policy, error) {
+func (a *MLTDOneStepSarsa) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
+	directions []*pb.Direction, m *maze.Maze) error {
+	defer solvealgos.TimeTrack(a, time.Now())
+
+	// params
+	numEpisodes := int64(1000)
+	epsilon := 0.99 // chance of picking random action [0-1], used to explore
+	epsilonDecay := -0.001
+	maxSteps := int64(1000)
+	df := 1.0       // discount factor
+	alpha := 0.0001 // learning rate
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -141,23 +143,27 @@ func OneStepSarsa(m *maze.Maze, clientID string, numEpisodes int64, alpha float6
 	p := ml.NewEpsilonGreedyPolicy(numStates, ml.DefaultActions, epsilon)
 
 	for e := int64(0); e < numEpisodes; e++ {
+		// TODO: fix this
 		if err := m.ResetClient(clientID); err != nil {
-			return nil, nil, err
+			return err
 		}
 
 		// slowly decrease epsilon, do less exploration over time
 		epsilon = utils.Decay(epsilon, float64(e), epsilonDecay)
-		// epsilon = epsilon - epsilon/float64(numEpisodes)*(float64(e))
 		if epsilon < 0.01 {
 			epsilon = 0.01
 		}
 
 		printSarsaProgress(e, numEpisodes, epsilon)
 
-		if err := runSarsaEpisode(m, clientID, svf, p, fromCell, toCell, maxSteps, df, alpha, epsilon); err != nil {
-			return nil, nil, err
+		if err := a.runSarsaEpisode(mazeID, m.Config().Rows, m.Config().Columns, clientID, svf, p, fromCell, toCell, maxSteps,
+			df, alpha, epsilon); err != nil {
+			return err
 		}
 
 	}
-	return svf, p, nil
+
+	a.ShowStats()
+
+	return nil
 }

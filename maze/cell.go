@@ -857,25 +857,33 @@ func (c *Cell) DirectionLinks(client string) []*pb.Direction {
 }
 
 // RandomLink returns a random cell linked to this one
-func (c *Cell) RandomLink() *Cell {
+// an error is return if there are no such cells
+func (c *Cell) RandomLink() (*Cell, error) {
 	var keys []*Cell
 	for item := range c.links.Iter() {
 		if c.Linked(item.Key) {
 			keys = append(keys, item.Key)
 		}
 	}
-	return keys[utils.Random(0, len(keys))]
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("no cells linked to %v", c)
+	}
+	return keys[utils.Random(0, len(keys))], nil
 }
 
 // RandomUnLink returns a random cell not linked to this one, but one that is a neighbor
-func (c *Cell) RandomUnLink() *Cell {
+// an error is return if there are no such cells
+func (c *Cell) RandomUnLink() (*Cell, error) {
 	var keys []*Cell
 	for _, k := range c.Neighbors() {
 		if !c.Linked(k) {
 			keys = append(keys, k)
 		}
 	}
-	return keys[utils.Random(0, len(keys))]
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("no cells unlinked from %v", c)
+	}
+	return keys[utils.Random(0, len(keys))], nil
 }
 
 // UnLinked returns all cells not linked anywhere, but ones that are neighbors

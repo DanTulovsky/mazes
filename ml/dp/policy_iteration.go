@@ -2,6 +2,7 @@ package dp
 
 import (
 	"log"
+
 	"mazes/maze"
 	"mazes/ml"
 )
@@ -40,7 +41,7 @@ func PolicyImprovement(m *maze.Maze, clientID string, df, theta float64, actions
 		// For each state...
 		for state := 0; state < numStates; state++ {
 			// The best action we would take under the current policy
-			chosenAction := policy.BestWeightedActionsForState(m, state)
+			chosenAction := policy.BestWeightedActionsForState(state)
 			// log.Printf("chosenAction: %v", chosenAction)
 
 			actionValues, err := ml.OneStepLookAhead(m, endCell, vf, df, state, len(actions))
