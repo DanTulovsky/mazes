@@ -16,12 +16,27 @@ service Mazer {
     // Register new client with an existing maze
     rpc RegisterClient(RegisterClientRequest) returns (RegisterClientReply) {}
 
+    // Reset existing client in an existing maze
+    rpc ResetClient(ResetClientRequest) returns (ResetClientReply) {}
+
     // Export a maze,
     rpc ExportMaze(ExportMazeRequest) returns (ExportMazeReply) {}
 }
 
+message ResetClientRequest {
+    string maze_id = 1;
+    string client_id = 2;
+}
+
+message ResetClientReply {
+    bool success = 1;
+    string message = 2;
+    MazeLocation current_location = 3;
+
+}
+
 message ExportMazeRequest {
-    string mazeId = 1;
+    string maze_id = 1;
 }
 
 message ExportMazeReply {
@@ -30,7 +45,7 @@ message ExportMazeReply {
 }
 
 message RegisterClientRequest {
-  string mazeId = 1;
+  string maze_id = 1;
   ClientConfig client_config = 2;
 }
 

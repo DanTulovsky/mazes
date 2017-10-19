@@ -123,6 +123,9 @@ func LocationFromState(rows, columns, l int64) (*pb.MazeLocation, error) {
 
 // StateFromLocation returns the state number given a location
 func StateFromLocation(rows, columns int64, l *pb.MazeLocation) (int, error) {
+	if l == nil {
+		return 0, fmt.Errorf("location is nil...")
+	}
 	if l.X > columns || l.Y > rows {
 		return 0, fmt.Errorf("requested coordinates (%v) are outside the grid (columns, rows) (%v, %v)", l, columns, rows)
 	}

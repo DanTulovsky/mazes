@@ -21,7 +21,7 @@ type MLTDOneStepSarsa struct {
 
 func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
 	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	if math.Mod(float64(e), 100) == 0 {
+	if math.Mod(float64(e), 10) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v)\n", e, numEpisodes, epsilon)
 	}
 	// termbox.Flush()
@@ -30,15 +30,7 @@ func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
 // runEpisode runs through the maze, updating the svf and policy on each step
 func (a *MLTDOneStepSarsa) runSarsaEpisode(mazeID string, rows, columns int64, clientID string, svf *ml.StateActionValueFunction,
 	p *ml.Policy, fromCell, toCell *pb.MazeLocation, maxSteps int64, df, alpha, epsilon float64) (err error) {
-	if fromCell == nil {
-		numStates := int(columns * rows)
-		// pick a random state to start at (fromCell), toCell is always the same
-		s := int(utils.Random(0, numStates))
-		fromCell, err = utils.LocationFromState(rows, columns, int64(s))
-		if err != nil {
-			return err
-		}
-	}
+
 	state, err := utils.StateFromLocation(rows, columns, fromCell)
 	if err != nil {
 		return err
@@ -69,6 +61,7 @@ func (a *MLTDOneStepSarsa) runSarsaEpisode(mazeID string, rows, columns int64, c
 		}
 		reward := reply.GetReward()
 		solved = reply.GetSolved()
+		// log.Printf("reward: %v", reward)
 
 		nextAction := p.BestWeightedActionsForState(nextState)
 
@@ -130,9 +123,9 @@ func (a *MLTDOneStepSarsa) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 	numEpisodes := int64(1000)
 	epsilon := 0.99 // chance of picking random action [0-1], used to explore
 	epsilonDecay := -0.001
-	maxSteps := int64(1000)
-	df := 1.0       // discount factor
-	alpha := 0.0001 // learning rate
+	maxSteps := int64(10000)
+	df := 1.0    // discount factor
+	alpha := 0.1 // learning rate
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -143,10 +136,17 @@ func (a *MLTDOneStepSarsa) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 	p := ml.NewEpsilonGreedyPolicy(numStates, ml.DefaultActions, epsilon)
 
 	for e := int64(0); e < numEpisodes; e++ {
-		// TODO: fix this
-		if err := m.ResetClient(clientID); err != nil {
-			return err
+		// reset client location
+		reply, err := a.ResetClient(mazeID, clientID)
+		if err != nil || !reply.GetSuccess() {
+			return fmt.Errorf("error resetting client: %v [%v]", err, reply.GetMessage())
 		}
+
+		log.Printf("epsilon: %v", epsilon)
+		log.Printf("epsilon decay: %v", epsilonDecay)
+		log.Printf("discount factor: %v", df)
+		log.Printf("learning rate (alpha): %v", alpha)
+		log.Println()
 
 		// slowly decrease epsilon, do less exploration over time
 		epsilon = utils.Decay(epsilon, float64(e), epsilonDecay)
@@ -161,6 +161,7 @@ func (a *MLTDOneStepSarsa) Solve(mazeID, clientID string, fromCell, toCell *pb.M
 			return err
 		}
 
+		// log.Printf("new client location: %v", reply.GetCurrentLocation())
 	}
 
 	a.ShowStats()

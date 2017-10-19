@@ -22,8 +22,6 @@ import (
 
 	"mazes/genalgos/fromfile"
 
-	"mazes/utils"
-
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
@@ -358,9 +356,9 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 // processMazeEvents takes care of periodic events happening in the maze
 func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
-	log.Printf("[%v] processing events...", time.Now())
+	// log.Printf("[%v] processing events...", time.Now())
 
-	c := m.RandomCell()
+	// c := m.RandomCell()
 	//c.SetBGColor(colors.GetColor("black"))
 	//log.Printf("cell [%v] bgcolor: %v", c, c.BGColor())
 
@@ -376,10 +374,10 @@ func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool
 	//	c.UnLink(l)
 	//}
 
-	c.SetWeight(utils.Random(0, 100))
+	// c.SetWeight(utils.Random(0, 100))
 
 	// redraw the background
-	updateBG.Set()
+	// updateBG.Set()
 
 }
 
@@ -468,6 +466,32 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			l := &locationInfo{
 				From: fromCell.Location(),
 				To:   toCell.Location(),
+			}
+
+			// send reply via the reply channel
+			in.Reply <- commandReply{answer: l}
+			t.UpdateSince(start)
+		case maze.CommandResetClient:
+			start := time.Now()
+			t := metrics.GetOrRegisterTimer("maze.command.reset-client.latency", nil)
+
+			// TODO(dan): Is this needed?
+			m.Reset()
+			m.ResetClient(in.ClientID)
+
+			client, err := m.Client(in.ClientID)
+			if err != nil {
+				in.Reply <- commandReply{error: fmt.Errorf("failed to lookup client: %v", err)}
+				return
+			}
+
+			// move client back to the beginning
+			client.SetCurrentLocation(client.FromCell())
+
+			// updateBG.Set()
+
+			l := &locationInfo{
+				From: client.FromCell().Location(),
 			}
 
 			// send reply via the reply channel
@@ -592,10 +616,15 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			client, err := m.MoveClient(in.ClientID, direction)
 			solved := client.CurrentLocation().Location().String() == m.ToCell(client).Location().String()
-			log.Printf("solved: %v", solved)
-			reward := 0.0
+
+			weight := float64(client.CurrentLocation().Weight())
+
+			// default weight is 1, so default reward is -1
+			reward := -weight
+
+			// if solved, reward is 0
 			if solved {
-				reward = 1
+				reward = 0.0
 			}
 
 			if err != nil {
@@ -605,7 +634,7 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 						current:             client.CurrentLocation().Location(),
 						availableDirections: client.CurrentLocation().DirectionLinks(in.ClientID),
 						solved:              solved,
-						reward:              -10,
+						reward:              -100, // invalid move, should be larger than any weight
 					},
 				}
 				return
@@ -819,6 +848,42 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 
 }
 
+// ResetClient resets an existing client in an existing maze
+func (s *server) ResetClient(ctx context.Context, in *pb.ResetClientRequest) (*pb.ResetClientReply, error) {
+	log.Printf("resetting client [%v] in maze [%#v]", in.GetClientId(), in.GetMazeId())
+	t := metrics.GetOrRegisterTimer("maze.rpc.reset-client.latency", nil)
+	defer t.UpdateSince(time.Now())
+
+	clientID := in.GetClientId()
+
+	m, found := mazeMap.Find(in.GetMazeId())
+	if !found {
+		return &pb.ResetClientReply{
+			Success: false,
+			Message: fmt.Sprintf("unable to lookup maze [%v]: %v", in.GetMazeId())}, nil
+	}
+
+	comm := m.(chan commandData)
+
+	data := commandData{
+		Action:   maze.CommandResetClient,
+		ClientID: clientID,
+		Reply:    make(chan commandReply),
+	}
+	comm <- data
+	// get response from maze
+	reply := <-data.Reply
+	if reply.error != nil {
+		return &pb.ResetClientReply{Success: false, Message: reply.error.(error).Error()}, nil
+	}
+
+	locationInfo := reply.answer.(*locationInfo)
+	return &pb.ResetClientReply{
+		Success:         true,
+		CurrentLocation: locationInfo.From}, nil
+
+}
+
 // ListMazes lists all the mazes
 func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
 	t := metrics.GetOrRegisterTimer("maze.rpc.list-mazes.latency", nil)
@@ -990,6 +1055,7 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 				CurrentLocation:     moveReply.current,
 				AvailableDirections: moveReply.availableDirections,
 				Solved:              moveReply.solved,
+				Reward:              moveReply.reward,
 			}
 			if err := stream.Send(r); err != nil {
 				return err
@@ -1004,6 +1070,7 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			CurrentLocation:     moveReply.current,
 			AvailableDirections: moveReply.availableDirections,
 			Solved:              moveReply.solved,
+			Reward:              moveReply.reward,
 		}
 		if err := stream.Send(r); err != nil {
 			return err

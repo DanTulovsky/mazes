@@ -1,51 +1,42 @@
-package td
+package sarsa_lambda
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"mazes/maze"
 	"mazes/ml"
+	"mazes/solvealgos"
+	"mazes/utils"
 
-	"fmt"
 	"math"
 
 	pb "mazes/proto"
-	"mazes/utils"
 )
 
-func printSarsaLambdaProgress(e, numEpisodes int64, epsilon float64) {
-	if math.Mod(float64(e), 100) == 0 {
+type MLTDSarsaLambda struct {
+	solvealgos.Common
+}
+
+func printSarsaProgress(e, numEpisodes int64, epsilon float64) {
+	// termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	if math.Mod(float64(e), 10) == 0 {
 		fmt.Printf("Episode %d of %d (epsilon = %v)\n", e, numEpisodes, epsilon)
 	}
+	// termbox.Flush()
 }
 
 // runEpisode runs through the maze, updating the svf and policy on each step
-func runSarsaLambdaEpisode(m *maze.Maze, clientID string, svf, evf *ml.StateActionValueFunction,
-	p *ml.Policy, fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64, gamma, lambda,
-	alpha, epsilon float64) (err error) {
-	if fromCell == nil {
-		numStates := int(m.Config().Columns * m.Config().Rows)
-		// pick a random state to start at (fromCell), toCell is always the same
-		s := int(utils.Random(0, numStates))
-		fromCell, err = utils.LocationFromState(m.Config().Rows, m.Config().Columns, int64(s))
-		if err != nil {
-			return err
-		}
-	}
-	numStates := int(m.Config().Columns * m.Config().Rows)
+func (a *MLTDSarsaLambda) runSarsaEpisode(mazeID string, rows, columns int64, clientID string, svf, evf *ml.StateActionValueFunction,
+	p *ml.Policy, fromCell, toCell *pb.MazeLocation, maxSteps int64, gamma, lambda, alpha, epsilon float64) (err error) {
 
-	state, err := utils.StateFromLocation(m.Config().Rows, m.Config().Columns, fromCell)
+	numStates := int(columns * rows)
+
+	state, err := utils.StateFromLocation(rows, columns, fromCell)
 	if err != nil {
 		return err
 	}
-
-	c, err := m.Client(clientID)
-	cell, err := m.CellFromLocation(fromCell)
-	if err != nil {
-		return err
-	}
-
-	c.SetCurrentLocation(cell)
 
 	solved := false
 	steps := int64(0)
@@ -59,26 +50,20 @@ func runSarsaLambdaEpisode(m *maze.Maze, clientID string, svf, evf *ml.StateActi
 	for !solved {
 		steps++
 
-		// get the next state
-		nextState, reward, valid, err := ml.NextState(m, toCell.Location(), state, action)
+		// only actually move if we picked a valid direction, otherwise we stay in the same place
+		// log.Printf("moving: %v", ml.ActionToText[action])
+		reply, err := a.Move(mazeID, clientID, ml.ActionToText[action])
+		//if err != nil {
+		//	return err
+		//}
+
+		nextState, err := utils.StateFromLocation(rows, columns, reply.GetCurrentLocation())
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to extract state from location [%v]: %v", reply.GetCurrentLocation(), err)
 		}
-
-		if utils.LocsSame(c.CurrentLocation().Location(), toCell.Location()) {
-			// log.Printf("+++ solved in %v steps!", steps)
-			solved = true
-			return nil
-		}
-
-		if valid && action != ml.None && !solved {
-			// only actually move if we picked a valid direction, otherwise we stay in the same place
-			// log.Printf("moving: %v", ml.ActionToText[action])
-			c, err = m.MoveClient(clientID, ml.ActionToText[action])
-			if err != nil {
-				return err
-			}
-		}
+		reward := reply.GetReward()
+		solved = reply.GetSolved()
+		// log.Printf("reward: %v", reward)
 
 		nextAction := p.BestWeightedActionsForState(nextState)
 
@@ -151,12 +136,23 @@ func runSarsaLambdaEpisode(m *maze.Maze, clientID string, svf, evf *ml.StateActi
 
 	}
 
+	log.Printf("maze solved in %v steps!", steps)
+
 	return err
 }
 
-// ControlEpsilonGreedy returns the optimal state-value function and policy
-func SarsaLambda(m *maze.Maze, clientID string, numEpisodes int64, gamma, lambda, alpha, epsilon, epsilonDecay float64,
-	fromCell *pb.MazeLocation, toCell *maze.Cell, maxSteps int64) (*ml.StateActionValueFunction, *ml.Policy, error) {
+func (a *MLTDSarsaLambda) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration,
+	directions []*pb.Direction, m *maze.Maze) error {
+	defer solvealgos.TimeTrack(a, time.Now())
+
+	// params
+	numEpisodes := int64(1000000)
+	epsilon := 0.99 // chance of picking random action [0-1], used to explore
+	epsilonDecay := -0.00000001
+	maxSteps := int64(10000)
+	alpha := 0.1  // learning rate
+	gamma := 0.9  // discount rate of earlier steps
+	lambda := 0.9 // trace decay parameter (1 = monte carlo, 0 = TD(0))
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 
@@ -170,23 +166,36 @@ func SarsaLambda(m *maze.Maze, clientID string, numEpisodes int64, gamma, lambda
 	p := ml.NewEpsilonGreedyPolicy(numStates, ml.DefaultActions, epsilon)
 
 	for e := int64(0); e < numEpisodes; e++ {
-		if err := m.ResetClient(clientID); err != nil {
-			return nil, nil, err
+		// reset client location
+		reply, err := a.ResetClient(mazeID, clientID)
+		if err != nil || !reply.GetSuccess() {
+			return fmt.Errorf("error resetting client: %v [%v]", err, reply.GetMessage())
 		}
+
+		log.Printf("epsilon: %v", epsilon)
+		log.Printf("epsilon decay: %v", epsilonDecay)
+		log.Printf("learning rate (alpha): %v", alpha)
+		log.Printf("discount rate of steps (gamma): %v", gamma)
+		log.Printf("trace decay (lambda): %v", lambda)
+		log.Println()
 
 		// slowly decrease epsilon, do less exploration over time
 		epsilon = utils.Decay(epsilon, float64(e), epsilonDecay)
-		// epsilon = epsilon - epsilon/float64(numEpisodes)*(float64(e))
-		if epsilon < 0.01 { // always do *some* exploration
+		if epsilon < 0.01 {
 			epsilon = 0.01
 		}
 
-		printSarsaLambdaProgress(e, numEpisodes, epsilon)
+		printSarsaProgress(e, numEpisodes, epsilon)
 
-		if err := runSarsaLambdaEpisode(m, clientID, svf, evf, p, fromCell, toCell, maxSteps, gamma, lambda, alpha, epsilon); err != nil {
-			return nil, nil, err
+		if err := a.runSarsaEpisode(mazeID, m.Config().Rows, m.Config().Columns, clientID, svf, evf, p, fromCell, toCell,
+			maxSteps, gamma, lambda, alpha, epsilon); err != nil {
+			return err
 		}
 
+		// log.Printf("new client location: %v", reply.GetCurrentLocation())
 	}
-	return svf, p, nil
+
+	a.ShowStats()
+
+	return nil
 }

@@ -671,17 +671,21 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 	if c.config.GetShowDistanceValues() {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
+
 		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
+		gfx.SetFont(nil, 0, 0)
 	}
 
 	if c.config.GetShowWeightValues() {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
+
 		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
+		gfx.SetFont(nil, 0, 0)
 	}
 
 	return r
@@ -749,6 +753,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
 		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
+		gfx.SetFont(nil, 0, 0)
 	}
 
 	if client.config.MarkVisitedCells {

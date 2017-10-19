@@ -25,6 +25,7 @@ import (
 	"mazes/solvealgos/manual"
 	"mazes/solvealgos/ml/follow_policy"
 	"mazes/solvealgos/ml/td/one_step_sarsa"
+	"mazes/solvealgos/ml/td/sarsa_lambda"
 	"mazes/solvealgos/random"
 	"mazes/solvealgos/random_unvisited"
 	solve_rb "mazes/solvealgos/recursive_backtracker"
@@ -58,6 +59,11 @@ var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func()
 	"wall-follower":         NewWallFollower,
 	"empty":                 NewEmpty,
 	"ml-td-one-step-sarsa":  NewMLTDOneStepSarsa,
+	"ml-td-sarsa-lambda":    NewMLTDSarsaLambda,
+}
+
+func NewMLTDSarsaLambda() solvealgos.Algorithmer {
+	return &sarsa_lambda.MLTDSarsaLambda{}
 }
 
 func NewMLTDOneStepSarsa() solvealgos.Algorithmer {

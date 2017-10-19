@@ -9,5 +9,6 @@ const (
 	CommandCurrentLocation
 	CommandLocationInfo // current, from, to
 	CommandAddClient
+	CommandResetClient
 	CommandExportMaze
 )

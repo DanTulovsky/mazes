@@ -711,7 +711,7 @@ func (m *Maze) setWeights() error {
 		for y := int64(0); y < m.rows; y++ {
 			weight := 1
 			if utils.IsOdd(int(x)) && utils.IsOdd(int(y)) && y != m.columns-1 || (y > m.columns/2 && x != 0 && y != m.columns-1) {
-				weight = 20
+				weight = utils.Random(1, 90)
 			}
 			m.cells[x][y].SetWeight(weight)
 		}

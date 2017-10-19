@@ -8,9 +8,13 @@ import (
 	"log"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"mazes/maze"
 	"mazes/ml"
 	pb "mazes/proto"
+
+	"context"
 
 	"github.com/rcrowley/go-metrics"
 )
@@ -18,6 +22,10 @@ import (
 var (
 	// stats
 	showStats = flag.Bool("stats", false, "show maze stats")
+)
+
+const (
+	ADDRESS = "localhost:50051"
 )
 
 type Algorithmer interface {
@@ -127,6 +135,30 @@ func (a *Common) SetStream(s pb.Mazer_SolveMazeClient) {
 	a.stream = s
 }
 
+// NewClient creates a server connection and returns a new SoleMazeClient
+func NewClient() pb.MazerClient {
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(ADDRESS, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	// defer conn.Close()
+	return pb.NewMazerClient(conn)
+}
+
+func (a *Common) ResetClient(mazeID, clientID string) (*pb.ResetClientReply, error) {
+
+	c := NewClient()
+	ctx := context.Background()
+	r, err := c.ResetClient(ctx,
+		&pb.ResetClientRequest{
+			MazeId:   mazeID,
+			ClientId: clientID,
+		})
+
+	return r, err
+}
+
 // Move sends a move request to the server and returns the reply
 func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error) {
 	t := metrics.GetOrRegisterTimer("solver.step.latency", nil)
@@ -146,12 +178,12 @@ func (a *Common) Move(mazeID, clientID, d string) (*pb.SolveMazeResponse, error)
 
 	reply, err := stream.Recv()
 	if err != nil {
-		log.Printf(">>> %v", err)
+		// log.Printf(">>> %v", err)
 		return reply, err
 	}
 
 	if reply.GetError() {
-		log.Printf(">>>> %v", reply.GetErrorMessage())
+		// log.Printf(">>>> %v", reply.GetErrorMessage())
 		return reply, fmt.Errorf("%v", reply.GetErrorMessage())
 	}
 

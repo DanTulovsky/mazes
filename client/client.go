@@ -27,6 +27,8 @@ import (
 
 	"mazes/ml/td"
 
+	"mazes/solvealgos"
+
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/nsf/termbox-go"
 	"github.com/pkg/profile"
@@ -35,11 +37,6 @@ import (
 	"github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
-	"google.golang.org/grpc"
-)
-
-const (
-	address = "localhost:50051"
 )
 
 var (
@@ -156,7 +153,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 // addClient creates a new client in the maze and runs the solver, the m value is the *local* maze for display
 func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze, p *ml.Policy) error {
 	log.Printf("registering and running new client in maze %v...", mazeID)
-	c := NewClient()
+	c := solvealgos.NewClient()
 
 	r, err := c.RegisterClient(ctx,
 		&pb.RegisterClientRequest{
@@ -985,7 +982,7 @@ func opCreateSolveMlTDQLearning() error {
 // opCreate creates a new maze
 func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
-	c := NewClient()
+	c := solvealgos.NewClient()
 	ctx := context.Background()
 
 	resp, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
@@ -998,7 +995,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	var w *sdl.Window
 
 	// create local maze for DP algorithms or local gui
-	if *showLocalGUI || *solveAlgo == "follow-policy" || *solveAlgo == "ml-td-one-step-sarsa" {
+	if *showLocalGUI || *solveAlgo == "follow-policy" || *solveAlgo == "ml-td-one-step-sarsa" || *solveAlgo == "ml-td-sarsa-lambda" {
 		if *showLocalGUI {
 			// if server gui is off, enable this so the client gui works
 			config.Gui = true
@@ -1027,7 +1024,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 
 // opList lists available mazes by their id
 func opList() (*pb.ListMazeReply, error) {
-	c := NewClient()
+	c := solvealgos.NewClient()
 
 	r, err := c.ListMazes(context.Background(), &pb.ListMazeRequest{})
 	if err != nil {
@@ -1039,7 +1036,7 @@ func opList() (*pb.ListMazeReply, error) {
 // opSolve solves the maze with mazeID, m is the *local* maze for display only
 func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze, p *ml.Policy) error {
 	log.Printf("in opSolve, client: %v", clientID)
-	c := NewClient()
+	c := solvealgos.NewClient()
 
 	stream, err := c.SolveMaze(context.Background())
 	if err != nil {
@@ -1100,17 +1097,6 @@ func setFlags() {
 	if *currentLocationColor == "" {
 		*currentLocationColor = *pathColor
 	}
-}
-
-// NewClient creates a server connection and returns a new SoleMazeClient
-func NewClient() pb.MazerClient {
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	// defer conn.Close()
-	return pb.NewMazerClient(conn)
 }
 
 func newMaze(config *pb.MazeConfig, r *sdl.Renderer, encodedMaze string) (*maze.Maze, error) {
@@ -1332,7 +1318,7 @@ func main() {
 	}
 
 	// run http server for expvars
-	sock, err := net.Listen("tcp", "localhost:8125")
+	sock, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
