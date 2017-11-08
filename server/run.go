@@ -88,7 +88,7 @@ var (
 //	return true
 //}
 
-// required to be able to call gfx.* functions on multiple windows.
+// ResetFontCache is required to be able to call gfx.* functions on multiple windows.
 func ResetFontCache() {
 	gfx.SetFont(nil, 0, 0)
 }
