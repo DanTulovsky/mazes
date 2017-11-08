@@ -136,19 +136,21 @@ func (a *Common) SetStream(s pb.Mazer_SolveMazeClient) {
 }
 
 // NewClient creates a server connection and returns a new SoleMazeClient
-func NewClient() pb.MazerClient {
+func NewClient() (*grpc.ClientConn, pb.MazerClient) {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(ADDRESS, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	// defer conn.Close()
-	return pb.NewMazerClient(conn)
+	return conn, pb.NewMazerClient(conn)
 }
 
 func (a *Common) ResetClient(mazeID, clientID string) (*pb.ResetClientReply, error) {
 
-	c := NewClient()
+	conn, c := NewClient()
+	defer conn.Close()
+
 	ctx := context.Background()
 	r, err := c.ResetClient(ctx,
 		&pb.ResetClientRequest{

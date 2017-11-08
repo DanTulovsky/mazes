@@ -153,7 +153,7 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 // addClient creates a new client in the maze and runs the solver, the m value is the *local* maze for display
 func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *maze.Maze, p *ml.Policy) error {
 	log.Printf("registering and running new client in maze %v...", mazeID)
-	c := solvealgos.NewClient()
+	_, c := solvealgos.NewClient()
 
 	r, err := c.RegisterClient(ctx,
 		&pb.RegisterClientRequest{
@@ -192,7 +192,7 @@ func opCreateSolveMulti() error {
 	if err != nil {
 		return err
 	}
-	mazeId := r.GetMazeId()
+	mazeID := r.GetMazeId()
 	var wd sync.WaitGroup
 
 	if *randomFromTo {
@@ -201,7 +201,7 @@ func opCreateSolveMulti() error {
 	}
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              *solveAlgo,
 		PathColor:              *pathColor,
 		FromCell:               *fromCellStr,
@@ -219,7 +219,7 @@ func opCreateSolveMulti() error {
 
 	// register more clients
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              "recursive-backtracker",
 		PathColor:              "blue",
 		FromCell:               *fromCellStr,
@@ -236,7 +236,7 @@ func opCreateSolveMulti() error {
 	}, nil, nil)
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              "recursive-backtracker",
 		PathColor:              "green",
 		FromCell:               *fromCellStr,
@@ -253,7 +253,7 @@ func opCreateSolveMulti() error {
 	}, nil, nil)
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              "recursive-backtracker",
 		PathColor:              "purple",
 		FromCell:               *fromCellStr,
@@ -270,7 +270,7 @@ func opCreateSolveMulti() error {
 	}, nil, nil)
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              "random",
 		PathColor:              "pink",
 		FromCell:               *fromCellStr,
@@ -287,7 +287,7 @@ func opCreateSolveMulti() error {
 	}, nil, nil)
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              "random-unvisited",
 		PathColor:              "gold",
 		FromCell:               *fromCellStr,
@@ -304,7 +304,7 @@ func opCreateSolveMulti() error {
 	}, nil, nil)
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeId, &pb.ClientConfig{
+	go addClient(context.Background(), mazeID, &pb.ClientConfig{
 		SolveAlgo:              "wall-follower",
 		PathColor:              "teal",
 		FromCell:               *fromCellStr,
@@ -546,10 +546,10 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	comparison := false
 	if comparison {
 		// for comparison
-		mazeId := r.GetMazeId()
+		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		go addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "recursive-backtracker",
 			PathColor:              "purple",
 			FromCell:               *fromCellStr,
@@ -644,10 +644,10 @@ func opCreateSolveMlMCOffPolicy() error {
 	comparison := false
 	if comparison {
 		// for comparison
-		mazeId := r.GetMazeId()
+		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		go addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "recursive-backtracker",
 			PathColor:              "purple",
 			FromCell:               *fromCellStr,
@@ -742,10 +742,10 @@ func opCreateSolveMlTDOneStepSarsa() error {
 	comparison := false
 	if comparison {
 		// for comparison
-		mazeId := r.GetMazeId()
+		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		go addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "recursive-backtracker",
 			PathColor:              "purple",
 			FromCell:               *fromCellStr,
@@ -840,10 +840,10 @@ func opCreateSolveMlTDSarsaLambda() error {
 	comparison := false
 	if comparison {
 		// for comparison
-		mazeId := r.GetMazeId()
+		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		go addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "recursive-backtracker",
 			PathColor:              "purple",
 			FromCell:               *fromCellStr,
@@ -938,10 +938,10 @@ func opCreateSolveMlTDQLearning() error {
 	comparison := false
 	if comparison {
 		// for comparison
-		mazeId := r.GetMazeId()
+		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeId, &pb.ClientConfig{
+		go addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "recursive-backtracker",
 			PathColor:              "purple",
 			FromCell:               *fromCellStr,
@@ -982,7 +982,7 @@ func opCreateSolveMlTDQLearning() error {
 // opCreate creates a new maze
 func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
-	c := solvealgos.NewClient()
+	_, c := solvealgos.NewClient()
 	ctx := context.Background()
 
 	resp, err := c.CreateMaze(ctx, &pb.CreateMazeRequest{Config: config})
@@ -1024,7 +1024,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 
 // opList lists available mazes by their id
 func opList() (*pb.ListMazeReply, error) {
-	c := solvealgos.NewClient()
+	_, c := solvealgos.NewClient()
 
 	r, err := c.ListMazes(context.Background(), &pb.ListMazeRequest{})
 	if err != nil {
@@ -1036,7 +1036,7 @@ func opList() (*pb.ListMazeReply, error) {
 // opSolve solves the maze with mazeID, m is the *local* maze for display only
 func opSolve(mazeID, clientID, solveAlgo string, m *maze.Maze, p *ml.Policy) error {
 	log.Printf("in opSolve, client: %v", clientID)
-	c := solvealgos.NewClient()
+	_, c := solvealgos.NewClient()
 
 	stream, err := c.SolveMaze(context.Background())
 	if err != nil {

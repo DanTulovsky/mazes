@@ -150,9 +150,9 @@ func (a *MLTDSarsaLambda) Solve(mazeID, clientID string, fromCell, toCell *pb.Ma
 	epsilon := 0.99 // chance of picking random action [0-1], used to explore
 	epsilonDecay := -0.00000001
 	maxSteps := int64(10000)
-	alpha := 0.1  // learning rate
+	alpha := 0.01 // learning rate
 	gamma := 0.9  // discount rate of earlier steps
-	lambda := 0.9 // trace decay parameter (1 = monte carlo, 0 = TD(0))
+	lambda := 0.2 // trace decay parameter (1 = monte carlo, 0 = TD(0))
 
 	numStates := int(m.Config().Columns * m.Config().Rows)
 

@@ -472,8 +472,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			in.Reply <- commandReply{answer: l}
 			t.UpdateSince(start)
 		case maze.CommandResetClient:
-			start := time.Now()
-			t := metrics.GetOrRegisterTimer("maze.command.reset-client.latency", nil)
 
 			// TODO(dan): Is this needed?
 			m.Reset()
@@ -496,7 +494,6 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			// send reply via the reply channel
 			in.Reply <- commandReply{answer: l}
-			t.UpdateSince(start)
 		case maze.CommandGetDirections:
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.get-direction.latency", nil)
@@ -850,9 +847,7 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 
 // ResetClient resets an existing client in an existing maze
 func (s *server) ResetClient(ctx context.Context, in *pb.ResetClientRequest) (*pb.ResetClientReply, error) {
-	log.Printf("resetting client [%v] in maze [%#v]", in.GetClientId(), in.GetMazeId())
-	t := metrics.GetOrRegisterTimer("maze.rpc.reset-client.latency", nil)
-	defer t.UpdateSince(time.Now())
+	// log.Printf("resetting client [%v] in maze [%#v]", in.GetClientId(), in.GetMazeId())
 
 	clientID := in.GetClientId()
 
