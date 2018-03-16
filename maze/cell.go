@@ -672,7 +672,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -682,7 +682,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -750,7 +750,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)

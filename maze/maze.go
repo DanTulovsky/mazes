@@ -369,10 +369,11 @@ func (m *Maze) configToCell(config *pb.ClientConfig, c string) (*Cell, error) {
 
 }
 
+// MakeBGTexture creates the background texture.
 func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 	r := m.r
-	winWidth := m.winWidth
-	winHeight := m.winHeight
+	winWidth := int32(m.winWidth)
+	winHeight := int32(m.winHeight)
 	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
 	if err != nil {
 		return nil, err

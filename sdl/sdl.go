@@ -15,7 +15,7 @@ import (
 
 // SetupSDL initializes SDL and returns the window and renderer object
 // xOffset and yOffset are offset to position window in full windows
-func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int) (*sdl.Window, *sdl.Renderer) {
+func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*sdl.Window, *sdl.Renderer) {
 	w := new(sdl.Window)
 	r := new(sdl.Renderer)
 
@@ -34,8 +34,8 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int) (*sd
 	})
 
 	// window
-	winWidth := int((config.Columns)*config.CellWidth + config.WallWidth*2)
-	winHeight := int((config.Rows)*config.CellWidth + config.WallWidth*2)
+	winWidth := int32((config.Columns)*config.CellWidth + config.WallWidth*2)
+	winHeight := int32((config.Rows)*config.CellWidth + config.WallWidth*2)
 
 	if xOffset != 0 {
 		xOffset = xOffset * winWidth
@@ -58,7 +58,6 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int) (*sd
 
 	// renderer
 	sdl.Do(func() {
-		log.Printf("window: %#v", w.GetID())
 		r, err = sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC|sdl.RENDERER_TARGETTEXTURE)
 	})
 	if err != nil {
