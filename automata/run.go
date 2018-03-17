@@ -86,6 +86,9 @@ var (
 	// solver
 	mazeID = flag.String("maze_id", "", "maze id")
 
+	// control
+	startPaused = flag.Bool("start_paused", false, "start the simulation paused")
+
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
@@ -268,12 +271,13 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandActi
 	ticker := time.NewTicker(time.Millisecond * time.Duration(*delayMs))
 	go func() {
 		var pause abool.AtomicBool
+		pause.SetTo(*startPaused)
 
 		for range ticker.C {
+			var msg commandAction
 
 			select {
-			case msg := <-comm:
-				log.Printf("received command: %v", msg)
+			case msg = <-comm:
 				switch msg {
 				case 'p':
 					log.Print("pausing...")
@@ -284,6 +288,13 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandActi
 				case 'q':
 					log.Print("quitting...")
 					running.UnSet()
+				case 's':
+					if !pause.IsSet() {
+						log.Print("stepping only makes sense after pause...")
+						break
+					}
+					log.Print("stepping...")
+					pause.UnSet()
 				}
 			default:
 			}
@@ -298,6 +309,12 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandActi
 			}
 
 			processMazeEvents(m, r, updateBG)
+
+			// If we one just one step, pause after running it
+			if msg == 's' {
+				pause.Set()
+			}
+
 		}
 	}()
 
@@ -424,11 +441,11 @@ func runServer() {
 		switch {
 		case ev.Key == termbox.KeyEsc:
 			log.Print("Quitting...")
+			running.UnSet()
 			return
 		default:
 			select {
 			case comm <- commandAction(ev.Ch):
-				log.Printf("sending: %v", commandAction(ev.Ch))
 			case <-time.NewTimer(time.Second).C:
 				// Make this check for quit every timer seconds
 			}
@@ -445,6 +462,7 @@ func showCommands() {
 	log.Print("  '<esc>': to quit")
 	log.Print("  'p': to pause execution")
 	log.Print("  'c': to continue execution")
+	log.Print("  's': to execute one step (only if paused already)")
 }
 
 func main() {
@@ -471,5 +489,5 @@ func main() {
 	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
 
-	// termbox.Close()
+	termbox.Close()
 }
