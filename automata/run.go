@@ -18,7 +18,6 @@ import (
 	"mazes/maze"
 	pb "mazes/proto"
 	lsdl "mazes/sdl"
-	"safemap"
 
 	"mazes/genalgos/fromfile"
 
@@ -55,12 +54,6 @@ var (
 	// stats
 	showStats        = flag.Bool("maze_stats", false, "show maze stats")
 	enableMonitoring = flag.Bool("enable_monitoring", false, "enable monitoring")
-
-	// keep track of mazes
-	mazeMap = *safemap.NewSafeMap()
-
-	// operation
-	op = flag.String("op", "list", "operation to run")
 
 	// maze
 	maskImage          = flag.String("mask_image", "", "file name of mask image")
@@ -104,6 +97,7 @@ var (
 	drawPathLength         = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
 	solveDrawDelay         = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
 	frameRate              = flag.Uint("frame_rate", 120, "frame rate for animation")
+	delayMs                = flag.Uint("delay_ms", 500, "delay in milliseconds between updates")
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
@@ -111,25 +105,7 @@ var (
 	skipGridCheck = flag.Bool("skip_grid_check", true, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
-	mazeID        = flag.String("maze_id", "", "maze id")
-	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
-	fromCellStr   = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
-	toCellStr     = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
-	returnMaze    = flag.Bool("return_maze", false, "return the encoded maze in the create reply, used for ML DP algorithms")
-
-	// ml params
-	df                 = flag.Float64("df", 1, "discount factor [0-1], at one treats all steps equally")
-	epsilon            = flag.Float64("epsilon", 1, "chance of picking random action [0-1], used to explore")
-	epsilonDecayFactor = flag.Float64("epsilon_decay_factor", -0.001, "decay factor for epsilon, the closer to 0, the slow it decays")
-	theta              = flag.Float64("theta", 0.000000001, "stops evaluation when value function change is less than this")
-	alpha              = flag.Float64("alpha", 0.0001, "TD learning rate")
-	gamma              = flag.Float64("gamma", 1, "discount rate of earlier steps")
-	lambda             = flag.Float64("lambda", 0.99, "trace decay parameter (1 = monte carlo, 0 = TD(0)), used for eligibility traces")
-	numEpisodes        = flag.Int64("num_episodes", 10000, "for episodic algorithms, run this many episodes")
-	maxSteps           = flag.Int64("max_steps", 0, "run only this many steps per episode, 0 means set automatically")
-
-	// misc
-	exportMaze = flag.Bool("export_maze", false, "save maze to a file on the server")
+	mazeID = flag.String("maze_id", "", "maze id")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -350,7 +326,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 	showMazeStats(m)
 
 	// process background events in the maze
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Millisecond * time.Duration(*delayMs))
 	go func() {
 		for range ticker.C {
 			processMazeEvents(m, r, updateBG)
@@ -372,18 +348,17 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 		t.UpdateSince(start)
 	}
 
-	mazeMap.Delete(m.Config().GetId())
-	log.Printf("maze is done...")
 	wd.Wait()
 }
 
 // processMazeEvents takes care of periodic events happening in the maze
+// we defer setting the colors so that they all get processed at once
 func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
 	log.Printf("[%v] processing events...", time.Now())
 
 	for c := range m.Cells() {
 		liveNeighbors := 0
-		for _, n := range c.Neighbors() {
+		for _, n := range c.AllNeighbors() {
 			if n.BGColor() == colors.GetColor("black") {
 				liveNeighbors++
 			}
@@ -391,19 +366,19 @@ func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool
 
 		if liveNeighbors < 2 {
 			// die, lonely
-			c.SetBGColor(colors.GetColor("white"))
+			defer c.SetBGColor(colors.GetColor("white"))
 			continue
 		}
 
 		if liveNeighbors > 3 {
 			// die, overcrowded
-			c.SetBGColor(colors.GetColor("white"))
+			defer c.SetBGColor(colors.GetColor("white"))
 			continue
 		}
 
 		if liveNeighbors == 3 && c.BGColor() == colors.GetColor("white") {
 			// Dead cell with 3 live neighbors becomes alive
-			c.SetBGColor(colors.GetColor("black"))
+			defer c.SetBGColor(colors.GetColor("black"))
 
 		}
 	}
@@ -469,7 +444,6 @@ func runServer() {
 		BraidProbability:   *braidProbability,
 		Gui:                *showGUI,
 		FromFile:           *mazeID,
-		ReturnMaze:         *returnMaze,
 		Title:              *title,
 	}
 	CreateMaze(config)
@@ -558,9 +532,18 @@ func setInitialStates(m *maze.Maze) *maze.Maze {
 		m.CellBeSure(2, 1, 0),
 		m.CellBeSure(2, 2, 0),
 		// line
-		m.CellBeSure(5, 1, 0),
-		m.CellBeSure(5, 2, 0),
-		m.CellBeSure(5, 3, 0),
+		m.CellBeSure(5, 4, 0),
+		m.CellBeSure(5, 5, 0),
+		m.CellBeSure(5, 6, 0),
+		// two diagonal blocks
+		m.CellBeSure(8, 1, 0),
+		m.CellBeSure(8, 2, 0),
+		m.CellBeSure(9, 1, 0),
+		m.CellBeSure(9, 2, 0),
+		m.CellBeSure(10, 3, 0),
+		m.CellBeSure(10, 4, 0),
+		m.CellBeSure(11, 3, 0),
+		m.CellBeSure(11, 4, 0),
 	}
 
 	for _, c := range liveCells {
@@ -585,7 +568,6 @@ func CreateMaze(config *pb.MazeConfig) error {
 	config.Id = mazeID
 
 	comm := make(chan commandData)
-	mazeMap.Insert(mazeID, comm)
 
 	m, r, w, err := createMaze(config)
 	if err != nil {

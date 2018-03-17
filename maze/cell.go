@@ -951,6 +951,38 @@ func (c *Cell) Linked(cell *Cell) bool {
 	return linked.(bool)
 }
 
+// AllNeighbors returns a list of all cells that are neighbors (includes diagonals)
+// Used for game of life only
+func (c *Cell) AllNeighbors() []*Cell {
+	c.RLock()
+	defer c.RUnlock()
+
+	var n []*Cell
+
+	for _, cell := range []*Cell{c.North(), c.South(), c.East(), c.West()} {
+		if cell != nil {
+			n = append(n, cell)
+		}
+	}
+
+	if c.North() != nil {
+		for _, cell := range []*Cell{c.North().East(), c.North().West()} {
+			if cell != nil {
+				n = append(n, cell)
+			}
+		}
+	}
+
+	if c.South() != nil {
+		for _, cell := range []*Cell{c.South().East(), c.South().West()} {
+			if cell != nil {
+				n = append(n, cell)
+			}
+		}
+	}
+	return n
+}
+
 // Neighbors returns a list of all cells that are neighbors (weather connected by passage or not)
 func (c *Cell) Neighbors() []*Cell {
 	c.RLock()
