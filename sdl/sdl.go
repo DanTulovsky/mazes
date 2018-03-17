@@ -109,6 +109,24 @@ func CheckQuit(running *abool.AtomicBool) {
 	})
 }
 
+func setCellColor(m *maze.Maze, x, y, w int64) {
+
+	c := int64(math.Floor(float64(x) / float64(w)))
+	r := int64(math.Floor(float64(y) / float64(w)))
+
+	cell, err := m.Cell(c, r, 0)
+	if err != nil {
+		log.Printf("error getting cell at coordinates (%v, %v)", x, y)
+	}
+
+	if cell.BGColor() == colors.GetColor(rules.AliveColor) {
+		cell.SetBGColor(colors.GetColor(rules.DeadColor))
+	} else {
+		cell.SetBGColor(colors.GetColor(rules.AliveColor))
+	}
+
+}
+
 // CheckEvents checks for events and updates the maze
 func CheckEvents(m *maze.Maze, running *abool.AtomicBool, updateBG *abool.AtomicBool) {
 	sdl.Do(func() {
@@ -117,27 +135,17 @@ func CheckEvents(m *maze.Maze, running *abool.AtomicBool, updateBG *abool.Atomic
 			case *sdl.QuitEvent:
 				log.Print("received quit request, exiting...")
 				running.UnSet()
+			case *sdl.MouseMotionEvent:
+				if t.State == sdl.BUTTON_LEFT {
+					setCellColor(m, int64(t.X), int64(t.Y), m.GetCellWidth())
+					updateBG.Set()
+				}
 			case *sdl.MouseButtonEvent:
-				if t.Type != sdl.MOUSEBUTTONDOWN {
-					break
+				switch t.Type {
+				case sdl.MOUSEBUTTONDOWN:
+					setCellColor(m, int64(t.X), int64(t.Y), m.GetCellWidth())
+					updateBG.Set()
 				}
-				// log.Printf("mouse: %v at (%v, %v)", t.Type, t.X, t.Y)
-				c := int64(math.Floor(float64(t.X) / float64(m.GetCellWidth())))
-				r := int64(math.Floor(float64(t.Y) / float64(m.GetCellWidth())))
-
-				cell, err := m.Cell(c, r, 0)
-				if err != nil {
-					log.Printf("error getting cell at coordinates (%v, %v)", t.X, t.Y)
-				}
-
-				// log.Printf("cell: %v", cell)
-				if cell.BGColor() == colors.GetColor(rules.AliveColor) {
-					cell.SetBGColor(colors.GetColor(rules.DeadColor))
-				} else {
-					cell.SetBGColor(colors.GetColor(rules.AliveColor))
-				}
-
-				updateBG.Set()
 			}
 		}
 	})
