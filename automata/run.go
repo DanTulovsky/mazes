@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"mazes/algos"
+	"mazes/automata/rules"
 	"mazes/colors"
 	"mazes/maze"
 	pb "mazes/proto"
@@ -70,18 +71,12 @@ var (
 	columns = flag.Int64("c", 15, "number of rows in the maze")
 
 	// colors
-	bgColor              = flag.String("bgcolor", "white", "background color")
-	borderColor          = flag.String("border_color", "black", "border color")
-	currentLocationColor = flag.String("location_color", "", "current location color, if empty, path color is used")
-	pathColor            = flag.String("path_color", "red", "border color")
-	visitedCellColor     = flag.String("visited_color", "red", "color of visited cell marker")
-	wallColor            = flag.String("wall_color", "black", "wall color")
-	fromCellColor        = flag.String("from_cell_color", "", "from cell color, based on path if empty")
-	toCellColor          = flag.String("to_cell_color", "", "to cell color, based on path if empty")
+	bgColor     = flag.String("bgcolor", "white", "background color")
+	borderColor = flag.String("border_color", "black", "border color")
+	wallColor   = flag.String("wall_color", "black", "wall color")
 
 	// width
 	cellWidth = flag.Int64("w", 30, "cell width (best as multiple of 2)")
-	pathWidth = flag.Int64("path_width", 2, "path width")
 	wallWidth = flag.Int64("wall_width", 2, "wall width (min of 2 to have walls - half on each side")
 	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")
 
@@ -323,8 +318,6 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 		m.SetBGTexture(mTexture)
 	}
 
-	showMazeStats(m)
-
 	// process background events in the maze
 	ticker := time.NewTicker(time.Millisecond * time.Duration(*delayMs))
 	go func() {
@@ -354,34 +347,9 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 // processMazeEvents takes care of periodic events happening in the maze
 // we defer setting the colors so that they all get processed at once
 func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
-	log.Printf("[%v] processing events...", time.Now())
 
-	for c := range m.Cells() {
-		liveNeighbors := 0
-		for _, n := range c.AllNeighbors() {
-			if n.BGColor() == colors.GetColor("black") {
-				liveNeighbors++
-			}
-		}
-
-		if liveNeighbors < 2 {
-			// die, lonely
-			defer c.SetBGColor(colors.GetColor("white"))
-			continue
-		}
-
-		if liveNeighbors > 3 {
-			// die, overcrowded
-			defer c.SetBGColor(colors.GetColor("white"))
-			continue
-		}
-
-		if liveNeighbors == 3 && c.BGColor() == colors.GetColor("white") {
-			// Dead cell with 3 live neighbors becomes alive
-			defer c.SetBGColor(colors.GetColor("black"))
-
-		}
-	}
+	// Use classic rules; http://web.stanford.edu/~cdebs/GameOfLife/
+	rules.Classic(m)
 
 	// redraw the background
 	updateBG.Set()
@@ -391,7 +359,6 @@ func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool
 func updateMazeBackground(m *maze.Maze, updateBG *abool.AtomicBool) {
 	if updateBG.IsSet() {
 		if m.Config().GetGui() {
-			log.Printf("setting background")
 			mTexture, err := m.MakeBGTexture()
 			if err != nil {
 				log.Fatalf("failed to create background: %v", err)
@@ -432,7 +399,6 @@ func runServer() {
 		WallWidth:          *wallWidth,
 		WallSpace:          *wallSpace,
 		WallColor:          *wallColor,
-		PathWidth:          *pathWidth,
 		ShowDistanceColors: *showDistanceColors,
 		ShowDistanceValues: *showDistanceValues,
 		ShowWeightValues:   *showWeightValues,
