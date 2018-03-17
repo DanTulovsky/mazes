@@ -7,6 +7,11 @@ import (
 	"mazes/utils"
 )
 
+// Empty doesn't set any initial state
+func Empty(m *maze.Maze) *maze.Maze {
+	return m
+}
+
 // Random sets a random initial state for game of life
 func Random(m *maze.Maze) *maze.Maze {
 	for c := range m.Cells() {
