@@ -1,29 +1,36 @@
 package rules
 
 import (
+	"log"
 	"mazes/colors"
 	"mazes/maze"
 	"mazes/utils"
 )
 
+const (
+	aliveColor = "black"
+	deadColor  = "white"
+)
+
 // isAlive returns true if the cell is alive
 func isAlive(c *maze.Cell) bool {
-	return c.BGColor() == colors.GetColor("black")
+	return c.BGColor() == colors.GetColor(aliveColor)
 }
 
 // isDead returns true if the cell is dead
 func isDead(c *maze.Cell) bool {
-	return c.BGColor() == colors.GetColor("white")
+	return c.BGColor() == colors.GetColor(deadColor)
 }
 
 // Revive sets the cell to be alive
 func Revive(c *maze.Cell) {
-	c.SetBGColor(colors.GetColor("black"))
+	c.SetBGColor(colors.GetColor(aliveColor))
 }
 
-// Kill kills the cell
+// Kill kills the cell and sets distance travelled to 0
 func Kill(c *maze.Cell) {
-	c.SetBGColor(colors.GetColor("white"))
+	c.SetBGColor(colors.GetColor(deadColor))
+	c.SetDistance(0)
 }
 
 // Classic implements the classic game of life rules
@@ -34,7 +41,7 @@ func Classic(m *maze.Maze) *maze.Maze {
 
 		// count number of live neighbors
 		for _, n := range c.AllNeighbors() {
-			if n.BGColor() == colors.GetColor("black") {
+			if isAlive(n) {
 				liveNeighbors++
 			}
 		}
@@ -66,7 +73,7 @@ func Play1(m *maze.Maze) *maze.Maze {
 	for c := range m.Cells() {
 		liveNeighbors := 0
 		for _, n := range c.AllNeighbors() {
-			if n.BGColor() == colors.GetColor("black") {
+			if isAlive(n) {
 				liveNeighbors++
 			}
 		}
@@ -105,13 +112,29 @@ func Play1(m *maze.Maze) *maze.Maze {
 func Play2(m *maze.Maze) *maze.Maze {
 	for c := range m.Cells() {
 		if isAlive(c) {
+			// incremenet the distance travelled, this is the strength
+			c.IncDistance()
+			log.Printf("%v (d=%v)", c, c.Distance())
+
 			// pick random neighbor to move to
 			rnd := c.RandomAllNeighbor()
 
 			// "move" by killing self and enabling neighbor
 			if isDead(rnd) {
 				defer Revive(rnd)
+				// transfer distance travelled
+				defer rnd.SetDistance(c.Distance())
 				defer Kill(c)
+				continue
+			}
+
+			if isAlive(rnd) {
+				if c.Distance() > rnd.Distance() {
+					// consume the weeker neighbor
+					defer rnd.SetDistance(c.Distance())
+					defer Kill(c)
+					continue
+				}
 			}
 		}
 	}

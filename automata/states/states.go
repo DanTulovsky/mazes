@@ -25,18 +25,18 @@ func Concrete(m *maze.Maze) *maze.Maze {
 		m.CellBeSure(2, 1, 0),
 		m.CellBeSure(2, 2, 0),
 		// line
-		m.CellBeSure(5, 4, 0),
-		m.CellBeSure(5, 5, 0),
-		m.CellBeSure(5, 6, 0),
+		// m.CellBeSure(5, 4, 0),
+		// m.CellBeSure(5, 5, 0),
+		// m.CellBeSure(5, 6, 0),
 		// // two diagonal blocks
-		m.CellBeSure(8, 1, 0),
-		m.CellBeSure(8, 2, 0),
-		m.CellBeSure(9, 1, 0),
-		m.CellBeSure(9, 2, 0),
-		m.CellBeSure(10, 3, 0),
-		m.CellBeSure(10, 4, 0),
-		m.CellBeSure(11, 3, 0),
-		m.CellBeSure(11, 4, 0),
+		// m.CellBeSure(8, 1, 0),
+		// m.CellBeSure(8, 2, 0),
+		// m.CellBeSure(9, 1, 0),
+		// m.CellBeSure(9, 2, 0),
+		// m.CellBeSure(10, 3, 0),
+		// m.CellBeSure(10, 4, 0),
+		// m.CellBeSure(11, 3, 0),
+		// m.CellBeSure(11, 4, 0),
 	}
 
 	for _, c := range liveCells {

@@ -307,6 +307,13 @@ func (c *Cell) SetDistance(d int) {
 	c.distance = d
 }
 
+// IncDistance increments the distance of the cell by one
+func (c *Cell) IncDistance() {
+	c.Lock()
+	defer c.Unlock()
+	c.distance++
+}
+
 func (c *Cell) String() string {
 	c.RLock()
 	defer c.RUnlock()

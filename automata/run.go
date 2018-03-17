@@ -7,8 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -320,7 +318,7 @@ func displaymaze(m *maze.Maze, r *sdl.Renderer) {
 
 // setInitialStates sets the initial state of the squares
 func setInitialStates(m *maze.Maze) *maze.Maze {
-	// m = states.Concrete(m)
+	//m = states.Concrete(m)
 	m = states.Random(m)
 	return m
 }
@@ -330,13 +328,13 @@ func setInitialStates(m *maze.Maze) *maze.Maze {
 func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
 
 	// Use classic rules; http://web.stanford.edu/~cdebs/GameOfLife/
-	// rules.Classic(m)
+	rules.Classic(m)
 
 	// Use Play1 rules; random chance cell with 0 neighbors to come alive
 	// rules.Play1(m)
 
 	// Use Play2 rules; experimental
-	rules.Play2(m)
+	// rules.Play2(m)
 
 	// redraw the background
 	updateBG.Set()
@@ -388,7 +386,7 @@ func runServer() {
 	}
 	CreateMaze(config)
 
-	log.Print("presee <enter> to quit...")
+	log.Print("presee <ctr>+c to quit...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
@@ -407,16 +405,6 @@ func main() {
 		log.Println("enabling profiling...")
 		defer profile.Start().Stop()
 	}
-
-	// run http server for expvars
-	sock, err := net.Listen("tcp", "localhost:8123")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	go func() {
-		fmt.Println("metrics now available at http://localhost:8123/debug/metrics")
-		http.Serve(sock, nil)
-	}()
 
 	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
