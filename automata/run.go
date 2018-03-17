@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bufio"
 	_ "expvar"
 	"flag"
 	"fmt"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/nsf/termbox-go"
 
 	"mazes/algos"
 	"mazes/automata/rules"
@@ -24,7 +25,6 @@ import (
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
 	"github.com/sasha-s/go-deadlock"
-	"github.com/satori/go.uuid"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
@@ -92,6 +92,8 @@ var (
 
 	wd sync.WaitGroup
 )
+
+type commandAction termbox.Key
 
 // ResetFontCache is required to be able to call gfx.* functions on multiple windows.
 func ResetFontCache() {
@@ -244,13 +246,7 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 }
 
 // runMaze runs the maze
-func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
-	defer func() {
-		sdl.Do(func() {
-			r.Destroy()
-			w.Destroy()
-		})
-	}()
+func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandAction, running *abool.AtomicBool) {
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
@@ -271,15 +267,50 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 	// this is where the work happens
 	ticker := time.NewTicker(time.Millisecond * time.Duration(*delayMs))
 	go func() {
+		var pause abool.AtomicBool
+
 		for range ticker.C {
+
+			select {
+			case msg := <-comm:
+				log.Printf("received command: %v", msg)
+				switch msg {
+				case 'p':
+					log.Print("pausing...")
+					pause.Set()
+				case 'c':
+					log.Print("continuing...")
+					pause.UnSet()
+				case 'q':
+					log.Print("quitting...")
+					running.UnSet()
+				}
+			default:
+			}
+
+			if pause.IsSet() {
+				time.Sleep(time.Millisecond * 100)
+				continue
+			}
+
+			if !running.IsSet() {
+				return
+			}
+
 			processMazeEvents(m, r, updateBG)
 		}
 	}()
 
 	// main loop re-drawing the maze
-	for {
+	for running.IsSet() {
+		start := time.Now()
+		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
+
+		lsdl.CheckQuit(running)
 		updateMazeBackground(m, updateBG)
 		displaymaze(m, r)
+
+		t.UpdateSince(start)
 	}
 }
 
@@ -298,22 +329,20 @@ func updateMazeBackground(m *maze.Maze, updateBG *abool.AtomicBool) {
 
 // displaymaze draws the maze
 func displaymaze(m *maze.Maze, r *sdl.Renderer) {
-	if m.Config().GetGui() {
-		// Displays the maze
-		sdl.Do(func() {
-			if err := r.Clear(); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to clear: %s\n", err)
-				os.Exit(1)
-			}
+	// Displays the maze
+	sdl.Do(func() {
+		if err := r.Clear(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to clear: %s\n", err)
+			os.Exit(1)
+		}
 
-			m.DrawMaze(r, m.BGTexture())
+		m.DrawMaze(r, m.BGTexture())
 
-			r.Present()
-			sdl.Delay(uint32(1000 / *frameRate))
-			ResetFontCache()
+		r.Present()
+		sdl.Delay(uint32(1000 / *frameRate))
+		ResetFontCache()
 
-		})
-	}
+	})
 }
 
 // setInitialStates sets the initial state of the squares
@@ -338,11 +367,10 @@ func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool
 
 	// redraw the background
 	updateBG.Set()
-
 }
 
 // CreateMaze creates and displays the maze specified by the config
-func CreateMaze(config *pb.MazeConfig) error {
+func CreateMaze(config *pb.MazeConfig, comm chan commandAction, running *abool.AtomicBool) error {
 	log.Printf("creating maze with config: %#v", config)
 	if config == nil {
 		return fmt.Errorf("maze config cannot be nil")
@@ -350,8 +378,6 @@ func CreateMaze(config *pb.MazeConfig) error {
 
 	t := metrics.GetOrRegisterTimer("maze.rpc.create-maze.latency", nil)
 	defer t.UpdateSince(time.Now())
-
-	config.Id = uuid.NewV4().String()
 
 	m, r, w, err := createMaze(config)
 	if err != nil {
@@ -361,7 +387,7 @@ func CreateMaze(config *pb.MazeConfig) error {
 	m = setInitialStates(m)
 
 	log.Print("running maze...")
-	go runMaze(m, r, w)
+	go runMaze(m, r, w, comm, running)
 
 	return nil
 }
@@ -384,15 +410,51 @@ func runServer() {
 		FromFile:         *mazeID,
 		Title:            *title,
 	}
-	CreateMaze(config)
 
-	log.Print("presee <ctr>+c to quit...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	comm := make(chan commandAction)
+	running := abool.New()
+	running.Set()
+
+	CreateMaze(config, comm, running)
+
+	for running.IsSet() {
+		showCommands()
+
+		ev := termbox.PollEvent()
+		switch {
+		case ev.Key == termbox.KeyEsc:
+			log.Print("Quitting...")
+			return
+		default:
+			select {
+			case comm <- commandAction(ev.Ch):
+				log.Printf("sending: %v", commandAction(ev.Ch))
+			case <-time.NewTimer(time.Second).C:
+				// Make this check for quit every timer seconds
+			}
+
+		}
+	}
+
+	log.Print("exiting...")
+}
+
+func showCommands() {
+	log.Print("Available commands:")
+	log.Print("  'q': to quit")
+	log.Print("  '<esc>': to quit")
+	log.Print("  'p': to pause execution")
+	log.Print("  'c': to continue execution")
 }
 
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
+	}
 
 	if *enableDeadlockDetection {
 		log.Println("enabling deadlock detection, this slows things down considerably!")
@@ -409,4 +471,5 @@ func main() {
 	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
 
+	// termbox.Close()
 }
