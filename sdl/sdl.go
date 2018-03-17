@@ -8,6 +8,7 @@ import (
 	"mazes/automata/rules"
 	"mazes/colors"
 	"mazes/maze"
+	"mazes/utils"
 	"os"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -109,22 +110,24 @@ func CheckQuit(running *abool.AtomicBool) {
 	})
 }
 
-func setCellColor(m *maze.Maze, x, y, w int64) {
-
-	c := int64(math.Floor(float64(x) / float64(w)))
-	r := int64(math.Floor(float64(y) / float64(w)))
-
-	cell, err := m.Cell(c, r, 0)
-	if err != nil {
-		log.Printf("error getting cell at coordinates (%v, %v)", x, y)
-	}
-
+// swapCellColor changes the cell from live to dead, and vice versa
+func swapCellColor(cell *maze.Cell) {
 	if cell.BGColor() == colors.GetColor(rules.AliveColor) {
 		cell.SetBGColor(colors.GetColor(rules.DeadColor))
 	} else {
 		cell.SetBGColor(colors.GetColor(rules.AliveColor))
 	}
+}
 
+func coordsToCell(m *maze.Maze, x, y, w int64) (*maze.Cell, error) {
+	c := int64(math.Floor(float64(x) / float64(w)))
+	r := int64(math.Floor(float64(y) / float64(w)))
+
+	cell, err := m.Cell(c, r, 0)
+	if err != nil {
+		return nil, fmt.Errorf("error getting cell at coordinates (%v, %v)", x, y)
+	}
+	return cell, nil
 }
 
 // CheckEvents checks for events and updates the maze
@@ -137,13 +140,28 @@ func CheckEvents(m *maze.Maze, running *abool.AtomicBool, updateBG *abool.Atomic
 				running.UnSet()
 			case *sdl.MouseMotionEvent:
 				if t.State == sdl.BUTTON_LEFT {
-					setCellColor(m, int64(t.X), int64(t.Y), m.GetCellWidth())
+					cell, err := coordsToCell(m, int64(t.X), int64(t.Y), m.GetCellWidth())
+					if err != nil {
+						log.Print(err)
+						break
+					}
+
+					if m.LastUpdatedCell() != nil && !utils.LocsSame(cell.Location(), m.LastUpdatedCell().Location()) {
+						swapCellColor(cell)
+					}
+
+					m.SetLastUpdatedCell(cell)
 					updateBG.Set()
 				}
 			case *sdl.MouseButtonEvent:
 				switch t.Type {
 				case sdl.MOUSEBUTTONDOWN:
-					setCellColor(m, int64(t.X), int64(t.Y), m.GetCellWidth())
+					cell, err := coordsToCell(m, int64(t.X), int64(t.Y), m.GetCellWidth())
+					if err != nil {
+						log.Print(err)
+						break
+					}
+					swapCellColor(cell)
 					updateBG.Set()
 				}
 			}

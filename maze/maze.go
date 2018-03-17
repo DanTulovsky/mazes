@@ -57,6 +57,8 @@ type Maze struct {
 	fromCell, toCell map[string]*Cell // save these for proper coloring, per client
 	nextClient       int              // number of the next client to connect
 
+	lastUpdatedCell *Cell // the last updated cell for game of life motion events
+
 	genCurrentLocation *Cell // the current location of generator
 
 	// map of client IDs to client structures
@@ -73,6 +75,20 @@ type Maze struct {
 	encoded string // the maze cells and passages encoded as ascii
 
 	deadlock.RWMutex
+}
+
+// LastUpdatedCell returns the last cell updated by game of life
+func (m *Maze) LastUpdatedCell() *Cell {
+	m.RLock()
+	defer m.RUnlock()
+	return m.lastUpdatedCell
+}
+
+// SetLastUpdatedCell sets the last cellto be updated by game of life
+func (m *Maze) SetLastUpdatedCell(c *Cell) {
+	m.Lock()
+	defer m.Unlock()
+	m.lastUpdatedCell = c
 }
 
 func (m *Maze) GetCellWidth() int64 {
