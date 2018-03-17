@@ -75,6 +75,10 @@ type Maze struct {
 	deadlock.RWMutex
 }
 
+func (m *Maze) GetCellWidth() int64 {
+	return m.cellWidth
+}
+
 func (m *Maze) SetEncodedString(e string) {
 	m.Lock()
 	defer m.Unlock()

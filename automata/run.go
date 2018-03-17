@@ -87,7 +87,7 @@ var (
 	mazeID = flag.String("maze_id", "", "maze id")
 
 	// control
-	startPaused = flag.Bool("start_paused", false, "start the simulation paused")
+	startPaused = flag.Bool("start_paused", true, "start the simulation paused")
 
 	// debug
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
@@ -293,7 +293,6 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandActi
 						log.Print("stepping only makes sense after pause...")
 						break
 					}
-					log.Print("stepping...")
 					pause.UnSet()
 				}
 			default:
@@ -323,7 +322,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandActi
 		start := time.Now()
 		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
 
-		lsdl.CheckQuit(running)
+		lsdl.CheckEvents(m, running, updateBG)
 		updateMazeBackground(m, updateBG)
 		displaymaze(m, r)
 
@@ -364,8 +363,8 @@ func displaymaze(m *maze.Maze, r *sdl.Renderer) {
 
 // setInitialStates sets the initial state of the squares
 func setInitialStates(m *maze.Maze) *maze.Maze {
-	//m = states.Concrete(m)
-	m = states.Random(m)
+	m = states.Concrete(m)
+	// m = states.Random(m)
 	return m
 }
 
@@ -449,7 +448,6 @@ func runServer() {
 			case <-time.NewTimer(time.Second).C:
 				// Make this check for quit every timer seconds
 			}
-
 		}
 	}
 
@@ -489,5 +487,5 @@ func main() {
 	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
 
-	termbox.Close()
+	// termbox.Close()
 }
