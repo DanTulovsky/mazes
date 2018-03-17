@@ -15,6 +15,7 @@ import (
 
 	"mazes/algos"
 	"mazes/automata/rules"
+	"mazes/automata/states"
 	"mazes/colors"
 	"mazes/maze"
 	pb "mazes/proto"
@@ -489,32 +490,8 @@ type server struct{}
 
 // setInitialStates sets the initial state of the squares
 func setInitialStates(m *maze.Maze) *maze.Maze {
-	// maxX, maxY := m.Dimensions()
-
-	liveCells := []*maze.Cell{
-		// block
-		m.CellBeSure(1, 1, 0),
-		m.CellBeSure(1, 2, 0),
-		m.CellBeSure(2, 1, 0),
-		m.CellBeSure(2, 2, 0),
-		// line
-		m.CellBeSure(5, 4, 0),
-		m.CellBeSure(5, 5, 0),
-		m.CellBeSure(5, 6, 0),
-		// two diagonal blocks
-		m.CellBeSure(8, 1, 0),
-		m.CellBeSure(8, 2, 0),
-		m.CellBeSure(9, 1, 0),
-		m.CellBeSure(9, 2, 0),
-		m.CellBeSure(10, 3, 0),
-		m.CellBeSure(10, 4, 0),
-		m.CellBeSure(11, 3, 0),
-		m.CellBeSure(11, 4, 0),
-	}
-
-	for _, c := range liveCells {
-		c.SetBGColor(colors.GetColor("black"))
-	}
+	// m = states.Concrete(m)
+	m = states.Random(m)
 	return m
 
 }
