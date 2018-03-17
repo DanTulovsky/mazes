@@ -1,6 +1,7 @@
 package states
 
 import (
+	"mazes/automata/rules"
 	"mazes/colors"
 	"mazes/maze"
 	"mazes/utils"
@@ -10,7 +11,7 @@ import (
 func Random(m *maze.Maze) *maze.Maze {
 	for c := range m.Cells() {
 		if utils.Random(0, 2) == 0 {
-			c.SetBGColor(colors.GetColor("black"))
+			c.SetBGColor(colors.GetColor(rules.AliveColor))
 		}
 	}
 	return m
@@ -40,7 +41,7 @@ func Concrete(m *maze.Maze) *maze.Maze {
 	}
 
 	for _, c := range liveCells {
-		c.SetBGColor(colors.GetColor("black"))
+		c.SetBGColor(colors.GetColor(rules.AliveColor))
 	}
 	return m
 }

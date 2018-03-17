@@ -8,28 +8,29 @@ import (
 )
 
 const (
-	aliveColor = "black"
-	deadColor  = "white"
+	// AliveColor is the color for the live squares.
+	AliveColor = "blue"
+	// DeadColor is the color for the dead squares.
+	DeadColor = "white"
 )
 
 // isAlive returns true if the cell is alive
 func isAlive(c *maze.Cell) bool {
-	return c.BGColor() == colors.GetColor(aliveColor)
+	return c.BGColor() == colors.GetColor(AliveColor)
 }
 
-// isDead returns true if the cell is dead
 func isDead(c *maze.Cell) bool {
-	return c.BGColor() == colors.GetColor(deadColor)
+	return c.BGColor() == colors.GetColor(DeadColor)
 }
 
 // Revive sets the cell to be alive
 func Revive(c *maze.Cell) {
-	c.SetBGColor(colors.GetColor(aliveColor))
+	c.SetBGColor(colors.GetColor(AliveColor))
 }
 
-// Kill kills the cell and sets distance travelled to 0
+// Kill kills the square
 func Kill(c *maze.Cell) {
-	c.SetBGColor(colors.GetColor(deadColor))
+	c.SetBGColor(colors.GetColor(DeadColor))
 	c.SetDistance(0)
 }
 
@@ -67,7 +68,7 @@ func Classic(m *maze.Maze) *maze.Maze {
 	return m
 }
 
-// Play1 implements some rules.
+// Play1 is liek classic, but cells with nothing around them have a small chance of coming to life.
 func Play1(m *maze.Maze) *maze.Maze {
 
 	for c := range m.Cells() {
