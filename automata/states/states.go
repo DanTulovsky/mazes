@@ -28,7 +28,7 @@ func Concrete(m *maze.Maze) *maze.Maze {
 		m.CellBeSure(5, 4, 0),
 		m.CellBeSure(5, 5, 0),
 		m.CellBeSure(5, 6, 0),
-		// two diagonal blocks
+		// // two diagonal blocks
 		m.CellBeSure(8, 1, 0),
 		m.CellBeSure(8, 2, 0),
 		m.CellBeSure(9, 1, 0),

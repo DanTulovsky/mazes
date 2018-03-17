@@ -1020,13 +1020,18 @@ func (c *Cell) RandomNeighbor() *Cell {
 	c.RLock()
 	defer c.RUnlock()
 
-	var n []*Cell
+	n := c.Neighbors()
 
-	for _, cell := range []*Cell{c.North(), c.South(), c.East(), c.West()} {
-		if cell != nil {
-			n = append(n, cell)
-		}
-	}
+	return n[utils.Random(0, len(n))]
+}
+
+// RandomAllNeighbor returns a random neighbor of this cell (including diagonals)
+func (c *Cell) RandomAllNeighbor() *Cell {
+	c.RLock()
+	defer c.RUnlock()
+
+	n := c.AllNeighbors()
+
 	return n[utils.Random(0, len(n))]
 }
 

@@ -54,18 +54,11 @@ const (
 
 var (
 	// stats
-	showStats        = flag.Bool("maze_stats", false, "show maze stats")
-	enableMonitoring = flag.Bool("enable_monitoring", false, "enable monitoring")
+	showStats = flag.Bool("maze_stats", false, "show maze stats")
 
 	// maze
-	maskImage          = flag.String("mask_image", "", "file name of mask image")
-	allowWeaving       = flag.Bool("weaving", false, "allow weaving")
-	weavingProbability = flag.Float64("weaving_probability", 1, "controls the amount of weaving that happens, with 1 being the max")
-	braidProbability   = flag.Float64("braid_probability", 0, "braid the maze with this probabily, 0 results in a perfect maze, 1 results in no deadends at all")
-	randomFromTo       = flag.Bool("random_path", false, "show a random path through the maze")
-	showGUI            = flag.Bool("gui", true, "show gui maze")
-	showLocalGUI       = flag.Bool("local_gui", false, "show client's view of the maze")
-	title              = flag.String("title", "", "maze title")
+	maskImage = flag.String("mask_image", "", "file name of mask image")
+	title     = flag.String("title", "", "maze title")
 
 	// dimensions
 	rows    = flag.Int64("r", 15, "number of rows in the maze")
@@ -82,22 +75,14 @@ var (
 	wallSpace = flag.Int64("wall_space", 0, "how much space between two side by side walls (min of 2)")
 
 	// display
-	avatarImage            = flag.String("avatar_image", "", "file name of avatar image, the avatar should be facing to the left in the image")
-	genDrawDelay           = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
-	markVisitedCells       = flag.Bool("mark_visited", false, "mark visited cells (by solver) with a properly sized square")
-	numberMarkVisitedCells = flag.Bool("mark_visited_number", false, "mark visited cells (by solver) with a number")
-	showFromToColors       = flag.Bool("show_from_to_colors", false, "show from/to colors")
-	showDistanceColors     = flag.Bool("show_distance_colors", false, "show distance colors")
-	showDistanceValues     = flag.Bool("show_distance_values", false, "show distance values")
-	showWeightValues       = flag.Bool("show_weight_values", false, "show weight values")
-	drawPathLength         = flag.Int64("draw_path_length", -1, "draw client path length, -1 = all, 0 = none")
-	solveDrawDelay         = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
-	frameRate              = flag.Uint("frame_rate", 120, "frame rate for animation")
-	delayMs                = flag.Uint("delay_ms", 500, "delay in milliseconds between updates")
+	genDrawDelay     = flag.String("gen_draw_delay", "0", "solver delay per step, used for animation")
+	showWeightValues = flag.Bool("show_weight_values", false, "show weight values")
+	solveDrawDelay   = flag.String("solve_draw_delay", "0", "solver delay per step, used for animation")
+	frameRate        = flag.Uint("frame_rate", 120, "frame rate for animation")
+	delayMs          = flag.Uint("delay_ms", 100, "delay in milliseconds between updates (how fast each turn is)")
 
 	// algo
 	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
-	solveAlgo     = flag.String("solve_algo", "recursive-backtracker", "algorithm to solve the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", true, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
@@ -109,15 +94,6 @@ var (
 
 	wd sync.WaitGroup
 )
-
-// Send returns true if it was able to send t on channel c.
-// It returns false if c is closed.
-// This isn't great, but for simplicity here.
-//func Send(c chan commChannel, t string) (ok bool) {
-//	defer func() { recover() }()
-//	c <- t
-//	return true
-//}
 
 // ResetFontCache is required to be able to call gfx.* functions on multiple windows.
 func ResetFontCache() {
@@ -132,7 +108,6 @@ func showMazeStats(m *maze.Maze) {
 }
 
 func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Window, err error) {
-
 	if config.GetCreateAlgo() == "fromfile" {
 		if c, r, err := fromfile.MazeSizeFromFile(config); err == nil {
 			config.Columns, config.Rows = int64(c), int64(r)
@@ -149,25 +124,6 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Setup SDL
 	//////////////////////////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// End Configure new grid
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	if config.AllowWeaving && config.WallSpace == 0 {
-		// weaving requires some wall space to look nice
-		config.WallSpace = 4
-		log.Printf("weaving enabled, setting wall_space to non-zero value (%d)", config.WallSpace)
-
-	}
-
-	if config.ShowDistanceColors && config.BgColor == "white" {
-		config.BgColor = "black"
-		if config.WallColor == "black" {
-			config.WallColor = "white"
-		}
-		log.Printf("Setting bgcolor to %v and adjusting wall color to %v since distance colors don't work with white right now.", config.BgColor, config.WallColor)
-
-	}
 
 	if config.BgColor == "black" {
 		if config.WallColor == "black" {
@@ -223,7 +179,6 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 	var wd sync.WaitGroup
 
 	wd.Add(1)
-	// TODO(dan): redo error return as a channel to catch problems here
 	generate := func() error {
 		defer wd.Done()
 		log.Printf("running generator %v", config.CreateAlgo)
@@ -291,70 +246,43 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 }
 
 // runMaze runs the maze
-func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData) {
+func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 	defer func() {
 		sdl.Do(func() {
 			r.Destroy()
 			w.Destroy()
 		})
 	}()
-	var wd sync.WaitGroup
 
 	///////////////////////////////////////////////////////////////////////////
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
-	// this is the main maze thread that draws the maze and interacts with it via comm
-	running := abool.New()
-	running.Set()
+	// this is the main maze thread that draws the maze
 
 	// when this is set to true, a redraw of the background texture is triggered
 	updateBG := abool.New()
 
-	if m.Config().GetGui() {
-		// create background texture, it is saved and re-rendered as a picture
-		mTexture, err := m.MakeBGTexture()
-		if err != nil {
-			log.Fatalf("failed to create background: %v", err)
-		}
-		m.SetBGTexture(mTexture)
+	// create background texture, it is saved and re-rendered as a picture
+	mTexture, err := m.MakeBGTexture()
+	if err != nil {
+		log.Fatalf("failed to create background: %v", err)
 	}
+	m.SetBGTexture(mTexture)
 
 	// process background events in the maze
+	// this is where the work happens
 	ticker := time.NewTicker(time.Millisecond * time.Duration(*delayMs))
 	go func() {
 		for range ticker.C {
 			processMazeEvents(m, r, updateBG)
-			if !running.IsSet() {
-				return
-			}
 		}
 	}()
 
-	// main loop processing and updating the maze
-	for running.IsSet() {
-		start := time.Now()
-		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
-
-		lsdl.CheckQuit(running)
+	// main loop re-drawing the maze
+	for {
 		updateMazeBackground(m, updateBG)
 		displaymaze(m, r)
-
-		t.UpdateSince(start)
 	}
-
-	wd.Wait()
-}
-
-// processMazeEvents takes care of periodic events happening in the maze
-// we defer setting the colors so that they all get processed at once
-func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
-
-	// Use classic rules; http://web.stanford.edu/~cdebs/GameOfLife/
-	rules.Classic(m)
-
-	// redraw the background
-	updateBG.Set()
-
 }
 
 func updateMazeBackground(m *maze.Maze, updateBG *abool.AtomicBool) {
@@ -390,28 +318,73 @@ func displaymaze(m *maze.Maze, r *sdl.Renderer) {
 	}
 }
 
+// setInitialStates sets the initial state of the squares
+func setInitialStates(m *maze.Maze) *maze.Maze {
+	// m = states.Concrete(m)
+	m = states.Random(m)
+	return m
+}
+
+// processMazeEvents takes care of periodic events happening in the maze
+// we defer setting the colors so that they all get processed at once
+func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
+
+	// Use classic rules; http://web.stanford.edu/~cdebs/GameOfLife/
+	// rules.Classic(m)
+
+	// Use Play1 rules; random chance cell with 0 neighbors to come alive
+	// rules.Play1(m)
+
+	// Use Play2 rules; experimental
+	rules.Play2(m)
+
+	// redraw the background
+	updateBG.Set()
+
+}
+
+// CreateMaze creates and displays the maze specified by the config
+func CreateMaze(config *pb.MazeConfig) error {
+	log.Printf("creating maze with config: %#v", config)
+	if config == nil {
+		return fmt.Errorf("maze config cannot be nil")
+	}
+
+	t := metrics.GetOrRegisterTimer("maze.rpc.create-maze.latency", nil)
+	defer t.UpdateSince(time.Now())
+
+	config.Id = uuid.NewV4().String()
+
+	m, r, w, err := createMaze(config)
+	if err != nil {
+		return err
+	}
+
+	m = setInitialStates(m)
+
+	log.Print("running maze...")
+	go runMaze(m, r, w)
+
+	return nil
+}
+
 func runServer() {
 	config := &pb.MazeConfig{
-		Rows:               *rows,
-		Columns:            *columns,
-		AllowWeaving:       *allowWeaving,
-		WeavingProbability: *weavingProbability,
-		CellWidth:          *cellWidth,
-		WallWidth:          *wallWidth,
-		WallSpace:          *wallSpace,
-		WallColor:          *wallColor,
-		ShowDistanceColors: *showDistanceColors,
-		ShowDistanceValues: *showDistanceValues,
-		ShowWeightValues:   *showWeightValues,
-		SkipGridCheck:      *skipGridCheck,
-		GenDrawDelay:       *genDrawDelay,
-		BgColor:            *bgColor,
-		BorderColor:        *borderColor,
-		CreateAlgo:         *createAlgo,
-		BraidProbability:   *braidProbability,
-		Gui:                *showGUI,
-		FromFile:           *mazeID,
-		Title:              *title,
+		Rows:             *rows,
+		Columns:          *columns,
+		CellWidth:        *cellWidth,
+		WallWidth:        *wallWidth,
+		WallSpace:        *wallSpace,
+		WallColor:        *wallColor,
+		ShowWeightValues: *showWeightValues,
+		SkipGridCheck:    *skipGridCheck,
+		GenDrawDelay:     *genDrawDelay,
+		BgColor:          *bgColor,
+		BorderColor:      *borderColor,
+		CreateAlgo:       *createAlgo,
+		Gui:              true,
+		FromFile:         *mazeID,
+		Title:            *title,
 	}
 	CreateMaze(config)
 
@@ -448,79 +421,4 @@ func main() {
 	// must be like this to keep drawing functions in main thread
 	sdl.Main(runServer)
 
-}
-
-type commChannel chan commandData
-
-type commandAction int
-
-// request parameters sent in
-type commandRequest struct {
-	request interface{}
-}
-
-type commandReply struct {
-	answer interface{}
-	error  error
-}
-
-type commandData struct {
-	Action       commandAction
-	ClientConfig *pb.ClientConfig
-	ClientID     string
-	Request      commandRequest
-	Reply        chan commandReply // reply from the maze is sent over this channel
-}
-
-type locationInfo struct {
-	current *pb.MazeLocation
-	From    *pb.MazeLocation
-	To      *pb.MazeLocation
-}
-
-type moveReply struct {
-	current             *pb.MazeLocation
-	availableDirections []*pb.Direction
-	solved              bool
-	reward              float64
-}
-
-// server is used to implement MazerServer.
-type server struct{}
-
-// setInitialStates sets the initial state of the squares
-func setInitialStates(m *maze.Maze) *maze.Maze {
-	// m = states.Concrete(m)
-	m = states.Random(m)
-	return m
-
-}
-
-// CreateMaze creates and displays the maze specified by the config
-func CreateMaze(config *pb.MazeConfig) error {
-	log.Printf("creating maze with config: %#v", config)
-	if config == nil {
-		return fmt.Errorf("maze config cannot be nil")
-	}
-
-	t := metrics.GetOrRegisterTimer("maze.rpc.create-maze.latency", nil)
-	defer t.UpdateSince(time.Now())
-
-	var mazeID string
-	mazeID = uuid.NewV4().String()
-	config.Id = mazeID
-
-	comm := make(chan commandData)
-
-	m, r, w, err := createMaze(config)
-	if err != nil {
-		return err
-	}
-
-	m = setInitialStates(m)
-
-	log.Print("running maze...")
-	go runMaze(m, r, w, comm)
-
-	return nil
 }
