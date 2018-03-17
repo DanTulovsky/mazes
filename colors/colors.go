@@ -2,6 +2,7 @@ package colors
 
 import (
 	"log"
+	"mazes/utils"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -56,7 +57,7 @@ func Darker(clr string, f float64) Color {
 	}
 }
 
-// Ligter returns the lighter version of this color
+// Lighter returns the lighter version of this color.
 // A tint is produced by "ligthening" a hue or "adding white"
 func Lighter(clr string, f float64) Color {
 	c := GetColor(clr)
@@ -94,6 +95,20 @@ func GetColor(c string) Color {
 		return ColorMap[DEFAULTCOLOR]
 	}
 	return color
+}
+
+// GetRandomColor returns a random *Color
+func GetRandomColor() Color {
+	r := utils.Random(0, len(ColorMap))
+	counter := 0
+
+	for _, c := range ColorMap {
+		if counter == r {
+			return c
+		}
+		counter++
+	}
+	return ColorMap["white"]
 }
 
 // SetDrawColor Sets the drawing color on the renderer

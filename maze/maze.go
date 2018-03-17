@@ -1008,9 +1008,9 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 	t := metrics.GetOrRegisterTimer("maze.draw.gen-current-location.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	current_location := m.GenCurrentLocation()
+	currentLocation := m.GenCurrentLocation()
 
-	if current_location != nil {
+	if currentLocation != nil {
 		for cell := range m.Cells() {
 			if cell != nil {
 				// reset all colors to default
@@ -1018,7 +1018,7 @@ func (m *Maze) drawGenCurrentLocation(r *sdl.Renderer) *sdl.Renderer {
 			}
 		}
 
-		current_location.SetBGColor(colors.GetColor("yellow"))
+		currentLocation.SetBGColor(colors.GetColor("yellow"))
 	}
 	return r
 }
@@ -1037,6 +1037,11 @@ func (m *Maze) Cell(column, row, z int64) (*Cell, error) {
 		return nil, fmt.Errorf("(%v, %v) is outside the grid (%v, %v)", column, row, m.columns, m.rows)
 	}
 	return m.cells[column][row], nil
+}
+
+// CellBeSure returns the cell at r,c. No error handling!
+func (m *Maze) CellBeSure(column, row, z int64) *Cell {
+	return m.cells[column][row]
 }
 
 // CellFromLocation returns the cell at r,c
