@@ -363,9 +363,9 @@ func displaymaze(m *maze.Maze, r *sdl.Renderer) {
 
 // setInitialStates sets the initial state of the squares
 func setInitialStates(m *maze.Maze) *maze.Maze {
-	m = states.Empty(m)
+	// m = states.Empty(m)
 	// m = states.Concrete(m)
-	// m = states.Random(m)
+	m = states.Random(m)
 	return m
 }
 
