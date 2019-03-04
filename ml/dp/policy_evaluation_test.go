@@ -1,13 +1,13 @@
 package dp
 
 import (
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 	"testing"
 
 	"github.com/tevino/abool"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 )
 
 var policytests = []struct {

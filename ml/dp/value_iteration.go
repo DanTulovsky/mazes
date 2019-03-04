@@ -3,8 +3,8 @@ package dp
 import (
 	"log"
 	"math"
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 
 	"github.com/gonum/matrix/mat64"
 )

@@ -1,10 +1,10 @@
 package states
 
 import (
-	"mazes/automata/rules"
-	"mazes/colors"
-	"mazes/maze"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/automata/rules"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 // Empty doesn't set any initial state

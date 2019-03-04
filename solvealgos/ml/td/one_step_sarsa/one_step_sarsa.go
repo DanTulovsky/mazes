@@ -5,14 +5,14 @@ import (
 	"log"
 	"time"
 
-	"mazes/maze"
-	"mazes/ml"
-	"mazes/solvealgos"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/solvealgos"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
 	"math"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 )
 
 type MLTDOneStepSarsa struct {

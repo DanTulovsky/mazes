@@ -4,10 +4,10 @@ import (
 	"log"
 	"time"
 
-	"mazes/maze"
-	"mazes/solvealgos"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/solvealgos"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 
 	"github.com/nsf/termbox-go"
 )

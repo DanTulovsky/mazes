@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"mazes/maze"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 var applytests = []struct {

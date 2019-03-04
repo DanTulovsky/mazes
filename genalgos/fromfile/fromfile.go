@@ -4,8 +4,8 @@ package fromfile
 import (
 	"time"
 
-	"mazes/genalgos"
-	"mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/genalgos"
+	"gogs.wetsnow.com/dant/mazes/maze"
 
 	"flag"
 
@@ -16,7 +16,7 @@ import (
 	"github.com/tevino/abool"
 
 	"bufio"
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 	"os"
 )
 

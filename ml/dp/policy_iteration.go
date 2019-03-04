@@ -3,8 +3,8 @@ package dp
 import (
 	"log"
 
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 )
 
 // PolicyImprovement Algorithm. Iteratively evaluates and improves a policy

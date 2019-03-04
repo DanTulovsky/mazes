@@ -1,8 +1,8 @@
 package sidewinder
 
 import (
-	"mazes/maze"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 	"testing"
 )
 

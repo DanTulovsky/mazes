@@ -4,8 +4,8 @@ package full
 import (
 	"time"
 
-	"mazes/genalgos"
-	"mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/genalgos"
+	"gogs.wetsnow.com/dant/mazes/maze"
 
 	"fmt"
 

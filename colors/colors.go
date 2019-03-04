@@ -2,7 +2,8 @@ package colors
 
 import (
 	"log"
-	"mazes/utils"
+
+	"gogs.wetsnow.com/dant/mazes/utils"
 
 	"github.com/veandco/go-sdl2/sdl"
 )

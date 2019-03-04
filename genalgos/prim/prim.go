@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/tevino/abool"
-	"mazes/genalgos"
-	"mazes/maze"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/genalgos"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 type Prim struct {

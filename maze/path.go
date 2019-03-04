@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"mazes/colors"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
-	"github.com/rcrowley/go-metrics"
-	"github.com/sasha-s/go-deadlock"
+	metrics "github.com/rcrowley/go-metrics"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
 

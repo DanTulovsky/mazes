@@ -1,8 +1,9 @@
 package maze
 
 import (
-	pb "mazes/proto"
 	"testing"
+
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 )
 
 var config = &pb.MazeConfig{

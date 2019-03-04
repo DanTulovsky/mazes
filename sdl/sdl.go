@@ -5,22 +5,23 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"mazes/automata/rules"
-	"mazes/colors"
-	"mazes/maze"
-	"mazes/utils"
 	"os"
+
+	"gogs.wetsnow.com/dant/mazes/automata/rules"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
 	"github.com/veandco/go-sdl2/sdl"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 
 	"github.com/tevino/abool"
 )
 
 // SetupSDL initializes SDL and returns the window and renderer object
 // xOffset and yOffset are offset to position window in full windows
-func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*sdl.Window, *sdl.Renderer) {
+func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int) (*sdl.Window, *sdl.Renderer) {
 	w := new(sdl.Window)
 	r := new(sdl.Renderer)
 
@@ -39,8 +40,8 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 	})
 
 	// window
-	winWidth := int32((config.Columns)*config.CellWidth + config.WallWidth*2)
-	winHeight := int32((config.Rows)*config.CellWidth + config.WallWidth*2)
+	winWidth := int(config.Columns*config.CellWidth + config.WallWidth*2)
+	winHeight := int(config.Rows*config.CellWidth + config.WallWidth*2)
 
 	if xOffset != 0 {
 		xOffset = xOffset * winWidth

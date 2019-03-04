@@ -7,9 +7,9 @@ import (
 	"log"
 	"time"
 
-	"mazes/maze"
-	"mazes/tree"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/tree"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
 	"github.com/tevino/abool"
 )
