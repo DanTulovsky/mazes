@@ -454,6 +454,7 @@ func runServer() {
 	}
 
 	log.Print("exiting...")
+	termbox.Close()
 }
 
 func showCommands() {
