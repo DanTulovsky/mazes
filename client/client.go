@@ -29,12 +29,12 @@ import (
 
 	"gogs.wetsnow.com/dant/mazes/solvealgos"
 
-	"github.com/cyberdelia/go-metrics-graphite"
-	"github.com/nsf/termbox-go"
+	graphite "github.com/cyberdelia/go-metrics-graphite"
+	termbox "github.com/nsf/termbox-go"
 	"github.com/pkg/profile"
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
-	"github.com/sasha-s/go-deadlock"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
 )
