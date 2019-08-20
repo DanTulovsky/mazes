@@ -795,7 +795,8 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	defer t.UpdateSince(time.Now())
 
 	var mazeID string
-	mazeID = uuid.NewV4().String()
+	mazeIDraw, _ := uuid.NewV4()
+	mazeID = mazeIDraw.String()
 	in.GetConfig().Id = mazeID
 
 	comm := make(chan commandData)
@@ -817,11 +818,12 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	t := metrics.GetOrRegisterTimer("maze.rpc.register-client.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	clientID := uuid.NewV4().String()
+	clientIDraw, _ := uuid.NewV4()
+	clientID := clientIDraw.String()
 
 	m, found := mazeMap.Find(in.GetMazeId())
 	if !found {
-		return &pb.RegisterClientReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]: %v", in.GetMazeId())}, nil
+		return &pb.RegisterClientReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]", in.GetMazeId())}, nil
 	}
 
 	comm := m.(chan commandData)

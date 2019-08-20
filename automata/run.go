@@ -374,10 +374,10 @@ func setInitialStates(m *maze.Maze) *maze.Maze {
 func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
 
 	// Use classic rules; http://web.stanford.edu/~cdebs/GameOfLife/
-	rules.Classic(m)
+	// rules.Classic(m)
 
 	// Use Play1 rules; random chance cell with 0 neighbors to come alive
-	// rules.Play1(m)
+	rules.Play1(m)
 
 	// Use Play2 rules; experimental
 	// rules.Play2(m)
