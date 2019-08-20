@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"mazes/maze"
-	pb "mazes/proto"
-	"mazes/solvealgos"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/solvealgos"
 )
 
 type Empty struct {

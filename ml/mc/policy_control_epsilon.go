@@ -4,11 +4,11 @@ import (
 	"log"
 	"math"
 
-	"mazes/maze"
-	"mazes/ml"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 
 	"github.com/gonum/matrix/mat64"
 )

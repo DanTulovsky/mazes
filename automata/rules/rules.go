@@ -2,9 +2,10 @@ package rules
 
 import (
 	"log"
-	"mazes/colors"
-	"mazes/maze"
-	"mazes/utils"
+
+	"gogs.wetsnow.com/dant/mazes/colors"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 const (

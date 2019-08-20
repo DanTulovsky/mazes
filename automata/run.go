@@ -10,21 +10,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nsf/termbox-go"
+	termbox "github.com/nsf/termbox-go"
 
-	"mazes/algos"
-	"mazes/automata/rules"
-	"mazes/automata/states"
-	"mazes/colors"
-	"mazes/maze"
-	pb "mazes/proto"
-	lsdl "mazes/sdl"
+	"gogs.wetsnow.com/dant/mazes/algos"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	lsdl "gogs.wetsnow.com/dant/mazes/sdl"
 
-	"mazes/genalgos/fromfile"
+	"gogs.wetsnow.com/dant/mazes/automata/rules"
+	"gogs.wetsnow.com/dant/mazes/automata/states"
+
+	"gogs.wetsnow.com/dant/mazes/genalgos/fromfile"
 
 	"github.com/pkg/profile"
-	"github.com/rcrowley/go-metrics"
-	"github.com/sasha-s/go-deadlock"
+	metrics "github.com/rcrowley/go-metrics"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
@@ -80,7 +81,7 @@ var (
 	delayMs          = flag.Uint("delay_ms", 100, "delay in milliseconds between updates (how fast each turn is)")
 
 	// algo
-	createAlgo    = flag.String("create_algo", "recursive-backtracker", "algorithm used to create the maze")
+	createAlgo    = flag.String("create_algo", "empty", "algorithm used to create the maze")
 	skipGridCheck = flag.Bool("skip_grid_check", true, "set to true to skip grid check (disable spanning tree check)")
 
 	// solver
@@ -453,6 +454,7 @@ func runServer() {
 	}
 
 	log.Print("exiting...")
+	termbox.Close()
 }
 
 func showCommands() {

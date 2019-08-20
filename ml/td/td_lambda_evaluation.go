@@ -4,11 +4,11 @@ import (
 	"log"
 	"math"
 
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 
-	pb "mazes/proto"
-	"mazes/utils"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 func printTDLambdaEvalProgress(e, numEpisodes int64) {

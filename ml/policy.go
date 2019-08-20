@@ -3,15 +3,15 @@ package ml
 import (
 	"fmt"
 
-	"mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/maze"
 
 	"github.com/gonum/matrix"
 	"github.com/gonum/matrix/mat64"
 
 	"math"
 
-	pb "mazes/proto"
-	"mazes/utils"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 type Policy struct {

@@ -5,19 +5,19 @@ import (
 	"flag"
 	"log"
 
-	"mazes/algos"
-	"mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/algos"
+	"gogs.wetsnow.com/dant/mazes/maze"
 
 	"os"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 
 	"fmt"
 	"io/ioutil"
 	"path"
 	"reflect"
 
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
 	"sync"
 

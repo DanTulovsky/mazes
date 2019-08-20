@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	"fmt"
-	pb "mazes/proto"
-	"mazes/utils"
+
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 var mazecreatetests = []struct {

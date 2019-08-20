@@ -4,7 +4,7 @@ import (
 	"log"
 	"testing"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 
 	"github.com/gonum/matrix/mat64"
 )

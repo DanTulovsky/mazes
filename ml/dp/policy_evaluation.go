@@ -2,8 +2,8 @@ package dp
 
 import (
 	"math"
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 )
 
 // Eval evaluates a given policy and returns a vector representing its value

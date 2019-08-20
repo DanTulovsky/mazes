@@ -3,28 +3,28 @@ package ml
 import (
 	"math"
 
-	"mazes/maze"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
 	"fmt"
 
 	"github.com/gonum/matrix/mat64"
 
-	"mazes/genalgos"
-	"mazes/genalgos/aldous_broder"
-	"mazes/genalgos/bintree"
-	"mazes/genalgos/ellers"
-	"mazes/genalgos/empty"
-	"mazes/genalgos/fromfile"
-	"mazes/genalgos/full"
-	"mazes/genalgos/hunt_and_kill"
-	"mazes/genalgos/kruskal"
-	"mazes/genalgos/prim"
-	"mazes/genalgos/recursive_backtracker"
-	"mazes/genalgos/recursive_division"
-	"mazes/genalgos/sidewinder"
-	"mazes/genalgos/wilsons"
-	pb "mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/genalgos"
+	"gogs.wetsnow.com/dant/mazes/genalgos/aldous_broder"
+	"gogs.wetsnow.com/dant/mazes/genalgos/bintree"
+	"gogs.wetsnow.com/dant/mazes/genalgos/ellers"
+	"gogs.wetsnow.com/dant/mazes/genalgos/empty"
+	"gogs.wetsnow.com/dant/mazes/genalgos/fromfile"
+	"gogs.wetsnow.com/dant/mazes/genalgos/full"
+	"gogs.wetsnow.com/dant/mazes/genalgos/hunt_and_kill"
+	"gogs.wetsnow.com/dant/mazes/genalgos/kruskal"
+	"gogs.wetsnow.com/dant/mazes/genalgos/prim"
+	"gogs.wetsnow.com/dant/mazes/genalgos/recursive_backtracker"
+	"gogs.wetsnow.com/dant/mazes/genalgos/recursive_division"
+	"gogs.wetsnow.com/dant/mazes/genalgos/sidewinder"
+	"gogs.wetsnow.com/dant/mazes/genalgos/wilsons"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 )
 
 const (

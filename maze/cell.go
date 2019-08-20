@@ -6,11 +6,11 @@ import (
 	"log"
 	"strconv"
 
-	"mazes/colors"
-	pb "mazes/proto"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
-	"github.com/sasha-s/go-deadlock"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -351,7 +351,7 @@ func (c *Cell) Location() *pb.MazeLocation {
 	//defer c.RUnlock()
 	// no lock needed, never changes after cell creation
 
-	return &pb.MazeLocation{c.x, c.y, c.z}
+	return &pb.MazeLocation{X: c.x, Y: c.y, Z: c.z}
 }
 
 // Visited returns true if the cell has been visited
@@ -679,7 +679,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -689,7 +689,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -757,7 +757,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -845,16 +845,16 @@ func (c *Cell) directionTo(cell *Cell, client string) *pb.Direction {
 
 	switch {
 	case c.North() == cell:
-		return &pb.Direction{"north", cell.Visited(client)}
+		return &pb.Direction{Name: "north", Visited: cell.Visited(client)}
 	case c.South() == cell:
-		return &pb.Direction{"south", cell.Visited(client)}
+		return &pb.Direction{Name: "south", Visited: cell.Visited(client)}
 	case c.East() == cell:
-		return &pb.Direction{"east", cell.Visited(client)}
+		return &pb.Direction{Name: "east", Visited: cell.Visited(client)}
 	case c.West() == cell:
-		return &pb.Direction{"west", cell.Visited(client)}
+		return &pb.Direction{Name: "west", Visited: cell.Visited(client)}
 	}
 
-	return &pb.Direction{"", false}
+	return &pb.Direction{Name: "", Visited: false}
 }
 
 // DirectionLinks returns a list of directions that have linked (passage to) cells

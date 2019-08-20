@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"mazes/maze"
-	"mazes/solvealgos"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/solvealgos"
 )
 
 type Dijkstra struct {

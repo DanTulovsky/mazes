@@ -3,12 +3,12 @@ package td
 import (
 	"testing"
 
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 
 	"github.com/tevino/abool"
 
-	pb "mazes/proto"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
 )
 
 var sarsalambdatests = []struct {

@@ -3,14 +3,14 @@ package td
 import (
 	"log"
 
-	"mazes/maze"
-	"mazes/ml"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/ml"
 
 	"fmt"
 	"math"
 
-	pb "mazes/proto"
-	"mazes/utils"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/utils"
 )
 
 func printQProgress(e, numEpisodes int64, epsilon float64) {

@@ -1,6 +1,6 @@
 package prim
 
-import "mazes/maze"
+import "gogs.wetsnow.com/dant/mazes/maze"
 
 // CellPriorityQueue implements a priority queue for cells by cell weight, there is no update method
 type CellPriorityQueue []*maze.Cell

@@ -14,18 +14,18 @@ import (
 	"strings"
 	"time"
 
-	"mazes/colors"
-	pb "mazes/proto"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"gogs.wetsnow.com/dant/mazes/utils"
 
-	"mazes/tree"
+	"gogs.wetsnow.com/dant/mazes/tree"
 
 	"io/ioutil"
 
 	"path"
 
-	"github.com/rcrowley/go-metrics"
-	"github.com/sasha-s/go-deadlock"
+	metrics "github.com/rcrowley/go-metrics"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -135,7 +135,7 @@ func (m *Maze) SetBGTexture(t *sdl.Texture) {
 func setupMazeMask(f string, c *pb.MazeConfig, mask []*pb.MazeLocation) ([]*pb.MazeLocation, error) {
 
 	addToMask := func(mask []*pb.MazeLocation, x, y int64) ([]*pb.MazeLocation, error) {
-		l := &pb.MazeLocation{x, y, 0}
+		l := &pb.MazeLocation{X: x, Y: y, Z: 0}
 
 		if x >= c.Columns || y >= c.Rows || x < 0 || y < 0 {
 			return nil, fmt.Errorf("invalid cell passed to mask: %v (grid size: %v %v)", l, c.Columns, c.Rows)
@@ -394,7 +394,7 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 	r := m.r
 	winWidth := int32(m.winWidth)
 	winHeight := int32(m.winHeight)
-	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, winWidth, winHeight)
+	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, int(winWidth), int(winHeight))
 	if err != nil {
 		return nil, err
 	}

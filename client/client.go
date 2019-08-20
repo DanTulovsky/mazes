@@ -10,31 +10,31 @@ import (
 	"sync"
 	"time"
 
-	"mazes/algos"
-	"mazes/colors"
-	"mazes/ml"
-	pb "mazes/proto"
-	lsdl "mazes/sdl"
+	"gogs.wetsnow.com/dant/mazes/algos"
+	"gogs.wetsnow.com/dant/mazes/colors"
+	"gogs.wetsnow.com/dant/mazes/ml"
+	pb "gogs.wetsnow.com/dant/mazes/proto"
+	lsdl "gogs.wetsnow.com/dant/mazes/sdl"
 
 	"os"
 
-	"mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/maze"
 
-	"mazes/ml/dp"
-	"mazes/ml/mc"
+	"gogs.wetsnow.com/dant/mazes/ml/dp"
+	"gogs.wetsnow.com/dant/mazes/ml/mc"
 
-	"mazes/genalgos/from_encoded_string"
+	"gogs.wetsnow.com/dant/mazes/genalgos/from_encoded_string"
 
-	"mazes/ml/td"
+	"gogs.wetsnow.com/dant/mazes/ml/td"
 
-	"mazes/solvealgos"
+	"gogs.wetsnow.com/dant/mazes/solvealgos"
 
-	"github.com/cyberdelia/go-metrics-graphite"
-	"github.com/nsf/termbox-go"
+	graphite "github.com/cyberdelia/go-metrics-graphite"
+	termbox "github.com/nsf/termbox-go"
 	"github.com/pkg/profile"
-	"github.com/rcrowley/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
-	"github.com/sasha-s/go-deadlock"
+	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/sdl"
 )

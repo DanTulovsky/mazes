@@ -3,10 +3,10 @@ package wall_follower
 import (
 	"fmt"
 	"log"
-	"mazes/genalgos/aldous_broder"
-	"mazes/genalgos/recursive_backtracker"
-	"mazes/maze"
-	"mazes/utils"
+	"gogs.wetsnow.com/dant/mazes/genalgos/aldous_broder"
+	"gogs.wetsnow.com/dant/mazes/genalgos/recursive_backtracker"
+	"gogs.wetsnow.com/dant/mazes/maze"
+	"gogs.wetsnow.com/dant/mazes/utils"
 	"testing"
 )
 
