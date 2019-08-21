@@ -6,12 +6,12 @@ import (
 	"log"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/ml"
-	"gogs.wetsnow.com/dant/mazes/solvealgos"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/ml"
+	"github.com/DanTulovsky/mazes/solvealgos"
+	"github.com/DanTulovsky/mazes/utils"
 
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	pb "github.com/DanTulovsky/mazes/proto"
 )
 
 type MLFollowPolicy struct {

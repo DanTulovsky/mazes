@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/colors"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/colors"
+	"github.com/DanTulovsky/mazes/utils"
 
 	metrics "github.com/rcrowley/go-metrics"
 	deadlock "github.com/sasha-s/go-deadlock"

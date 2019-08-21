@@ -1,9 +1,9 @@
 package mc
 
 import (
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/ml"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/ml"
+	pb "github.com/DanTulovsky/mazes/proto"
 )
 
 func OffPolicyControl(m *maze.Maze, clientID string, numEpisodes int64, theta float64, df float64,

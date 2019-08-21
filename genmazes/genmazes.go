@@ -5,19 +5,19 @@ import (
 	"flag"
 	"log"
 
-	"gogs.wetsnow.com/dant/mazes/algos"
-	"gogs.wetsnow.com/dant/mazes/maze"
+	"github.com/DanTulovsky/mazes/algos"
+	"github.com/DanTulovsky/mazes/maze"
 
 	"os"
 
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	pb "github.com/DanTulovsky/mazes/proto"
 
 	"fmt"
 	"io/ioutil"
 	"path"
 	"reflect"
 
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/utils"
 
 	"sync"
 

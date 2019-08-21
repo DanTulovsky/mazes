@@ -3,7 +3,7 @@ package kruskal
 import (
 	"container/heap"
 	"fmt"
-	"gogs.wetsnow.com/dant/mazes/maze"
+	"github.com/DanTulovsky/mazes/maze"
 )
 
 type neighborPair struct {

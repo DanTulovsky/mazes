@@ -3,28 +3,28 @@ package ml
 import (
 	"math"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/utils"
 
 	"fmt"
 
 	"github.com/gonum/matrix/mat64"
 
-	"gogs.wetsnow.com/dant/mazes/genalgos"
-	"gogs.wetsnow.com/dant/mazes/genalgos/aldous_broder"
-	"gogs.wetsnow.com/dant/mazes/genalgos/bintree"
-	"gogs.wetsnow.com/dant/mazes/genalgos/ellers"
-	"gogs.wetsnow.com/dant/mazes/genalgos/empty"
-	"gogs.wetsnow.com/dant/mazes/genalgos/fromfile"
-	"gogs.wetsnow.com/dant/mazes/genalgos/full"
-	"gogs.wetsnow.com/dant/mazes/genalgos/hunt_and_kill"
-	"gogs.wetsnow.com/dant/mazes/genalgos/kruskal"
-	"gogs.wetsnow.com/dant/mazes/genalgos/prim"
-	"gogs.wetsnow.com/dant/mazes/genalgos/recursive_backtracker"
-	"gogs.wetsnow.com/dant/mazes/genalgos/recursive_division"
-	"gogs.wetsnow.com/dant/mazes/genalgos/sidewinder"
-	"gogs.wetsnow.com/dant/mazes/genalgos/wilsons"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"github.com/DanTulovsky/mazes/genalgos"
+	"github.com/DanTulovsky/mazes/genalgos/aldous_broder"
+	"github.com/DanTulovsky/mazes/genalgos/bintree"
+	"github.com/DanTulovsky/mazes/genalgos/ellers"
+	"github.com/DanTulovsky/mazes/genalgos/empty"
+	"github.com/DanTulovsky/mazes/genalgos/fromfile"
+	"github.com/DanTulovsky/mazes/genalgos/full"
+	"github.com/DanTulovsky/mazes/genalgos/hunt_and_kill"
+	"github.com/DanTulovsky/mazes/genalgos/kruskal"
+	"github.com/DanTulovsky/mazes/genalgos/prim"
+	"github.com/DanTulovsky/mazes/genalgos/recursive_backtracker"
+	"github.com/DanTulovsky/mazes/genalgos/recursive_division"
+	"github.com/DanTulovsky/mazes/genalgos/sidewinder"
+	"github.com/DanTulovsky/mazes/genalgos/wilsons"
+	pb "github.com/DanTulovsky/mazes/proto"
 )
 
 const (

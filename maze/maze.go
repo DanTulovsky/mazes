@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/colors"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/colors"
+	pb "github.com/DanTulovsky/mazes/proto"
+	"github.com/DanTulovsky/mazes/utils"
 
-	"gogs.wetsnow.com/dant/mazes/tree"
+	"github.com/DanTulovsky/mazes/tree"
 
 	"io/ioutil"
 

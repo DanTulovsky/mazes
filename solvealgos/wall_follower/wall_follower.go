@@ -10,9 +10,9 @@ import (
 	"log"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	"gogs.wetsnow.com/dant/mazes/solvealgos"
+	"github.com/DanTulovsky/mazes/maze"
+	pb "github.com/DanTulovsky/mazes/proto"
+	"github.com/DanTulovsky/mazes/solvealgos"
 )
 
 type WallFollower struct {

@@ -7,14 +7,14 @@ import (
 	"math"
 	"os"
 
-	"gogs.wetsnow.com/dant/mazes/automata/rules"
-	"gogs.wetsnow.com/dant/mazes/colors"
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/automata/rules"
+	"github.com/DanTulovsky/mazes/colors"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/utils"
 
 	"github.com/veandco/go-sdl2/sdl"
 
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	pb "github.com/DanTulovsky/mazes/proto"
 
 	"github.com/tevino/abool"
 )

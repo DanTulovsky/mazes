@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/tevino/abool"
-	"gogs.wetsnow.com/dant/mazes/genalgos"
-	"gogs.wetsnow.com/dant/mazes/maze"
+	"github.com/DanTulovsky/mazes/genalgos"
+	"github.com/DanTulovsky/mazes/maze"
 )
 
 type RecursiveBacktracker struct {

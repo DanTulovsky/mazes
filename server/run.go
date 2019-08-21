@@ -13,14 +13,14 @@ import (
 	"sync"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/algos"
-	"gogs.wetsnow.com/dant/mazes/colors"
-	"gogs.wetsnow.com/dant/mazes/maze"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	lsdl "gogs.wetsnow.com/dant/mazes/sdl"
+	"github.com/DanTulovsky/mazes/algos"
+	"github.com/DanTulovsky/mazes/colors"
+	"github.com/DanTulovsky/mazes/maze"
+	pb "github.com/DanTulovsky/mazes/proto"
+	lsdl "github.com/DanTulovsky/mazes/sdl"
 	"safemap"
 
-	"gogs.wetsnow.com/dant/mazes/genalgos/fromfile"
+	"github.com/DanTulovsky/mazes/genalgos/fromfile"
 
 	"github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"

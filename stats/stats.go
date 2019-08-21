@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"gogs.wetsnow.com/dant/mazes/colors"
-	"gogs.wetsnow.com/dant/mazes/genalgos"
+	"github.com/DanTulovsky/mazes/colors"
+	"github.com/DanTulovsky/mazes/genalgos"
 	"os"
 
 	"github.com/montanaflynn/stats"
@@ -13,15 +13,15 @@ import (
 
 	"sort"
 
-	"gogs.wetsnow.com/dant/mazes/algos"
+	"github.com/DanTulovsky/mazes/algos"
 
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/solvealgos"
+	"github.com/DanTulovsky/mazes/solvealgos"
 
 	"net/http"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
+	"github.com/DanTulovsky/mazes/maze"
 	_ "net/http/pprof"
 )
 

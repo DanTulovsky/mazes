@@ -6,9 +6,9 @@ import (
 	"log"
 	"strconv"
 
-	"gogs.wetsnow.com/dant/mazes/colors"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/colors"
+	pb "github.com/DanTulovsky/mazes/proto"
+	"github.com/DanTulovsky/mazes/utils"
 
 	deadlock "github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/gfx"

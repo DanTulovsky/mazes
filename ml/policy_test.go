@@ -1,7 +1,7 @@
 package ml
 
 import (
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	pb "github.com/DanTulovsky/mazes/proto"
 	"testing"
 
 	"github.com/gonum/matrix/mat64"

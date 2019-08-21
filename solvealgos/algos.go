@@ -10,9 +10,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/ml"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/ml"
+	pb "github.com/DanTulovsky/mazes/proto"
 
 	"context"
 

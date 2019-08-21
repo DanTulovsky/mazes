@@ -10,24 +10,24 @@ import (
 	"sync"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/algos"
-	"gogs.wetsnow.com/dant/mazes/colors"
-	"gogs.wetsnow.com/dant/mazes/ml"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	lsdl "gogs.wetsnow.com/dant/mazes/sdl"
+	"github.com/DanTulovsky/mazes/algos"
+	"github.com/DanTulovsky/mazes/colors"
+	"github.com/DanTulovsky/mazes/ml"
+	pb "github.com/DanTulovsky/mazes/proto"
+	lsdl "github.com/DanTulovsky/mazes/sdl"
 
 	"os"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
+	"github.com/DanTulovsky/mazes/maze"
 
-	"gogs.wetsnow.com/dant/mazes/ml/dp"
-	"gogs.wetsnow.com/dant/mazes/ml/mc"
+	"github.com/DanTulovsky/mazes/ml/dp"
+	"github.com/DanTulovsky/mazes/ml/mc"
 
-	"gogs.wetsnow.com/dant/mazes/genalgos/from_encoded_string"
+	"github.com/DanTulovsky/mazes/genalgos/from_encoded_string"
 
-	"gogs.wetsnow.com/dant/mazes/ml/td"
+	"github.com/DanTulovsky/mazes/ml/td"
 
-	"gogs.wetsnow.com/dant/mazes/solvealgos"
+	"github.com/DanTulovsky/mazes/solvealgos"
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
 	termbox "github.com/nsf/termbox-go"

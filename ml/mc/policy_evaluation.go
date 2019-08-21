@@ -3,13 +3,13 @@ package mc
 import (
 	"math"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/ml"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/ml"
 
 	"fmt"
 
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	pb "github.com/DanTulovsky/mazes/proto"
+	"github.com/DanTulovsky/mazes/utils"
 
 	"sort"
 )

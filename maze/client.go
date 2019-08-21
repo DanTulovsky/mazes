@@ -1,6 +1,6 @@
 package maze
 
-import pb "gogs.wetsnow.com/dant/mazes/proto"
+import pb "github.com/DanTulovsky/mazes/proto"
 
 // Define a Client struct to keep track of the clients in the maze
 

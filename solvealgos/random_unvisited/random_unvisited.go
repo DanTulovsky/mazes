@@ -8,10 +8,10 @@ import (
 	"log"
 	"time"
 
-	"gogs.wetsnow.com/dant/mazes/maze"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	"gogs.wetsnow.com/dant/mazes/solvealgos"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/maze"
+	pb "github.com/DanTulovsky/mazes/proto"
+	"github.com/DanTulovsky/mazes/solvealgos"
+	"github.com/DanTulovsky/mazes/utils"
 )
 
 type RandomUnvisited struct {

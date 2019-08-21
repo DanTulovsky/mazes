@@ -3,7 +3,7 @@ package maze
 import (
 	"testing"
 
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	pb "github.com/DanTulovsky/mazes/proto"
 )
 
 var config = &pb.MazeConfig{

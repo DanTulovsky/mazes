@@ -1,8 +1,8 @@
 package mc
 
 import (
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/ml"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/ml"
 	"testing"
 
 	"github.com/tevino/abool"

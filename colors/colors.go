@@ -3,7 +3,7 @@ package colors
 import (
 	"log"
 
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/utils"
 
 	"github.com/veandco/go-sdl2/sdl"
 )

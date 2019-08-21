@@ -1,11 +1,11 @@
 package tests
 
 import (
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/ml"
-	"gogs.wetsnow.com/dant/mazes/ml/dp"
-	"gogs.wetsnow.com/dant/mazes/ml/mc"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/ml"
+	"github.com/DanTulovsky/mazes/ml/dp"
+	"github.com/DanTulovsky/mazes/ml/mc"
+	pb "github.com/DanTulovsky/mazes/proto"
 	"testing"
 
 	"github.com/tevino/abool"

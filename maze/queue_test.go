@@ -4,7 +4,7 @@ import (
 	"container/heap"
 	"testing"
 
-	pb "gogs.wetsnow.com/dant/mazes/proto"
+	pb "github.com/DanTulovsky/mazes/proto"
 )
 
 type testCell struct {

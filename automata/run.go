@@ -12,16 +12,16 @@ import (
 
 	termbox "github.com/nsf/termbox-go"
 
-	"gogs.wetsnow.com/dant/mazes/algos"
-	"gogs.wetsnow.com/dant/mazes/colors"
-	"gogs.wetsnow.com/dant/mazes/maze"
-	pb "gogs.wetsnow.com/dant/mazes/proto"
-	lsdl "gogs.wetsnow.com/dant/mazes/sdl"
+	"github.com/DanTulovsky/mazes/algos"
+	"github.com/DanTulovsky/mazes/colors"
+	"github.com/DanTulovsky/mazes/maze"
+	pb "github.com/DanTulovsky/mazes/proto"
+	lsdl "github.com/DanTulovsky/mazes/sdl"
 
-	"gogs.wetsnow.com/dant/mazes/automata/rules"
-	"gogs.wetsnow.com/dant/mazes/automata/states"
+	"github.com/DanTulovsky/mazes/automata/rules"
+	"github.com/DanTulovsky/mazes/automata/states"
 
-	"gogs.wetsnow.com/dant/mazes/genalgos/fromfile"
+	"github.com/DanTulovsky/mazes/genalgos/fromfile"
 
 	"github.com/pkg/profile"
 	metrics "github.com/rcrowley/go-metrics"

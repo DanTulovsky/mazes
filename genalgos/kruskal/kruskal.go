@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/tevino/abool"
-	"gogs.wetsnow.com/dant/mazes/genalgos"
-	"gogs.wetsnow.com/dant/mazes/maze"
-	"gogs.wetsnow.com/dant/mazes/utils"
+	"github.com/DanTulovsky/mazes/genalgos"
+	"github.com/DanTulovsky/mazes/maze"
+	"github.com/DanTulovsky/mazes/utils"
 )
 
 type state struct {

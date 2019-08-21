@@ -1,8 +1,8 @@
 package from_encoded_string
 
 import (
-	"gogs.wetsnow.com/dant/mazes/genalgos"
-	"gogs.wetsnow.com/dant/mazes/maze"
+	"github.com/DanTulovsky/mazes/genalgos"
+	"github.com/DanTulovsky/mazes/maze"
 	"time"
 
 	"github.com/tevino/abool"
