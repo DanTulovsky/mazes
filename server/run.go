@@ -13,21 +13,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DanTulovsky/safemap"
+
 	"github.com/DanTulovsky/mazes/algos"
 	"github.com/DanTulovsky/mazes/colors"
 	"github.com/DanTulovsky/mazes/maze"
 	pb "github.com/DanTulovsky/mazes/proto"
 	lsdl "github.com/DanTulovsky/mazes/sdl"
-	"safemap"
 
 	"github.com/DanTulovsky/mazes/genalgos/fromfile"
 
-	"github.com/cyberdelia/go-metrics-graphite"
+	graphite "github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
 	"github.com/sasha-s/go-deadlock"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/mix"
@@ -76,7 +77,7 @@ var (
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
 	// keep track of mazes
-	mazeMap = *safemap.NewSafeMap()
+	mazeMap = safemap.New()
 )
 
 // Send returns true if it was able to send t on channel c.
@@ -329,7 +330,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 	// process background events in the maze
 	ticker := time.NewTicker(time.Second * 1)
 	go func() {
-		for _ = range ticker.C {
+		for range ticker.C {
 			processMazeEvents(m, r, updateBG)
 			if !running.IsSet() {
 				return
@@ -498,59 +499,60 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.get-direction.latency", nil)
 
-			if client, err := m.Client(in.ClientID); err != nil {
+			client, err := m.Client(in.ClientID)
+			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client links: %v", err)}
 				return
 
-			} else {
-				in.Reply <- commandReply{answer: client.CurrentLocation().DirectionLinks(in.ClientID)}
 			}
+			in.Reply <- commandReply{answer: client.CurrentLocation().DirectionLinks(in.ClientID)}
 			t.UpdateSince(start)
 		case maze.CommandSetInitialClientLocation:
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.set-initial-client-location.latency", nil)
 
-			if client, err := m.Client(in.ClientID); err != nil {
+			client, err := m.Client(in.ClientID)
+			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to set initial client location: %v", err)}
 				return
-			} else {
-				client.SetCurrentLocation(m.FromCell(client))
-				cell := client.CurrentLocation()
-
-				// Add initial location to paths
-				s := maze.NewSegment(cell, "north", true)
-				cell.SetVisited(in.ClientID)
-				client.TravelPath.AddSegement(s)
-				in.Reply <- commandReply{error: nil}
 			}
+			client.SetCurrentLocation(m.FromCell(client))
+			cell := client.CurrentLocation()
+
+			// Add initial location to paths
+			s := maze.NewSegment(cell, "north", true)
+			cell.SetVisited(in.ClientID)
+			client.TravelPath.AddSegement(s)
+			in.Reply <- commandReply{error: nil}
 			t.UpdateSince(start)
 		case maze.CommandCurrentLocation:
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.current-location.latency", nil)
 
-			if client, err := m.Client(in.ClientID); err != nil {
+			client, err := m.Client(in.ClientID)
+			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client location: %v", err)}
 				return
-			} else {
-				cell := client.CurrentLocation()
-				in.Reply <- commandReply{answer: cell.Location()}
 			}
+			cell := client.CurrentLocation()
+			in.Reply <- commandReply{answer: cell.Location()}
+
 			t.UpdateSince(start)
 		case maze.CommandLocationInfo:
 			start := time.Now()
 			t := metrics.GetOrRegisterTimer("maze.command.location-info.latency", nil)
 
-			if client, err := m.Client(in.ClientID); err != nil {
+			client, err := m.Client(in.ClientID)
+			if err != nil {
 				in.Reply <- commandReply{error: fmt.Errorf("failed to get client location: %v", err)}
 				return
-			} else {
-				info := &locationInfo{
-					current: client.CurrentLocation().Location(),
-					From:    m.FromCell(client).Location(),
-					To:      m.ToCell(client).Location(),
-				}
-				in.Reply <- commandReply{answer: info}
 			}
+			info := &locationInfo{
+				current: client.CurrentLocation().Location(),
+				From:    m.FromCell(client).Location(),
+				To:      m.ToCell(client).Location(),
+			}
+			in.Reply <- commandReply{answer: info}
 			t.UpdateSince(start)
 		case maze.CommandMoveBack:
 			start := time.Now()

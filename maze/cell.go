@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	// VisitedGenerator ...
 	VisitedGenerator = "generator"
 )
 
@@ -185,60 +186,70 @@ func (c *Cell) Decode(e string) error {
 	return nil
 }
 
+// SetBelow ...
 func (c *Cell) SetBelow(cell *Cell) {
 	c.Lock()
 	defer c.Unlock()
 	c.below = cell
 }
 
+// SetNorth ...
 func (c *Cell) SetNorth(cell *Cell) {
 	c.Lock()
 	defer c.Unlock()
 	c.north = cell
 }
 
+// SetSouth ...
 func (c *Cell) SetSouth(cell *Cell) {
 	c.Lock()
 	defer c.Unlock()
 	c.south = cell
 }
 
+// SetEast ...
 func (c *Cell) SetEast(cell *Cell) {
 	c.Lock()
 	defer c.Unlock()
 	c.east = cell
 }
 
+// SetWest ...
 func (c *Cell) SetWest(cell *Cell) {
 	c.Lock()
 	defer c.Unlock()
 	c.west = cell
 }
 
+// Below ...
 func (c *Cell) Below() *Cell {
 	c.RLock()
 	defer c.RUnlock()
 	return c.below
 }
 
+// North ...
 func (c *Cell) North() *Cell {
 	c.RLock()
 	defer c.RUnlock()
 	return c.north
 }
 
+// South ...
 func (c *Cell) South() *Cell {
 	c.RLock()
 	defer c.RUnlock()
 	return c.south
 }
 
+// East ...
 func (c *Cell) East() *Cell {
 	c.RLock()
 	defer c.RUnlock()
 	return c.east
 }
 
+// West ...
 func (c *Cell) West() *Cell {
 	c.RLock()
 	defer c.RUnlock()
@@ -263,6 +274,7 @@ func (c *Cell) HavePath(client *client, s string) (have bool) {
 	return have
 }
 
+// SetHavePath ...
 func (c *Cell) SetHavePath(client *client, s string) {
 	c.Lock()
 	defer c.Unlock()
@@ -679,7 +691,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprintf("%v", c.Distance()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -689,7 +701,7 @@ func (c *Cell) Draw(r *sdl.Renderer) *sdl.Renderer {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprintf("%v", c.Weight()), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -757,7 +769,7 @@ func (c *Cell) DrawVisited(r *sdl.Renderer, client *client) {
 		x := c.x*c.width + c.wallWidth + 1 + wallSpace
 		y := c.y*c.width + c.wallWidth + 1 + wallSpace
 
-		if e := gfx.StringRGBA(r, int(x), int(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
+		if e := gfx.StringRGBA(r, int32(x), int32(y), fmt.Sprint(c.VisitedTimes(client.id)), 0, 0, 0, 255); e != true {
 			log.Printf("error: %v", sdl.GetError())
 		}
 		gfx.SetFont(nil, 0, 0)
@@ -1083,6 +1095,7 @@ func (c *Cell) Orphan() {
 	c.SetOrphan()
 }
 
+// SetOrphan ...
 func (c *Cell) SetOrphan() {
 	c.Lock()
 	defer c.Unlock()
@@ -1090,6 +1103,7 @@ func (c *Cell) SetOrphan() {
 	c.orphan = true
 }
 
+// IsOrphan ...
 func (c *Cell) IsOrphan() bool {
 	c.RLock()
 	defer c.RUnlock()

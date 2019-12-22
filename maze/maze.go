@@ -3,6 +3,8 @@ package maze
 import (
 	"fmt"
 	"image"
+
+	// for png
 	_ "image/png"
 	"log"
 	"math"
@@ -38,7 +40,7 @@ type Location struct {
 	X, Y, Z int
 }
 
-// Grid defines the maze grid
+// Maze defines the maze grid
 type Maze struct {
 	id               string
 	config           *pb.MazeConfig
@@ -91,26 +93,31 @@ func (m *Maze) SetLastUpdatedCell(c *Cell) {
 	m.lastUpdatedCell = c
 }
 
+// GetCellWidth ...
 func (m *Maze) GetCellWidth() int64 {
 	return m.cellWidth
 }
 
+// SetEncodedString ...
 func (m *Maze) SetEncodedString(e string) {
 	m.Lock()
 	defer m.Unlock()
 	m.encoded = e
 }
 
+// EncodedString ...
 func (m *Maze) EncodedString() string {
 	m.RLock()
 	defer m.RUnlock()
 	return m.encoded
 }
 
+// ID ...
 func (m *Maze) ID() string {
 	return m.id
 }
 
+// Config ...
 func (m *Maze) Config() *pb.MazeConfig {
 	return m.config
 }
@@ -164,7 +171,7 @@ func setupMazeMask(f string, c *pb.MazeConfig, mask []*pb.MazeLocation) ([]*pb.M
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, a := m.At(x, y).RGBA()
 			// this only works for black, fix my colors to use the go image package colors
-			if colors.Same(colors.GetColor("black"), colors.Color{uint8(r), uint8(g), uint8(b), uint8(a), ""}) {
+			if colors.Same(colors.GetColor("black"), colors.Color{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a), Name: ""}) {
 				if mask, err = addToMask(mask, int64(x), int64(y)); err != nil {
 					return nil, err
 				}
@@ -187,7 +194,7 @@ func NewMazeFromImage(c *pb.MazeConfig, f string, r *sdl.Renderer) (*Maze, error
 	return NewMaze(c, r)
 }
 
-// NewGrid returns a new grid.
+// NewMaze returns a new grid.
 func NewMaze(c *pb.MazeConfig, r *sdl.Renderer) (*Maze, error) {
 	m := &Maze{
 		id:          c.GetId(),
@@ -394,7 +401,7 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 	r := m.r
 	winWidth := int32(m.winWidth)
 	winHeight := int32(m.winHeight)
-	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, int(winWidth), int(winHeight))
+	mTexture, err := m.r.CreateTexture(sdl.PIXELFORMAT_RGB24, sdl.TEXTUREACCESS_TARGET, int32(winWidth), int32(winHeight))
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +480,7 @@ func (m *Maze) AddClient(id string, config *pb.ClientConfig) (fromCell *Cell, to
 	}
 
 	if c.config == nil {
-		return nil, nil, fmt.Errorf("client config was nil!")
+		return nil, nil, fmt.Errorf("client config was nil")
 	}
 	if c.config.ShowFromToColors {
 		m.SetFromToColors(c, fromCell, toCell)
@@ -529,7 +536,7 @@ func (m *Maze) Clients() map[string]*client {
 	return m.clients
 }
 
-// Clients returns the clients connected to this maze in a deterministic order
+// ClientsSorted returns the clients connected to this maze in a deterministic order
 func (m *Maze) ClientsSorted() []*client {
 	m.clientsLock.RLock()
 	defer m.clientsLock.RUnlock()
@@ -781,7 +788,7 @@ func (m *Maze) configureCells() {
 
 }
 
-// UpdateClientViewAndLocation sets the current cell location of the generator algorithm
+// SetGenCurrentLocatio sets the current cell location of the generator algorithm
 func (m *Maze) SetGenCurrentLocation(cell *Cell) {
 	m.Lock()
 	defer m.Unlock()
@@ -796,6 +803,7 @@ func (m *Maze) GenCurrentLocation() *Cell {
 	return m.genCurrentLocation
 }
 
+// SetCreateTime ...
 func (m *Maze) SetCreateTime(t time.Duration) {
 	m.Lock()
 	defer m.Unlock()
@@ -803,6 +811,7 @@ func (m *Maze) SetCreateTime(t time.Duration) {
 	m.createTime = t
 }
 
+// CreateTime ...
 func (m *Maze) CreateTime() time.Duration {
 	m.RLock()
 	defer m.RUnlock()

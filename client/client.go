@@ -7,26 +7,20 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/DanTulovsky/mazes/algos"
 	"github.com/DanTulovsky/mazes/colors"
-	"github.com/DanTulovsky/mazes/ml"
-	pb "github.com/DanTulovsky/mazes/proto"
-	lsdl "github.com/DanTulovsky/mazes/sdl"
-
-	"os"
-
+	"github.com/DanTulovsky/mazes/genalgos/from_encoded_string"
 	"github.com/DanTulovsky/mazes/maze"
-
+	"github.com/DanTulovsky/mazes/ml"
 	"github.com/DanTulovsky/mazes/ml/dp"
 	"github.com/DanTulovsky/mazes/ml/mc"
-
-	"github.com/DanTulovsky/mazes/genalgos/from_encoded_string"
-
 	"github.com/DanTulovsky/mazes/ml/td"
-
+	pb "github.com/DanTulovsky/mazes/proto"
+	lsdl "github.com/DanTulovsky/mazes/sdl"
 	"github.com/DanTulovsky/mazes/solvealgos"
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
