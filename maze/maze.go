@@ -419,7 +419,8 @@ func (m *Maze) MakeBGTexture() (*sdl.Texture, error) {
 	})
 	m.DrawMazeBackground(r)
 	sdl.Do(func() {
-		r.Present()
+		// TODO: This causes a crash.  Why is this even here?
+		// r.Present()
 	})
 
 	// Reset to drawing on the screen

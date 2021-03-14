@@ -311,7 +311,8 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 		if err != nil {
 			log.Fatalf("failed to create background: %v", err)
 		}
-		m.SetBGTexture(mTexture)
+		// m.SetBGTexture(mTexture)
+		log.Println(mTexture)
 	}
 
 	wd.Add(1)
@@ -797,7 +798,7 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	defer t.UpdateSince(time.Now())
 
 	var mazeID string
-	mazeIDraw, _ := uuid.NewV4()
+	mazeIDraw := uuid.NewV4()
 	mazeID = mazeIDraw.String()
 	in.GetConfig().Id = mazeID
 
@@ -820,7 +821,7 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 	t := metrics.GetOrRegisterTimer("maze.rpc.register-client.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	clientIDraw, _ := uuid.NewV4()
+	clientIDraw := uuid.NewV4()
 	clientID := clientIDraw.String()
 
 	m, found := mazeMap.Find(in.GetMazeId())

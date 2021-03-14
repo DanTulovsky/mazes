@@ -22,8 +22,8 @@ import (
 // SetupSDL initializes SDL and returns the window and renderer object
 // xOffset and yOffset are offset to position window in full windows
 func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*sdl.Window, *sdl.Renderer) {
-	w := new(sdl.Window)
-	r := new(sdl.Renderer)
+	var w *sdl.Window
+	var r *sdl.Renderer
 
 	log.Print("setting up sdl window and renderer")
 	if !config.GetGui() {
@@ -55,7 +55,8 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 	sdl.Do(func() {
 		w, err = sdl.CreateWindow(winTitle, xOffset, yOffset,
 			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE)
+			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_VULKAN|sdl.WINDOW_RESIZABLE)
+
 	})
 	if err != nil {
 		log.Printf("Failed to create window: %s\n", err)
@@ -88,6 +89,7 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 	})
 
 	log.Print("done SDL setup")
+	log.Println(r)
 	return w, r
 }
 
