@@ -311,8 +311,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 		if err != nil {
 			log.Fatalf("failed to create background: %v", err)
 		}
-		// m.SetBGTexture(mTexture)
-		log.Println(mTexture)
+		m.SetBGTexture(mTexture)
 	}
 
 	wd.Add(1)
@@ -1044,6 +1043,9 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		comm <- data
 		// get response from maze
 		mazeReply := <-data.Reply
+		if mazeReply.answer == nil {
+			return fmt.Errorf("moveReply was nil")
+		}
 		moveReply := mazeReply.answer.(*moveReply)
 
 		if err := mazeReply.error; err != nil {
