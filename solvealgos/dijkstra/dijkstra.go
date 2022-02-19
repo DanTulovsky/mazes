@@ -3,6 +3,8 @@
 package dijkstra
 
 import (
+	pb "github.com/DanTulovsky/mazes/proto"
+	"log"
 	"math"
 	"time"
 
@@ -14,22 +16,31 @@ type Dijkstra struct {
 	solvealgos.Common
 }
 
-func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.Duration, keyInput <-chan string) (*maze.Maze, error) {
+func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocation, delay time.Duration, _ []*pb.Direction, m *maze.Maze) error {
 	defer solvealgos.TimeTrack(a, time.Now())
 
 	// swap these for proper drawing colors
 	fromCell, toCell = toCell, fromCell
 
-	var travelPath = g.TravelPath()
-	var solvePath = g.SolvePath()
-	var facing string = "north"
+	var travelPath = a.TravelPath()
+	var solvePath = a.SolvePath()
+	var facing = "north"
+
+	mazeFromCell, err := m.CellFromLocation(fromCell)
+	if err != nil {
+		return err
+	}
+	mazeToCell, err := m.CellFromLocation(toCell)
+	if err != nil {
+		return err
+	}
 
 	// Get all distances from this cell
-	d := fromCell.Distances()
+	d := mazeFromCell.Distances()
 
-	currentCell := toCell
+	currentCell := mazeToCell
 
-	segment := maze.NewSegment(toCell, facing)
+	segment := maze.NewSegment(mazeToCell, facing, false)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 
@@ -37,7 +48,7 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 		// animation delay
 		time.Sleep(delay)
 
-		currentCell.SetVisited()
+		//currentCell.SetVisited()
 
 		smallest := math.MaxInt64
 		var nextCell *maze.Cell
@@ -51,28 +62,59 @@ func (a *Dijkstra) Solve(g *maze.Maze, fromCell, toCell *maze.Cell, delay time.D
 
 		facing = currentCell.GetFacingDirection(nextCell)
 
-		segment := maze.NewSegment(nextCell, facing)
+		segment := maze.NewSegment(nextCell, facing, false)
 		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 
-		g.SetClientPath(fromCell, currentCell, travelPath)
+		//m.SetClientPath(mazeFromCell, currentCell, travelPath)
 		currentCell = nextCell
 	}
 
 	// add toCell to path
 	travelPath.ReverseCells()
-	facing = currentCell.GetFacingDirection(toCell)
+	facing = currentCell.GetFacingDirection(mazeToCell)
 
-	segment = maze.NewSegment(toCell, facing)
+	segment = maze.NewSegment(mazeToCell, facing, false)
 	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 
-	g.SetClientPath(fromCell, toCell, travelPath)
+	//m.SetClientPath(mazeFromCell, mazeToCell, travelPath)
 
 	// stats
 	a.SetSolvePath(solvePath)
 	a.SetTravelPath(travelPath)
 	a.SetSolveSteps(solvePath.Length())
 
-	return g, nil
+	solved := false
+	steps := 0
+	currentServerCell := fromCell
+
+	for _, seg := range solvePath.Segments() {
+		// animation delay
+		time.Sleep(delay)
+
+		reply, err := a.Move(mazeID, clientID, seg.Cell().String())
+		if err != nil {
+			return err
+		}
+		//directions = reply.GetAvailableDirections()
+		previousServerCell := currentServerCell
+		currentServerCell = reply.GetCurrentLocation()
+
+		// set current location in local maze
+		steps++
+		if err := a.UpdateClientViewAndLocation(clientID, m, currentServerCell, previousServerCell, steps); err != nil {
+			return err
+		}
+
+		solved = reply.Solved
+		if solved {
+			break
+		}
+	}
+
+	log.Printf("maze solved!")
+	a.ShowStats()
+
+	return nil
 }

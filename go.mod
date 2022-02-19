@@ -19,7 +19,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/tevino/abool v1.2.0
-	github.com/veandco/go-sdl2 v0.4.5
+	github.com/veandco/go-sdl2 v0.4.14
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	google.golang.org/grpc v1.36.0
 )

@@ -2,6 +2,7 @@
 package algos
 
 import (
+	"github.com/DanTulovsky/mazes/solvealgos/dijkstra"
 	"log"
 
 	"github.com/DanTulovsky/mazes/genalgos"
@@ -50,7 +51,7 @@ var Algorithms map[string]genalgos.Algorithmer = map[string]genalgos.Algorithmer
 }
 
 var SolveAlgorithms map[string]func() solvealgos.Algorithmer = map[string]func() solvealgos.Algorithmer{
-	//"dijkstra":              &dijkstra.Dijkstra{},
+	"dijkstra":              NewDijkstra,
 	"manual":                NewManual,
 	"follow-policy":         NewFollowPolicy,
 	"random":                NewRandom,
@@ -72,6 +73,10 @@ func NewMLTDOneStepSarsa() solvealgos.Algorithmer {
 
 func NewFollowPolicy() solvealgos.Algorithmer {
 	return &ml_follow_policy.MLFollowPolicy{}
+}
+
+func NewDijkstra() solvealgos.Algorithmer {
+	return &dijkstra.Dijkstra{}
 }
 
 func NewEmpty() solvealgos.Algorithmer {
