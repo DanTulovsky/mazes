@@ -22,8 +22,8 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 	// swap these for proper drawing colors
 	fromCell, toCell = toCell, fromCell
 
-	var travelPath = a.TravelPath()
-	var solvePath = a.SolvePath()
+	var travelPath = maze.NewPath()
+	var solvePath = maze.NewPath()
 	var facing = "north"
 
 	mazeFromCell, err := m.CellFromLocation(fromCell)
@@ -52,7 +52,10 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 
 		smallest := math.MaxInt64
 		var nextCell *maze.Cell
+		log.Printf("currentCell: %v", currentCell)
+		log.Printf("  links: %v", currentCell.Links())
 		for _, link := range currentCell.Links() {
+			log.Printf("  link: %v", link)
 			dist, _ := d.Get(link)
 			if dist < smallest {
 				smallest = dist
@@ -81,9 +84,9 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 	//m.SetClientPath(mazeFromCell, mazeToCell, travelPath)
 
 	// stats
-	a.SetSolvePath(solvePath)
-	a.SetTravelPath(travelPath)
-	a.SetSolveSteps(solvePath.Length())
+	//a.SetSolvePath(solvePath)
+	//a.SetTravelPath(travelPath)
+	//a.SetSolveSteps(solvePath.Length())
 
 	solved := false
 	steps := 0

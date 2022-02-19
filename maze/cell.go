@@ -842,6 +842,9 @@ func (c *Cell) UnLink(cell *Cell) error {
 // Links returns a list of all cells linked (passage to) to this one
 func (c *Cell) Links() []*Cell {
 	var keys []*Cell
+	if c.links == nil {
+		return keys
+	}
 	for item := range c.links.Iter() {
 		if c.Linked(item.Key) {
 			keys = append(keys, item.Key)

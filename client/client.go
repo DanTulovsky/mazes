@@ -989,7 +989,7 @@ func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	var w *sdl.Window
 
 	// create local maze for DP algorithms or local gui
-	if *showLocalGUI || *solveAlgo == "follow-policy" || *solveAlgo == "ml-td-one-step-sarsa" || *solveAlgo == "ml-td-sarsa-lambda" {
+	if *showLocalGUI || *solveAlgo == "follow-policy" || *solveAlgo == "ml-td-one-step-sarsa" || *solveAlgo == "ml-td-sarsa-lambda" || *solveAlgo == "dijkstra" {
 		if *showLocalGUI {
 			// if server gui is off, enable this so the client gui works
 			config.Gui = true
@@ -1134,7 +1134,7 @@ func createMaze(config *pb.MazeConfig, encodedMaze string) (*maze.Maze, *sdl.Ren
 	if encodedMaze != "" {
 		config.CreateAlgo = "from-encoded-string"
 	} else {
-		// client always starts with an full view
+		// client always starts with a full view
 		config.CreateAlgo = "full"
 	}
 
