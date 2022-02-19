@@ -53,6 +53,7 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 		smallest := math.MaxInt64
 		var nextCell *maze.Cell
 		log.Printf("currentCell: %v", currentCell)
+		// TODO: cells are missing links
 		log.Printf("  links: %v", currentCell.Links())
 		for _, link := range currentCell.Links() {
 			log.Printf("  link: %v", link)
