@@ -222,7 +222,7 @@ func opCreateSolveMulti() error {
 	// register more clients
 	wd.Add(1)
 	go func() {
-		addClient(context.Background(), mazeID, &pb.ClientConfig{
+		err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "recursive-backtracker",
 			PathColor:              "#857FFF",
 			FromCell:               *fromCellStr,
@@ -245,7 +245,7 @@ func opCreateSolveMulti() error {
 	//
 	wd.Add(1)
 	go func() {
-		addClient(context.Background(), mazeID, &pb.ClientConfig{
+		err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 			SolveAlgo:              "random-unvisited",
 			PathColor:              "green",
 			FromCell:               *fromCellStr,
@@ -268,7 +268,7 @@ func opCreateSolveMulti() error {
 	//
 	//wd.Add(1)
 	//go func() {
-	//	addClient(context.Background(), mazeID, &pb.ClientConfig{
+	//	err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 	//		SolveAlgo:              "recursive-backtracker",
 	//		PathColor:              "purple",
 	//		FromCell:               *fromCellStr,
@@ -291,7 +291,7 @@ func opCreateSolveMulti() error {
 	//
 	//wd.Add(1)
 	//go func() {
-	//	addClient(context.Background(), mazeID, &pb.ClientConfig{
+	//	err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 	//		SolveAlgo:              "random",
 	//		PathColor:              "pink",
 	//		FromCell:               *fromCellStr,
@@ -314,7 +314,7 @@ func opCreateSolveMulti() error {
 	//
 	//wd.Add(1)
 	//go func() {
-	//	addClient(context.Background(), mazeID, &pb.ClientConfig{
+	//	err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 	//		SolveAlgo:              "random-unvisited",
 	//		PathColor:              "gold",
 	//		FromCell:               *fromCellStr,
@@ -337,7 +337,7 @@ func opCreateSolveMulti() error {
 	//
 	//wd.Add(1)
 	//go func() {
-	//	addClient(context.Background(), mazeID, &pb.ClientConfig{
+	//	err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 	//		SolveAlgo:              "wall-follower",
 	//		PathColor:              "teal",
 	//		FromCell:               *fromCellStr,
@@ -443,7 +443,10 @@ func opCreateSolveMlDpPolicyIteration() error {
 	clientID := "clientID"
 	log.Printf("Determining optimal policy using policy iteration..")
 	clientConfig.DrawPathLength = 0 // don't draw on the client
-	m.AddClient(clientID, clientConfig)
+	if _, _, err = m.AddClient(clientID, clientConfig); err != nil {
+		return err
+	}
+
 	// runs through the *local* maze to find optimal path
 	policy, _, err := dp.PolicyImprovement(m, clientID, *df, theta, ml.DefaultActions)
 	if err != nil {
@@ -597,7 +600,7 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 		wd.Add(1)
 
 		go func() {
-			addClient(context.Background(), mazeID, &pb.ClientConfig{
+			err := addClient(context.Background(), mazeID, &pb.ClientConfig{
 				SolveAlgo:              "recursive-backtracker",
 				PathColor:              "purple",
 				FromCell:               *fromCellStr,
@@ -612,11 +615,10 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 				DrawPathLength:         *drawPathLength,
 				NumberMarkVisitedCells: *numberMarkVisitedCells,
 			}, nil, nil)
+			if err != nil {
+				log.Fatalf("error adding client: %v", err)
+			}
 		}()
-
-		if err != nil {
-			log.Fatalf("error adding client: %v", err)
-		}
 	}
 
 	// runs through the *local* maze to find optimal path
@@ -634,7 +636,11 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 	policy.SetType("deterministic")               // follow this policy exactly
 
 	wd.Add(1)
-	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	go func() {
+		if err := addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy); err != nil {
+			log.Fatalf("addClient error: %v", err)
+		}
+	}()
 	wd.Wait()
 
 	return nil
@@ -682,7 +688,9 @@ func opCreateSolveMlMCOffPolicy() error {
 		*maxSteps = m.Config().Rows * m.Config().Columns * 10000
 	}
 	clientID := "clientID"
-	m.AddClient(clientID, clientConfig)
+	if _, _, err = m.AddClient(clientID, clientConfig); err != nil {
+		return err
+	}
 
 	// we must pass the same from/to to the server as we used locally
 	c, err := m.Client(clientID)
@@ -700,21 +708,26 @@ func opCreateSolveMlMCOffPolicy() error {
 		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeID, &pb.ClientConfig{
-			SolveAlgo:              "recursive-backtracker",
-			PathColor:              "purple",
-			FromCell:               *fromCellStr,
-			ToCell:                 *toCellStr,
-			FromCellColor:          *fromCellColor,
-			ToCellColor:            *toCellColor,
-			ShowFromToColors:       *showFromToColors,
-			VisitedCellColor:       "purple",
-			CurrentLocationColor:   "purple",
-			DisableDrawOffset:      *disableOffset,
-			MarkVisitedCells:       *markVisitedCells,
-			DrawPathLength:         *drawPathLength,
-			NumberMarkVisitedCells: *numberMarkVisitedCells,
-		}, nil, nil)
+		go func() {
+			err := addClient(context.Background(), mazeID, &pb.ClientConfig{
+				SolveAlgo:              "recursive-backtracker",
+				PathColor:              "purple",
+				FromCell:               *fromCellStr,
+				ToCell:                 *toCellStr,
+				FromCellColor:          *fromCellColor,
+				ToCellColor:            *toCellColor,
+				ShowFromToColors:       *showFromToColors,
+				VisitedCellColor:       "purple",
+				CurrentLocationColor:   "purple",
+				DisableDrawOffset:      *disableOffset,
+				MarkVisitedCells:       *markVisitedCells,
+				DrawPathLength:         *drawPathLength,
+				NumberMarkVisitedCells: *numberMarkVisitedCells,
+			}, nil, nil)
+			if err != nil {
+				log.Fatalf("error adding client: %v", err)
+			}
+		}()
 	}
 
 	// runs through the *local* maze to find optimal path
@@ -732,7 +745,12 @@ func opCreateSolveMlMCOffPolicy() error {
 	policy.SetType("deterministic")               // follow this policy exactly
 
 	wd.Add(1)
-	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	go func() {
+		err := addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 	wd.Wait()
 
 	return nil
@@ -1026,7 +1044,12 @@ func opCreateSolveMlTDQLearning() error {
 	policy.SetType("deterministic")               // follow this policy exactly
 
 	wd.Add(1)
-	go addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+	go func() {
+		err := addClient(context.Background(), r.GetMazeId(), clientConfig, m, policy)
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 	wd.Wait()
 
 	return nil

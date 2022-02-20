@@ -9,7 +9,7 @@ import (
 	pcolors "gopkg.in/go-playground/colors.v1"
 )
 
-const DEFAULTCOLOR = "black"
+const DefaultColor = "black"
 
 var (
 	ColorMap = map[string]Color{
@@ -66,9 +66,9 @@ func Lighter(clr string, f float64) Color {
 
 	// newR = currentR + (255 - currentR) * tint_factor
 	return Color{
-		R:    uint8(float64(c.R) + float64((255-c.R))*f),
-		G:    uint8(float64(c.G) + float64((255-c.R))*f),
-		B:    uint8(float64(c.B) + float64((255-c.R))*f),
+		R:    uint8(float64(c.R) + float64(255-c.R)*f),
+		G:    uint8(float64(c.G) + float64(255-c.R)*f),
+		B:    uint8(float64(c.B) + float64(255-c.R)*f),
 		A:    c.A,
 		Name: c.Name,
 	}
@@ -97,7 +97,7 @@ func GetColor(c string) Color {
 		hex, err := pcolors.ParseHEX(c)
 		if err != nil {
 			log.Printf("cannot parse: %v", c)
-			return ColorMap[DEFAULTCOLOR]
+			return ColorMap[DefaultColor]
 		}
 		rgb := hex.ToRGB()
 		return Color{
