@@ -347,6 +347,10 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 	showMazeStats(m)
 
+	// Raise window and set input focus
+	// Without this, closing a window that is in the background makes it hang
+	w.Raise()
+
 	// main loop processing and updating the maze
 	for running.IsSet() {
 		start := time.Now()
@@ -939,6 +943,9 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 	log.Printf("received initial client connect...")
 	t := metrics.GetOrRegisterTimer("maze.rpc.solve-maze.latency", nil)
 	defer t.UpdateSince(time.Now())
+	//defer func() {
+	//	log.Println("SolveMaze exited...")
+	//}()
 
 	// initial connect
 	in, err := stream.Recv()
@@ -1031,7 +1038,9 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 
 	trpc := metrics.GetOrRegisterTimer("maze.rpc.solve-maze-loop.latency", nil)
 
+	var solveErr error
 	// this is the main loop as the client tries to solve the maze
+SOLVE:
 	for {
 		start := time.Now()
 
@@ -1080,7 +1089,8 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		// This requires plumbing this "closed" channel into the syncmap.
 		select {
 		case <-doneCh:
-			return fmt.Errorf("maze exited")
+			solveErr = fmt.Errorf("maze exited during solve")
+			break SOLVE
 		case commCh <- data:
 		}
 
@@ -1123,4 +1133,11 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 
 		trpc.UpdateSince(start)
 	}
+
+	if solveErr != nil {
+		log.Printf("solve for loop error: %v", solveErr)
+	}
+
+	log.Println("SolveMaze exited...")
+	return solveErr
 }

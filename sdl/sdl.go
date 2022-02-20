@@ -56,7 +56,7 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 		w, err = sdl.CreateWindow(winTitle, xOffset, yOffset,
 			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
 			//winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_VULKAN|sdl.WINDOW_RESIZABLE)
-			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE)
+			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE|sdl.WINDOW_INPUT_FOCUS)
 
 	})
 	if err != nil {
@@ -108,7 +108,6 @@ func CheckQuit(running *abool.AtomicBool) {
 					log.Printf("window resized: %#v", e)
 				}
 			}
-
 		}
 	})
 }
