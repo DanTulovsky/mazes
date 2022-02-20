@@ -6,6 +6,7 @@ import (
 	"github.com/DanTulovsky/mazes/utils"
 
 	"github.com/veandco/go-sdl2/sdl"
+	pcolors "gopkg.in/go-playground/colors.v1"
 )
 
 const DEFAULTCOLOR = "black"
@@ -59,7 +60,7 @@ func Darker(clr string, f float64) Color {
 }
 
 // Lighter returns the lighter version of this color.
-// A tint is produced by "ligthening" a hue or "adding white"
+// A tint is produced by "lightening" a hue or "adding white"
 func Lighter(clr string, f float64) Color {
 	c := GetColor(clr)
 
@@ -93,7 +94,17 @@ func SetOpacity(c Color, o uint8) Color {
 func GetColor(c string) Color {
 	color, ok := ColorMap[c]
 	if !ok {
-		return ColorMap[DEFAULTCOLOR]
+		hex, err := pcolors.ParseHEX(c)
+		if err != nil {
+			log.Printf("cannot parse: %v", c)
+			return ColorMap[DEFAULTCOLOR]
+		}
+		rgb := hex.ToRGB()
+		return Color{
+			R: rgb.R,
+			G: rgb.G,
+			B: rgb.B,
+		}
 	}
 	return color
 }
