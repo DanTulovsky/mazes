@@ -194,7 +194,9 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 			return nil, nil, nil, fmt.Errorf("cannot load music file %v: %v", *bgMusic, err)
 		}
 
-		music.Play(-1) // loop forever
+		if err := music.Play(-1); err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to start music: %v", err)
+		} // loop forever
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// End Background Music
@@ -248,7 +250,13 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 		generating.UnSet()
 		return nil
 	}
-	go generate()
+	go func() {
+
+		err := generate()
+		if err != nil {
+			log.Fatalf("error in generate: %v", err)
+		}
+	}()
 
 	if m.Config().GetGui() {
 		for generating.IsSet() {
@@ -258,7 +266,9 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 				// reset the clear color back to white
 				colors.SetDrawColor(colors.GetColor("white"), r)
 
-				r.Clear()
+				if err := r.Clear(); err != nil {
+					log.Fatalf("error in clear: %v", err)
+				}
 				m.DrawMazeBackground(r)
 				r.Present()
 				sdl.Delay(uint32(1000 / *frameRate))
@@ -358,7 +368,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 		lsdl.CheckQuit(running)
 		updateMazeBackground(m, updateBG)
-		displaymaze(m, r)
+		displayMaze(m, r)
 
 		t.UpdateSince(start)
 	}
@@ -410,8 +420,8 @@ func updateMazeBackground(m *maze.Maze, updateBG *abool.AtomicBool) {
 	}
 }
 
-// displaymaze draws the maze
-func displaymaze(m *maze.Maze, r *sdl.Renderer) {
+// displayMaze draws the maze
+func displayMaze(m *maze.Maze, r *sdl.Renderer) {
 	if m.Config().GetGui() {
 		// Displays the maze
 		sdl.Do(func() {
@@ -490,7 +500,9 @@ func checkComm(m *maze.Maze, comm commChannel, updateBG *abool.AtomicBool) {
 
 			// TODO(dan): Is this needed?
 			m.Reset()
-			m.ResetClient(in.ClientID)
+			if err := m.ResetClient(in.ClientID); err != nil {
+				fmt.Printf("error in ResetClient: %v", err)
+			}
 
 			client, err := m.Client(in.ClientID)
 			if err != nil {
@@ -689,7 +701,6 @@ func runServer() {
 
 	if *enableMonitoring {
 		log.Printf("starting metrics...")
-		// go metrics.Log(metrics.DefaultRegistry, 5*time.Second, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 		exp.Exp(metrics.DefaultRegistry)
 		addr, _ := net.ResolveTCPAddr("tcp", "localhost:2003")
 		go graphite.Graphite(metrics.DefaultRegistry, 10e9, "metrics", addr)
@@ -726,7 +737,9 @@ func main() {
 		if *enableMonitoring {
 			fmt.Println("metrics now available at http://localhost:8123/debug/metrics")
 		}
-		http.Serve(sock, nil)
+		if err := http.Serve(sock, nil); err != nil {
+			log.Fatalf("error in httpServe: %v", err)
+		}
 	}()
 
 	// must be like this to keep drawing functions in main thread
@@ -773,7 +786,7 @@ type moveReply struct {
 type server struct{}
 
 // ExportMaze exports the given maze to disk, only the structure is preserved
-func (s *server) ExportMaze(ctx context.Context, in *pb.ExportMazeRequest) (*pb.ExportMazeReply, error) {
+func (s *server) ExportMaze(_ context.Context, in *pb.ExportMazeRequest) (*pb.ExportMazeReply, error) {
 	log.Printf("exporting maze with id: %v", in.GetMazeId())
 	if in.GetMazeId() == "" {
 		return nil, fmt.Errorf("maze id cannot be empty")
@@ -784,7 +797,7 @@ func (s *server) ExportMaze(ctx context.Context, in *pb.ExportMazeRequest) (*pb.
 
 	m, found := mazeMap.Find(in.GetMazeId())
 	if !found {
-		return &pb.ExportMazeReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]: %v", in.GetMazeId())}, nil
+		return &pb.ExportMazeReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]", in.GetMazeId())}, nil
 	}
 
 	comm := m.(chan commandData)
@@ -804,7 +817,7 @@ func (s *server) ExportMaze(ctx context.Context, in *pb.ExportMazeRequest) (*pb.
 }
 
 // CreateMaze creates and displays the maze specified by the config
-func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {
+func (s *server) CreateMaze(_ context.Context, in *pb.CreateMazeRequest) (*pb.CreateMazeReply, error) {
 	log.Printf("creating maze with config: %#v", in.Config)
 	if in.Config == nil {
 		return nil, fmt.Errorf("maze config cannot be nil")
@@ -834,7 +847,7 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 }
 
 // RegisterClient registers a new client with an existing maze
-func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientRequest) (*pb.RegisterClientReply, error) {
+func (s *server) RegisterClient(_ context.Context, in *pb.RegisterClientRequest) (*pb.RegisterClientReply, error) {
 	log.Printf("associating new client with maze: %#v", in.GetMazeId())
 	t := metrics.GetOrRegisterTimer("maze.rpc.register-client.latency", nil)
 	defer t.UpdateSince(time.Now())
@@ -869,7 +882,7 @@ func (s *server) RegisterClient(ctx context.Context, in *pb.RegisterClientReques
 }
 
 // ResetClient resets an existing client in an existing maze
-func (s *server) ResetClient(ctx context.Context, in *pb.ResetClientRequest) (*pb.ResetClientReply, error) {
+func (s *server) ResetClient(_ context.Context, in *pb.ResetClientRequest) (*pb.ResetClientReply, error) {
 	// log.Printf("resetting client [%v] in maze [%#v]", in.GetClientId(), in.GetMazeId())
 
 	clientID := in.GetClientId()
@@ -878,7 +891,7 @@ func (s *server) ResetClient(ctx context.Context, in *pb.ResetClientRequest) (*p
 	if !found {
 		return &pb.ResetClientReply{
 			Success: false,
-			Message: fmt.Sprintf("unable to lookup maze [%v]: %v", in.GetMazeId())}, nil
+			Message: fmt.Sprintf("unable to lookup maze [%v]", in.GetMazeId())}, nil
 	}
 
 	comm := m.(chan commandData)
@@ -903,7 +916,7 @@ func (s *server) ResetClient(ctx context.Context, in *pb.ResetClientRequest) (*p
 }
 
 // ListMazes lists all the mazes
-func (s *server) ListMazes(ctx context.Context, in *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
+func (s *server) ListMazes(_ context.Context, _ *pb.ListMazeRequest) (*pb.ListMazeReply, error) {
 	t := metrics.GetOrRegisterTimer("maze.rpc.list-mazes.latency", nil)
 	defer t.UpdateSince(time.Now())
 
@@ -994,7 +1007,7 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		Reply:    make(chan commandReply),
 	}
 	comm <- data
-	// get currentlocation from maze
+	// get current location from maze
 	locationInfoReply := <-data.Reply
 	if locationInfoReply.error != nil {
 		return locationInfoReply.error.(error)
@@ -1099,6 +1112,4 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 
 		trpc.UpdateSince(start)
 	}
-
-	return nil
 }
