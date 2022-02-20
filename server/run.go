@@ -77,7 +77,7 @@ var (
 	enableDeadlockDetection = flag.Bool("enable_deadlock_detection", false, "enable deadlock detection")
 	enableProfile           = flag.Bool("enable_profile", false, "enable profiling")
 
-	// keep track of mazes
+	// keep track of mazes, maze_id -> struct {commChannel, doneChannel}
 	mazeMap = safemap.New()
 )
 
@@ -297,7 +297,7 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 }
 
 // runMaze runs the maze
-func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData) {
+func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData, doneCh chan bool) {
 	defer func() {
 		sdl.Do(func() {
 			log.Println("Destroying GUI window...")
@@ -347,20 +347,6 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 	showMazeStats(m)
 
-	// process background events in the maze
-	ticker := time.NewTicker(time.Second * 1)
-	wd.Add(1)
-	go func() {
-		defer wd.Done()
-		for range ticker.C {
-			processMazeEvents(m, r, updateBG)
-			if !running.IsSet() {
-				log.Println("background events thread exiting...")
-				return
-			}
-		}
-	}()
-
 	// main loop processing and updating the maze
 	for running.IsSet() {
 		start := time.Now()
@@ -375,35 +361,15 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 
 	mazeMap.Delete(m.Config().GetId())
 	log.Printf("maze is done, waiting for background threads to exit...")
+
+	// This causes a panic as the sender tries to send on this closed channel
+	// If it's not closed, it causes a race where the sender waits forever
+	// close(comm)
+	close(doneCh)
+
 	wd.Wait()
+
 	log.Printf("and all done!")
-}
-
-// processMazeEvents takes care of periodic events happening in the maze
-func processMazeEvents(m *maze.Maze, r *sdl.Renderer, updateBG *abool.AtomicBool) {
-	// log.Printf("[%v] processing events...", time.Now())
-
-	// c := m.RandomCell()
-	//c.SetBGColor(colors.GetColor("black"))
-	//log.Printf("cell [%v] bgcolor: %v", c, c.BGColor())
-
-	// link a random neighbor
-	//u, err := c.RandomUnLink()
-	//if err == nil {
-	//	c.Link(u)
-	//}
-
-	// unlink a random neighbor
-	//l, err := c.RandomLink()
-	//if err == nil {
-	//	c.UnLink(l)
-	//}
-
-	// c.SetWeight(utils.Random(0, 100))
-
-	// redraw the background
-	// updateBG.Set()
-
 }
 
 func updateMazeBackground(m *maze.Maze, updateBG *abool.AtomicBool) {
@@ -743,6 +709,7 @@ func main() {
 	}()
 
 	// must be like this to keep drawing functions in main thread
+	runtime.LockOSThread()
 	sdl.Main(runServer)
 
 }
@@ -795,12 +762,12 @@ func (s *server) ExportMaze(_ context.Context, in *pb.ExportMazeRequest) (*pb.Ex
 	t := metrics.GetOrRegisterTimer("maze.rpc.export-maze.latency", nil)
 	defer t.UpdateSince(time.Now())
 
-	m, found := mazeMap.Find(in.GetMazeId())
+	channels, found := mazeMap.Find(in.GetMazeId())
 	if !found {
 		return &pb.ExportMazeReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]", in.GetMazeId())}, nil
 	}
 
-	comm := m.(chan commandData)
+	comm := channels.(*mazeChannels).commCh
 
 	data := commandData{
 		Action: maze.CommandExportMaze,
@@ -814,6 +781,22 @@ func (s *server) ExportMaze(_ context.Context, in *pb.ExportMazeRequest) (*pb.Ex
 	}
 
 	return &pb.ExportMazeReply{Success: true}, nil
+}
+
+// mazeChannels holds the comm channels
+type mazeChannels struct {
+	// commCh is used to send data commands to the maze
+	commCh chan commandData
+
+	// doneChe is used to signal, from the maze, that it is exiting
+	doneCh chan bool
+}
+
+func newMazeChannels(comm chan commandData, done chan bool) *mazeChannels {
+	return &mazeChannels{
+		commCh: comm,
+		doneCh: done,
+	}
 }
 
 // CreateMaze creates and displays the maze specified by the config
@@ -831,14 +814,15 @@ func (s *server) CreateMaze(_ context.Context, in *pb.CreateMazeRequest) (*pb.Cr
 	mazeID = mazeIDraw.String()
 	in.GetConfig().Id = mazeID
 
-	comm := make(chan commandData)
-	mazeMap.Insert(mazeID, comm)
+	commCh := make(chan commandData)
+	doneCh := make(chan bool)
+	mazeMap.Insert(mazeID, newMazeChannels(commCh, doneCh))
 
 	m, r, w, err := createMaze(in.Config)
 	if err != nil {
 		return nil, err
 	}
-	go runMaze(m, r, w, comm)
+	go runMaze(m, r, w, commCh, doneCh)
 
 	if in.Config.ReturnMaze {
 		log.Printf("client requested maze in the response!")
@@ -855,12 +839,12 @@ func (s *server) RegisterClient(_ context.Context, in *pb.RegisterClientRequest)
 	clientIDraw := uuid.NewV4()
 	clientID := clientIDraw.String()
 
-	m, found := mazeMap.Find(in.GetMazeId())
+	channels, found := mazeMap.Find(in.GetMazeId())
 	if !found {
 		return &pb.RegisterClientReply{Success: false, Message: fmt.Sprintf("unable to lookup maze [%v]", in.GetMazeId())}, nil
 	}
 
-	comm := m.(chan commandData)
+	comm := channels.(*mazeChannels).commCh
 
 	data := commandData{
 		Action:       maze.CommandAddClient,
@@ -887,14 +871,14 @@ func (s *server) ResetClient(_ context.Context, in *pb.ResetClientRequest) (*pb.
 
 	clientID := in.GetClientId()
 
-	m, found := mazeMap.Find(in.GetMazeId())
+	channels, found := mazeMap.Find(in.GetMazeId())
 	if !found {
 		return &pb.ResetClientReply{
 			Success: false,
 			Message: fmt.Sprintf("unable to lookup maze [%v]", in.GetMazeId())}, nil
 	}
 
-	comm := m.(chan commandData)
+	comm := channels.(*mazeChannels).commCh
 
 	data := commandData{
 		Action:   maze.CommandResetClient,
@@ -924,14 +908,14 @@ func (s *server) ListMazes(_ context.Context, _ *pb.ListMazeRequest) (*pb.ListMa
 	for _, k := range mazeMap.Keys() {
 		m := &pb.Maze{MazeId: k}
 
-		r, found := mazeMap.Find(k)
+		channels, found := mazeMap.Find(k)
 		if !found {
 			// should never happen
 			return nil, fmt.Errorf("failed to find maze with id %v", k)
 		}
 
 		// comm is the channel to talk to the maze
-		comm := r.(chan commandData)
+		comm := channels.(*mazeChannels).commCh
 		replyChannel := make(chan commandReply)
 		data := commandData{
 			Action: maze.CommandListClients,
@@ -965,12 +949,15 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		return err
 	}
 
-	m, found := mazeMap.Find(in.GetMazeId())
+	channels, found := mazeMap.Find(in.GetMazeId())
 	if !found {
 		return fmt.Errorf("unable to lookup maze [%v]: %v", in.GetMazeId(), err)
 	}
-	// comm is the communication channel with this maze
-	comm := m.(chan commandData)
+
+	// commCh is the communication channel with this maze
+	commCh := channels.(*mazeChannels).commCh
+	// doneCh is closed when the maze goroutine exits
+	doneCh := channels.(*mazeChannels).doneCh
 
 	// check that client is valid
 
@@ -981,32 +968,46 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 		Reply:    make(chan commandReply),
 		Request:  commandRequest{},
 	}
-	comm <- data
+
+	select {
+	case <-doneCh:
+		return fmt.Errorf("maze exited")
+	case commCh <- data:
+	}
+
 	initialLocationReply := <-data.Reply
 	if initialLocationReply.error != nil {
 		return initialLocationReply.error.(error)
 	}
 
-	// send request into m for available directions, include client id
+	// send request into commChannel for available directions, include client id
 	data = commandData{
 		Action:   maze.CommandGetDirections,
 		ClientID: in.GetClientId(),
 		Reply:    make(chan commandReply),
 	}
-	comm <- data
+	select {
+	case <-doneCh:
+		return fmt.Errorf("maze exited")
+	case commCh <- data:
+	}
 	// get response from maze
 	dirReply := <-data.Reply
 	if dirReply.error != nil {
 		return dirReply.error.(error)
 	}
 
-	// send request into m for current location
+	// send request into commChannel for current location
 	data = commandData{
 		Action:   maze.CommandLocationInfo,
 		ClientID: in.GetClientId(),
 		Reply:    make(chan commandReply),
 	}
-	comm <- data
+	select {
+	case <-doneCh:
+		return fmt.Errorf("maze exited")
+	case commCh <- data:
+	}
 	// get current location from maze
 	locationInfoReply := <-data.Reply
 	if locationInfoReply.error != nil {
@@ -1072,7 +1073,17 @@ func (s *server) SolveMaze(stream pb.Mazer_SolveMazeServer) error {
 			Reply: make(chan commandReply),
 		}
 
-		comm <- data
+		// There is a race here with the maze goroutine closing
+		// This thread is the producer, so it should be responsible for closing the channel
+		// Ideally there should be a "closed" channel here as well, it would be closed by the other thread
+		// and checked here. If it's closed, this send would not happen and this thread would exit.
+		// This requires plumbing this "closed" channel into the syncmap.
+		select {
+		case <-doneCh:
+			return fmt.Errorf("maze exited")
+		case commCh <- data:
+		}
+
 		// get response from maze
 		mazeReply := <-data.Reply
 		if mazeReply.answer == nil {

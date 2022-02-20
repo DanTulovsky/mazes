@@ -96,7 +96,6 @@ func GetColor(c string) Color {
 	if !ok {
 		hex, err := pcolors.ParseHEX(c)
 		if err != nil {
-			log.Printf("cannot parse: %v", c)
 			return ColorMap[DefaultColor]
 		}
 		rgb := hex.ToRGB()
