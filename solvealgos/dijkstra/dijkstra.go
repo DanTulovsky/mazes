@@ -87,7 +87,6 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 			return err
 		}
 
-		//directions = reply.GetAvailableDirections()
 		previousServerCell := currentServerCell
 		currentServerCell = reply.GetCurrentLocation()
 

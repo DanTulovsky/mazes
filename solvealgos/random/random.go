@@ -40,6 +40,7 @@ func (a *Random) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocatio
 			if err != nil {
 				return err
 			}
+
 			directions = reply.GetAvailableDirections()
 			previousCell := currentCell
 			currentCell = reply.GetCurrentLocation()

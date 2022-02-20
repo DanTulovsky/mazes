@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -301,6 +302,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 			log.Println("Finished destroying GUI window...")
 		})
 	}()
+	runtime.LockOSThread()
 	var wd sync.WaitGroup
 
 	///////////////////////////////////////////////////////////////////////////
@@ -719,8 +721,11 @@ func main() {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+
 	go func() {
-		fmt.Println("metrics now available at http://localhost:8123/debug/metrics")
+		if *enableMonitoring {
+			fmt.Println("metrics now available at http://localhost:8123/debug/metrics")
+		}
 		http.Serve(sock, nil)
 	}()
 

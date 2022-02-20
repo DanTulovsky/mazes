@@ -90,7 +90,7 @@ var (
 	disableOffset = flag.Bool("disable_draw_offset", false, "disable path draw offset")
 	fromCellStr   = flag.String("from_cell", "", "path from cell ('min' = minX, minY)")
 	toCellStr     = flag.String("to_cell", "", "path to cell ('max' = maxX, maxY)")
-	returnMaze    = flag.Bool("return_maze", false, "return the encoded maze in the create reply, used for ML DP algorithms")
+	returnMaze    = flag.Bool("return_maze", false, "return the encoded maze in the create reply, used for ML DP algorithms and dijkstra")
 
 	// ml params
 	df                 = flag.Float64("df", 1, "discount factor [0-1], at one treats all steps equally")
@@ -1034,7 +1034,10 @@ func opCreateSolveMlTDQLearning() error {
 // opCreate creates a new maze
 func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
-	config.ReturnMaze = true
+
+	if *solveAlgo == "dijkstra" {
+		config.ReturnMaze = true
+	}
 
 	_, c := solvealgos.NewClient()
 	ctx := context.Background()

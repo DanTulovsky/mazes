@@ -90,7 +90,6 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 	})
 
 	log.Print("done SDL setup")
-	log.Println(r)
 	return w, r
 }
 
