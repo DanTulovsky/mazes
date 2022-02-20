@@ -1017,7 +1017,7 @@ func (c *Cell) Neighbors() []*Cell {
 
 	var n []*Cell
 
-	for _, cell := range []*Cell{c.North(), c.South(), c.East(), c.West()} {
+	for _, cell := range []*Cell{c.north, c.south, c.east, c.west} {
 		if cell != nil {
 			n = append(n, cell)
 		}
@@ -1026,16 +1026,16 @@ func (c *Cell) Neighbors() []*Cell {
 	// if weaving is allowed, add additional possibilities for neighbors
 	if c.config.AllowWeaving && utils.Random(0, 100) <= int(c.config.WeavingProbability*100) {
 		if c.canTunnelNorth() {
-			n = append(n, c.North().North())
+			n = append(n, c.north.North())
 		}
 		if c.canTunnelSouth() {
-			n = append(n, c.South().South())
+			n = append(n, c.south.South())
 		}
 		if c.canTunnelEast() {
-			n = append(n, c.East().East())
+			n = append(n, c.east.East())
 		}
 		if c.canTunnelWest() {
-			n = append(n, c.West().West())
+			n = append(n, c.west.West())
 		}
 	}
 

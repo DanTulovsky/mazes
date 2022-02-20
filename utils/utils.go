@@ -22,6 +22,11 @@ func Random(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
+// Random64 returns a random number in [min, max)
+func Random64(min, max int64) int64 {
+	return rand.Int63n(max-min) + min
+}
+
 // AffineTransform x (in the range [a, b] to a number in [c, d]
 func AffineTransform(x, a, b, c, d float64) int {
 	// log.Printf("in: %v [%v, %v] -> [%v, %v]", x, a, b, c, d)

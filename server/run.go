@@ -251,7 +251,6 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 		return nil
 	}
 	go func() {
-
 		err := generate()
 		if err != nil {
 			log.Fatalf("error in generate: %v", err)

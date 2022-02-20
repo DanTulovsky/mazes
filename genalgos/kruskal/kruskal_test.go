@@ -2,22 +2,24 @@ package kruskal
 
 import (
 	"github.com/DanTulovsky/mazes/maze"
+	pb "github.com/DanTulovsky/mazes/proto"
 	"github.com/DanTulovsky/mazes/utils"
+	"github.com/tevino/abool"
 	"testing"
 )
 
 var applytests = []struct {
-	config  *maze.Config
+	config  *pb.MazeConfig
 	wantErr bool
 }{
 	{
-		config: &maze.Config{
-			Rows:    utils.Random(5, 40),
-			Columns: utils.Random(5, 40),
+		config: &pb.MazeConfig{
+			Rows:    utils.Random64(5, 40),
+			Columns: utils.Random64(5, 40),
 		},
 		wantErr: false,
 	}, {
-		config: &maze.Config{
+		config: &pb.MazeConfig{
 			Rows:    10,
 			Columns: 15,
 		},
@@ -32,7 +34,7 @@ func setup() *Kruskal {
 func TestApply(t *testing.T) {
 
 	for _, tt := range applytests {
-		g, err := maze.NewMaze(tt.config)
+		g, err := maze.NewMaze(tt.config, nil)
 		a := setup()
 
 		if err != nil {
@@ -43,7 +45,7 @@ func TestApply(t *testing.T) {
 			}
 		}
 
-		if err := a.Apply(g, 0); err != nil {
+		if err := a.Apply(g, 0, abool.NewBool(true)); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 
@@ -54,18 +56,18 @@ func TestApply(t *testing.T) {
 }
 
 func BenchmarkApply(b *testing.B) {
-	config := &maze.Config{
+	config := &pb.MazeConfig{
 		Rows:    3,
 		Columns: 3,
 	}
 
 	for i := 0; i < b.N; i++ {
-		g, err := maze.NewMaze(config)
+		g, err := maze.NewMaze(config, nil)
 		if err != nil {
 			b.Errorf("invalid config: %v", err)
 		}
 		a := setup()
-		a.Apply(g, 0)
+		a.Apply(g, 0, abool.NewBool(true))
 	}
 
 }

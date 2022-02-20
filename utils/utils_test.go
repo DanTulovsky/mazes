@@ -107,12 +107,12 @@ var locationfromstatetests = []struct {
 	expected *pb.MazeLocation
 	wantErr  bool
 }{
-	{rows: 10, columns: 10, location: 0, expected: &pb.MazeLocation{0, 0, 0}, wantErr: false},
-	{rows: 3, columns: 3, location: 5, expected: &pb.MazeLocation{2, 1, 0}, wantErr: false},
+	{rows: 10, columns: 10, location: 0, expected: &pb.MazeLocation{X: 0, Y: 0, Z: 0}, wantErr: false},
+	{rows: 3, columns: 3, location: 5, expected: &pb.MazeLocation{X: 2, Y: 1, Z: 0}, wantErr: false},
 	{rows: 3, columns: 3, location: 60, expected: nil, wantErr: true},
 	{rows: 3, columns: 3, location: -1, expected: nil, wantErr: true},
-	{rows: 3, columns: 2, location: 4, expected: &pb.MazeLocation{0, 2, 0}, wantErr: false},
-	{rows: 2, columns: 2, location: 2, expected: &pb.MazeLocation{0, 1, 0}, wantErr: false},
+	{rows: 3, columns: 2, location: 4, expected: &pb.MazeLocation{X: 0, Y: 2, Z: 0}, wantErr: false},
+	{rows: 2, columns: 2, location: 2, expected: &pb.MazeLocation{X: 0, Y: 1, Z: 0}, wantErr: false},
 }
 
 func TestLocationFromState(t *testing.T) {
@@ -139,11 +139,11 @@ var statefromlocationtests = []struct {
 	expected int
 	wantErr  bool
 }{
-	{l: &pb.MazeLocation{0, 0, 0}, rows: 10, columns: 10, expected: 0, wantErr: false},
-	{l: &pb.MazeLocation{23, 0, 0}, rows: 10, columns: 10, expected: 0, wantErr: true},
-	{l: &pb.MazeLocation{1, 0, 0}, rows: 10, columns: 10, expected: 1, wantErr: false},
-	{l: &pb.MazeLocation{2, 1, 0}, rows: 3, columns: 4, expected: 6, wantErr: false},
-	{l: &pb.MazeLocation{0, 2, 0}, rows: 4, columns: 3, expected: 6, wantErr: false},
+	{l: &pb.MazeLocation{}, rows: 10, columns: 10, expected: 0, wantErr: false},
+	{l: &pb.MazeLocation{X: 23}, rows: 10, columns: 10, expected: 0, wantErr: true},
+	{l: &pb.MazeLocation{X: 1}, rows: 10, columns: 10, expected: 1, wantErr: false},
+	{l: &pb.MazeLocation{X: 2, Y: 1}, rows: 3, columns: 4, expected: 6, wantErr: false},
+	{l: &pb.MazeLocation{Y: 2}, rows: 4, columns: 3, expected: 6, wantErr: false},
 }
 
 func TestStateFromLocation(t *testing.T) {
@@ -169,10 +169,10 @@ var locsametests = []struct {
 	m        *pb.MazeLocation
 	expected bool
 }{
-	{l: &pb.MazeLocation{0, 0, 0}, m: &pb.MazeLocation{0, 0, 0}, expected: true},
-	{l: &pb.MazeLocation{3, 2, 6}, m: &pb.MazeLocation{3, 2, 6}, expected: true},
-	{l: &pb.MazeLocation{0, 0, 0}, m: &pb.MazeLocation{0, 1, 0}, expected: false},
-	{l: &pb.MazeLocation{0, 0, 0}, m: &pb.MazeLocation{3, 0, 0}, expected: false},
+	{l: &pb.MazeLocation{}, m: &pb.MazeLocation{}, expected: true},
+	{l: &pb.MazeLocation{X: 3, Y: 2, Z: 6}, m: &pb.MazeLocation{X: 3, Y: 2, Z: 6}, expected: true},
+	{l: &pb.MazeLocation{}, m: &pb.MazeLocation{Y: 1}, expected: false},
+	{l: &pb.MazeLocation{}, m: &pb.MazeLocation{X: 3}, expected: false},
 }
 
 func TestLocsSame(t *testing.T) {

@@ -2,6 +2,8 @@ package aldous_broder
 
 import (
 	"fmt"
+	pb "github.com/DanTulovsky/mazes/proto"
+	"github.com/tevino/abool"
 	"testing"
 
 	"github.com/DanTulovsky/mazes/maze"
@@ -9,17 +11,17 @@ import (
 )
 
 var applytests = []struct {
-	config  *maze.Config
+	config  *pb.MazeConfig
 	wantErr bool
 }{
 	{
-		config: &maze.Config{
-			Rows:    utils.Random(5, 40),
-			Columns: utils.Random(5, 40),
+		config: &pb.MazeConfig{
+			Rows:    utils.Random64(5, 10),
+			Columns: utils.Random64(5, 10),
 		},
 		wantErr: false,
 	}, {
-		config: &maze.Config{
+		config: &pb.MazeConfig{
 			Rows:    10,
 			Columns: 15,
 		},
@@ -32,9 +34,8 @@ func setup() *AldousBroder {
 }
 
 func TestApply(t *testing.T) {
-
 	for _, tt := range applytests {
-		m, err := maze.NewMaze(tt.config)
+		m, err := maze.NewMaze(tt.config, nil)
 		a := setup()
 
 		if err != nil {
@@ -45,7 +46,7 @@ func TestApply(t *testing.T) {
 			}
 		}
 
-		if err := a.Apply(m, 0); err != nil {
+		if err := a.Apply(m, 0, abool.NewBool(true)); err != nil {
 			t.Errorf("apply failed: %v", err)
 		}
 
@@ -57,18 +58,18 @@ func TestApply(t *testing.T) {
 }
 
 func BenchmarkApply(b *testing.B) {
-	config := &maze.Config{
+	config := &pb.MazeConfig{
 		Rows:    3,
 		Columns: 3,
 	}
 
 	for i := 0; i < b.N; i++ {
-		g, err := maze.NewMaze(config)
+		g, err := maze.NewMaze(config, nil)
 		if err != nil {
 			b.Errorf("invalid config: %v", err)
 		}
 		a := setup()
-		a.Apply(g, 0)
+		a.Apply(g, 0, abool.NewBool(true))
 	}
 
 }

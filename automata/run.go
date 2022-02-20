@@ -217,7 +217,11 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 
 	if m.Config().GetGui() {
 		for generating.IsSet() {
-			lsdl.CheckQuit(generating)
+			winID, err := w.GetID()
+			if err != nil {
+				log.Fatalf("failed to get window id: %v", err)
+			}
+			lsdl.CheckQuit(generating, winID)
 			// Displays the main maze while generating it
 			sdl.Do(func() {
 				// reset the clear color back to white
