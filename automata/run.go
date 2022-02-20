@@ -256,6 +256,7 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandActi
 	// DISPLAY
 	///////////////////////////////////////////////////////////////////////////
 	// this is the main maze thread that draws the maze
+	w.Raise()
 
 	// when this is set to true, a redraw of the background texture is triggered
 	updateBG := abool.New()

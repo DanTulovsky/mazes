@@ -94,7 +94,7 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 }
 
 // CheckQuit catches quit events in the gui and cleans up
-func CheckQuit(running *abool.AtomicBool) {
+func CheckQuit(running *abool.AtomicBool, winID uint32) {
 	sdl.Do(func() {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
@@ -103,9 +103,14 @@ func CheckQuit(running *abool.AtomicBool) {
 				running.UnSet()
 			case *sdl.WindowEvent:
 				e := event.(*sdl.WindowEvent)
-				if e.Event == sdl.WINDOWEVENT_RESIZED {
-					// TODO(imlement redraw based on this)
+				switch e.Event {
+				case sdl.WINDOWEVENT_RESIZED:
+					// TODO(implement redraw based on this)
 					log.Printf("window resized: %#v", e)
+				case sdl.WINDOWEVENT_CLOSE:
+					if e.WindowID == winID {
+						running.UnSet()
+					}
 				}
 			}
 		}

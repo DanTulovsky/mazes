@@ -260,7 +260,11 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 
 	if m.Config().GetGui() {
 		for generating.IsSet() {
-			lsdl.CheckQuit(generating)
+			winID, err := w.GetID()
+			if err != nil {
+				log.Printf("error getting window id: %v", err)
+			}
+			lsdl.CheckQuit(generating, winID)
 			// Displays the main maze while generating it
 			sdl.Do(func() {
 				// reset the clear color back to white
@@ -356,9 +360,15 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 		start := time.Now()
 		t := metrics.GetOrRegisterTimer("maze.loop.latency", nil)
 
-		lsdl.CheckQuit(running)
+		id, err := w.GetID()
+		if err != nil {
+			log.Printf("error getting window id: %v", err)
+		}
+		lsdl.CheckQuit(running, id)
 		updateMazeBackground(m, updateBG)
 		displayMaze(m, r)
+
+		sdl.Delay(uint32(1000 / *frameRate))
 
 		t.UpdateSince(start)
 	}
@@ -1082,11 +1092,8 @@ SOLVE:
 			Reply: make(chan commandReply),
 		}
 
-		// There is a race here with the maze goroutine closing
+		// There is a race here with the maze goroutine closing that is now fixed
 		// This thread is the producer, so it should be responsible for closing the channel
-		// Ideally there should be a "closed" channel here as well, it would be closed by the other thread
-		// and checked here. If it's closed, this send would not happen and this thread would exit.
-		// This requires plumbing this "closed" channel into the syncmap.
 		select {
 		case <-doneCh:
 			solveErr = fmt.Errorf("maze exited during solve")

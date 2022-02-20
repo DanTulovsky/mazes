@@ -10,7 +10,7 @@ import (
 	pb "github.com/DanTulovsky/mazes/proto"
 	"github.com/DanTulovsky/mazes/utils"
 
-	deadlock "github.com/sasha-s/go-deadlock"
+	"github.com/sasha-s/go-deadlock"
 	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -23,7 +23,7 @@ const (
 // Cell defines a single cell in the grid
 type Cell struct {
 	x, y, z int64
-	// keep track of neighborgs
+	// keep track of neighbors
 	north, south, east, west, below *Cell
 	// keeps track of which cells this cell has a connection (no wall) to
 	links *safeMap2
@@ -467,14 +467,14 @@ func (c *Cell) Distances() *Distances {
 				log.Fatalf("error getting distance from [%v]->[%v]: %v", c, l, err)
 			}
 
-			totalWeight := int(d) + l.weight // never changes once set
+			totalWeight := d + l.weight // never changes once set
 
 			prevDistance, err := c.distances.Get(l)
 
-			if totalWeight < int(prevDistance) || err != nil {
+			if totalWeight < prevDistance || err != nil {
 				heap.Push(&pending, l)
 				// sets distance to new cell
-				c.distances.Set(l, int(totalWeight))
+				c.distances.Set(l, totalWeight)
 			}
 		}
 
@@ -821,7 +821,7 @@ func (c *Cell) unLinkOneWay(cell *Cell) error {
 // Link unlinks a cell from its neighbor (removes passage)
 func (c *Cell) Link(cell *Cell) error {
 	if cell == nil {
-		return fmt.Errorf("Link: cannot link %v to nil", c)
+		return fmt.Errorf("error in Link: cannot link %v to nil", c)
 	}
 	c.linkOneWay(cell)
 	cell.linkOneWay(c)
@@ -832,7 +832,7 @@ func (c *Cell) Link(cell *Cell) error {
 // UnLink unlinks a cell from its neighbor (removes passage)
 func (c *Cell) UnLink(cell *Cell) error {
 	if cell == nil {
-		return fmt.Errorf("UnLink: cannot link %v to nil", c)
+		return fmt.Errorf("error in UnLink: cannot link %v to nil", c)
 	}
 	c.unLinkOneWay(cell)
 	cell.unLinkOneWay(c)
@@ -853,23 +853,23 @@ func (c *Cell) Links() []*Cell {
 	return keys
 }
 
-// directionTo returns the direction (north, south, east, west) of cell from c
+// DirectionTo returns the direction (north, south, east, west) of cell from c
 // c and cell must be linked
 // TODO(dan): raise appropriate error if cells are not linked
-func (c *Cell) directionTo(cell *Cell, client string) *pb.Direction {
+func (c *Cell) DirectionTo(cell *Cell, client string) (*pb.Direction, error) {
 
 	switch {
 	case c.North() == cell:
-		return &pb.Direction{Name: "north", Visited: cell.Visited(client)}
+		return &pb.Direction{Name: "north", Visited: cell.Visited(client)}, nil
 	case c.South() == cell:
-		return &pb.Direction{Name: "south", Visited: cell.Visited(client)}
+		return &pb.Direction{Name: "south", Visited: cell.Visited(client)}, nil
 	case c.East() == cell:
-		return &pb.Direction{Name: "east", Visited: cell.Visited(client)}
+		return &pb.Direction{Name: "east", Visited: cell.Visited(client)}, nil
 	case c.West() == cell:
-		return &pb.Direction{Name: "west", Visited: cell.Visited(client)}
+		return &pb.Direction{Name: "west", Visited: cell.Visited(client)}, nil
 	}
 
-	return &pb.Direction{Name: "", Visited: false}
+	return &pb.Direction{Name: "", Visited: false}, fmt.Errorf("error: cell [%v] not linked to [%v]", c, cell)
 }
 
 // DirectionLinks returns a list of directions that have linked (passage to) cells
@@ -877,7 +877,12 @@ func (c *Cell) DirectionLinks(client string) []*pb.Direction {
 	var directions []*pb.Direction
 	for item := range c.links.Iter() {
 		if c.Linked(item.Key) {
-			directions = append(directions, c.directionTo(item.Key, client))
+			d, err := c.DirectionTo(item.Key, client)
+			if err != nil {
+				return directions
+			}
+
+			directions = append(directions, d)
 		}
 	}
 	return directions
@@ -926,22 +931,22 @@ func (c *Cell) UnLinked() []*Cell {
 	return keys
 }
 
-// RandomUnLinkPreferDeadends returns a random cell not linked to this one, but one that is a neighbor
-// It prefers returning a cell that is itself a deadend
-func (c *Cell) RandomUnLinkPreferDeadends() *Cell {
+// RandomUnLinkPreferDeadEnds returns a random cell not linked to this one, but one that is a neighbor
+// It prefers returning a cell that is itself a dead end
+func (c *Cell) RandomUnLinkPreferDeadEnds() *Cell {
 	var keys []*Cell
-	var deadends []*Cell
+	var deadEnds []*Cell
 
 	for _, k := range c.Neighbors() {
 		if !c.Linked(k) {
 			keys = append(keys, k)
 		}
 		if len(k.Links()) == 1 {
-			deadends = append(deadends, k)
+			deadEnds = append(deadEnds, k)
 		}
 	}
-	if len(deadends) > 0 {
-		return keys[utils.Random(0, len(deadends))]
+	if len(deadEnds) > 0 {
+		return keys[utils.Random(0, len(deadEnds))]
 	}
 	return keys[utils.Random(0, len(keys))]
 }

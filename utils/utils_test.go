@@ -95,7 +95,7 @@ func TestBits(t *testing.T) {
 
 		rc := ClearBit(r, tt.pos)
 		if rc != tt.in {
-			t.Errorf("expected %v for input %v, but got %v", tt.in, r, r, rc)
+			t.Errorf("expected %v for input %v, but got %v", tt.in, r, rc)
 		}
 	}
 }
@@ -151,7 +151,7 @@ func TestStateFromLocation(t *testing.T) {
 		state, err := StateFromLocation(tt.rows, tt.columns, tt.l)
 		if err != nil {
 			if !tt.wantErr {
-				t.Fatalf("failed to find state from l (%v)", tt.l, err)
+				t.Fatalf("failed to find state from l (%v): %v", tt.l, err)
 			} else {
 				continue
 			}

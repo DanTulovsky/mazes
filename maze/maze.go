@@ -511,7 +511,7 @@ func (m *Maze) Braid(p float64) {
 
 		// make sure still dead end
 		if len(c.Links()) == 1 {
-			n := c.RandomUnLinkPreferDeadends()
+			n := c.RandomUnLinkPreferDeadEnds()
 			m.Link(c, n)
 		}
 

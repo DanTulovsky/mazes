@@ -3,6 +3,7 @@ package recursive_backtracker
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"time"
 
@@ -39,6 +40,9 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell, previo
 			reply, err := a.Move(mazeID, clientID, nextDir.GetName())
 			if err != nil {
 				log.Printf("error moving: %v", err)
+				if err == io.EOF {
+					log.Fatalf("server disconnected, exiting...")
+				}
 				return false
 			}
 			directions = reply.GetAvailableDirections()
@@ -57,6 +61,9 @@ func (a *RecursiveBacktracker) Step(mazeID, clientID string, currentCell, previo
 	reply, err := a.MoveBack(mazeID, clientID)
 	if err != nil {
 		log.Printf("error moving: %v", err)
+		if err == io.EOF {
+			log.Fatalf("server disconnected, exiting...")
+		}
 		return false
 	}
 

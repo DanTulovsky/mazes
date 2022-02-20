@@ -141,6 +141,11 @@ func newMazeConfig(createAlgo, currentLocationColor string) *pb.MazeConfig {
 		ReturnMaze:           *returnMaze,
 		Title:                *title,
 	}
+
+	if createAlgo == "dijkstra" && *allowWeaving {
+		log.Printf("dijkstra doesn't support weaving, disabling...")
+		config.AllowWeaving = false
+	}
 	return config
 }
 
@@ -1266,7 +1271,11 @@ func showMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window) {
 	running.Set()
 
 	for running.IsSet() {
-		lsdl.CheckQuit(running)
+		winID, err := w.GetID()
+		if err != nil {
+			log.Printf("error getting window id: %v", err)
+		}
+		lsdl.CheckQuit(running, winID)
 
 		sdl.Do(func() {
 			colors.SetDrawColor(colors.GetColor("gray"), r)

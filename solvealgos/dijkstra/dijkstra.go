@@ -3,7 +3,6 @@
 package dijkstra
 
 import (
-	"fmt"
 	pb "github.com/DanTulovsky/mazes/proto"
 	"log"
 	"math"
@@ -72,17 +71,17 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 	steps := 0
 	currentServerCell := fromCell
 
-	segs := solvePath.Segments()
-	for i := 1; i < len(segs); i++ {
+	s := solvePath.Segments()
+	for i := 1; i < len(s); i++ {
 		// animation delay
 		time.Sleep(delay)
 
-		direction, err := a.CellDirection(segs[i-1].Cell(), segs[i].Cell())
+		direction, err := s[i-1].Cell().DirectionTo(s[i].Cell(), clientID)
 		if err != nil {
 			return err
 		}
 
-		reply, err := a.Move(mazeID, clientID, direction)
+		reply, err := a.Move(mazeID, clientID, direction.Name)
 		if err != nil {
 			return err
 		}
@@ -106,20 +105,4 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 	a.ShowStats()
 
 	return nil
-}
-
-// CellDirection returns the direction that the "to" cell is from the "from" cell
-func (a *Dijkstra) CellDirection(from, to *maze.Cell) (string, error) {
-	switch {
-	case from.North() == to:
-		return "north", nil
-	case from.South() == to:
-		return "south", nil
-	case from.East() == to:
-		return "east", nil
-	case from.West() == to:
-		return "west", nil
-	}
-
-	return "", fmt.Errorf("%v is not connect to %v", from, to)
 }

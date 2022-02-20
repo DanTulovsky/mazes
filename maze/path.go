@@ -74,12 +74,14 @@ func (p *Path) AddSegement(s *PathSegment) {
 
 func (p *Path) AddSegements(s []*PathSegment) {
 	for _, seg := range s {
-		p.Lock()
-		defer p.Unlock()
+		func() {
+			p.Lock()
+			defer p.Unlock()
 
-		p.segments = append(p.segments, seg)
-		p.segmentMap[seg] = true
-		p.cellMap[seg.Cell()] = true
+			p.segments = append(p.segments, seg)
+			p.segmentMap[seg] = true
+			p.cellMap[seg.Cell()] = true
+		}()
 	}
 }
 

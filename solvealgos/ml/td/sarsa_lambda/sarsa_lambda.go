@@ -136,7 +136,9 @@ func (a *MLTDSarsaLambda) runSarsaEpisode(mazeID string, rows, columns int64, cl
 
 	}
 
-	log.Printf("maze solved in %v steps!", steps)
+	if solved {
+		log.Printf("maze solved in %v steps!", steps)
+	}
 
 	return err
 }
