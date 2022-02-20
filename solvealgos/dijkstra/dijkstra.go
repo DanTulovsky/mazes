@@ -3,6 +3,7 @@
 package dijkstra
 
 import (
+	"fmt"
 	pb "github.com/DanTulovsky/mazes/proto"
 	"log"
 	"math"
@@ -22,7 +23,6 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 	// swap these for proper drawing colors
 	fromCell, toCell = toCell, fromCell
 
-	var travelPath = maze.NewPath()
 	var solvePath = maze.NewPath()
 	var facing = "north"
 
@@ -41,22 +41,13 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 	currentCell := mazeToCell
 
 	segment := maze.NewSegment(mazeToCell, facing, false)
-	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
 
+	// Solve the maze locally, we know its entire layout
 	for currentCell != d.Root() {
-		// animation delay
-		time.Sleep(delay)
-
-		//currentCell.SetVisited()
-
 		smallest := math.MaxInt64
 		var nextCell *maze.Cell
-		log.Printf("currentCell: %v", currentCell)
-		// TODO: cells are missing links
-		log.Printf("  links: %v", currentCell.Links())
 		for _, link := range currentCell.Links() {
-			log.Printf("  link: %v", link)
 			dist, _ := d.Get(link)
 			if dist < smallest {
 				smallest = dist
@@ -65,42 +56,37 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 		}
 
 		facing = currentCell.GetFacingDirection(nextCell)
-
 		segment := maze.NewSegment(nextCell, facing, false)
-		travelPath.AddSegement(segment)
 		solvePath.AddSegement(segment)
 
-		//m.SetClientPath(mazeFromCell, currentCell, travelPath)
 		currentCell = nextCell
 	}
 
 	// add toCell to path
-	travelPath.ReverseCells()
 	facing = currentCell.GetFacingDirection(mazeToCell)
 
 	segment = maze.NewSegment(mazeToCell, facing, false)
-	travelPath.AddSegement(segment)
 	solvePath.AddSegement(segment)
-
-	//m.SetClientPath(mazeFromCell, mazeToCell, travelPath)
-
-	// stats
-	//a.SetSolvePath(solvePath)
-	//a.SetTravelPath(travelPath)
-	//a.SetSolveSteps(solvePath.Length())
 
 	solved := false
 	steps := 0
 	currentServerCell := fromCell
 
-	for _, seg := range solvePath.Segments() {
+	segs := solvePath.Segments()
+	for i := 1; i < len(segs); i++ {
 		// animation delay
 		time.Sleep(delay)
 
-		reply, err := a.Move(mazeID, clientID, seg.Cell().String())
+		direction, err := a.CellDirection(segs[i-1].Cell(), segs[i].Cell())
 		if err != nil {
 			return err
 		}
+
+		reply, err := a.Move(mazeID, clientID, direction)
+		if err != nil {
+			return err
+		}
+
 		//directions = reply.GetAvailableDirections()
 		previousServerCell := currentServerCell
 		currentServerCell = reply.GetCurrentLocation()
@@ -117,8 +103,24 @@ func (a *Dijkstra) Solve(mazeID, clientID string, fromCell, toCell *pb.MazeLocat
 		}
 	}
 
-	log.Printf("maze solved!")
+	log.Printf("maze solved in %v steps", steps)
 	a.ShowStats()
 
 	return nil
+}
+
+// CellDirection returns the direction that the "to" cell is from the "from" cell
+func (a *Dijkstra) CellDirection(from, to *maze.Cell) (string, error) {
+	switch {
+	case from.North() == to:
+		return "north", nil
+	case from.South() == to:
+		return "south", nil
+	case from.East() == to:
+		return "east", nil
+	case from.West() == to:
+		return "west", nil
+	}
+
+	return "", fmt.Errorf("%v is not connect to %v", from, to)
 }

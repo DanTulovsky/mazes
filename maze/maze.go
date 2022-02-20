@@ -1399,7 +1399,7 @@ func (m *Maze) SetDistanceInfo(client *client, c *Cell) {
 	c.Distances()
 
 	_, longestPath := c.FurthestCell()
-	log.Printf("longest: %v", longestPath)
+	log.Printf("longestPath: %v", longestPath)
 
 	// use alpha blending, works for any color
 	for cell := range m.Cells() {

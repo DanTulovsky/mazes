@@ -172,7 +172,10 @@ func addClient(ctx context.Context, mazeID string, config *pb.ClientConfig, m *m
 	log.Printf("path: %s -> %s", config.GetFromCell(), config.GetToCell())
 
 	if m != nil {
-		m.AddClient(r.GetClientId(), config)
+		_, _, err := m.AddClient(r.GetClientId(), config)
+		if err != nil {
+			return err
+		}
 	}
 
 	return opSolve(mazeID, r.GetClientId(), config.GetSolveAlgo(), m, p)
@@ -195,124 +198,166 @@ func opCreateSolveMulti() error {
 	}
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              *solveAlgo,
-		PathColor:              *pathColor,
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       *visitedCellColor,
-		CurrentLocationColor:   *currentLocationColor,
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		err := addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              *solveAlgo,
+			PathColor:              *pathColor,
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       *visitedCellColor,
+			CurrentLocationColor:   *currentLocationColor,
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 
 	// register more clients
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              "recursive-backtracker",
-		PathColor:              "blue",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "blue",
-		CurrentLocationColor:   "blue",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "blue",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "blue",
+			CurrentLocationColor:   "blue",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              "recursive-backtracker",
-		PathColor:              "green",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "green",
-		CurrentLocationColor:   "green",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "green",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "green",
+			CurrentLocationColor:   "green",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              "recursive-backtracker",
-		PathColor:              "purple",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "purple",
-		CurrentLocationColor:   "purple",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              "recursive-backtracker",
+			PathColor:              "purple",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "purple",
+			CurrentLocationColor:   "purple",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              "random",
-		PathColor:              "pink",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "pink",
-		CurrentLocationColor:   "pink",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              "random",
+			PathColor:              "pink",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "pink",
+			CurrentLocationColor:   "pink",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              "random-unvisited",
-		PathColor:              "gold",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "gold",
-		CurrentLocationColor:   "gold",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              "random-unvisited",
+			PathColor:              "gold",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "gold",
+			CurrentLocationColor:   "gold",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
 
 	wd.Add(1)
-	go addClient(context.Background(), mazeID, &pb.ClientConfig{
-		SolveAlgo:              "wall-follower",
-		PathColor:              "teal",
-		FromCell:               *fromCellStr,
-		ToCell:                 *toCellStr,
-		FromCellColor:          *fromCellColor,
-		ToCellColor:            *toCellColor,
-		ShowFromToColors:       *showFromToColors,
-		VisitedCellColor:       "teal",
-		CurrentLocationColor:   "teal",
-		DisableDrawOffset:      *disableOffset,
-		MarkVisitedCells:       *markVisitedCells,
-		DrawPathLength:         *drawPathLength,
-		NumberMarkVisitedCells: *numberMarkVisitedCells,
-	}, nil, nil)
+	go func() {
+		addClient(context.Background(), mazeID, &pb.ClientConfig{
+			SolveAlgo:              "wall-follower",
+			PathColor:              "teal",
+			FromCell:               *fromCellStr,
+			ToCell:                 *toCellStr,
+			FromCellColor:          *fromCellColor,
+			ToCellColor:            *toCellColor,
+			ShowFromToColors:       *showFromToColors,
+			VisitedCellColor:       "teal",
+			CurrentLocationColor:   "teal",
+			DisableDrawOffset:      *disableOffset,
+			MarkVisitedCells:       *markVisitedCells,
+			DrawPathLength:         *drawPathLength,
+			NumberMarkVisitedCells: *numberMarkVisitedCells,
+		}, nil, nil)
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
+	}()
+
 	log.Printf("waiting for clients...")
 	wd.Wait()
 
@@ -461,7 +506,11 @@ func opCreateSolveMlDpValueIteration() error {
 	theta := *theta
 	clientID := "clientID"
 	log.Printf("Determining optimal policy using value iteration...")
-	m.AddClient(clientID, clientConfig)
+	_, _, err = m.AddClient(clientID, clientConfig)
+	if err != nil {
+		return err
+	}
+
 	// runs through the *local* maze to find optimal path
 	policy, _, err := dp.ValueIteration(m, clientID, df, theta, ml.DefaultActions)
 	if err != nil {
@@ -525,7 +574,10 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 		*maxSteps = m.Config().Rows * m.Config().Columns * 10000
 	}
 	clientID := "clientID"
-	m.AddClient(clientID, clientConfig)
+	_, _, err = m.AddClient(clientID, clientConfig)
+	if err != nil {
+		return err
+	}
 
 	// we must pass the same from/to to the server as we used locally
 	c, err := m.Client(clientID)
@@ -543,21 +595,27 @@ func opCreateSolveMlMCEpsilonGreedyControl() error {
 		mazeID := r.GetMazeId()
 		wd.Add(1)
 
-		go addClient(context.Background(), mazeID, &pb.ClientConfig{
-			SolveAlgo:              "recursive-backtracker",
-			PathColor:              "purple",
-			FromCell:               *fromCellStr,
-			ToCell:                 *toCellStr,
-			FromCellColor:          *fromCellColor,
-			ToCellColor:            *toCellColor,
-			ShowFromToColors:       *showFromToColors,
-			VisitedCellColor:       "purple",
-			CurrentLocationColor:   "purple",
-			DisableDrawOffset:      *disableOffset,
-			MarkVisitedCells:       *markVisitedCells,
-			DrawPathLength:         *drawPathLength,
-			NumberMarkVisitedCells: *numberMarkVisitedCells,
-		}, nil, nil)
+		go func() {
+			addClient(context.Background(), mazeID, &pb.ClientConfig{
+				SolveAlgo:              "recursive-backtracker",
+				PathColor:              "purple",
+				FromCell:               *fromCellStr,
+				ToCell:                 *toCellStr,
+				FromCellColor:          *fromCellColor,
+				ToCellColor:            *toCellColor,
+				ShowFromToColors:       *showFromToColors,
+				VisitedCellColor:       "purple",
+				CurrentLocationColor:   "purple",
+				DisableDrawOffset:      *disableOffset,
+				MarkVisitedCells:       *markVisitedCells,
+				DrawPathLength:         *drawPathLength,
+				NumberMarkVisitedCells: *numberMarkVisitedCells,
+			}, nil, nil)
+		}()
+
+		if err != nil {
+			log.Fatalf("error adding client: %v", err)
+		}
 	}
 
 	// runs through the *local* maze to find optimal path
@@ -976,6 +1034,8 @@ func opCreateSolveMlTDQLearning() error {
 // opCreate creates a new maze
 func opCreate() (*pb.CreateMazeReply, *maze.Maze, error) {
 	config := newMazeConfig(*createAlgo, *currentLocationColor)
+	config.ReturnMaze = true
+
 	_, c := solvealgos.NewClient()
 	ctx := context.Background()
 

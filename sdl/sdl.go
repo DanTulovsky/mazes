@@ -55,7 +55,8 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 	sdl.Do(func() {
 		w, err = sdl.CreateWindow(winTitle, xOffset, yOffset,
 			// TODO(dan): consider sdl.WINDOW_ALLOW_HIGHDPI; https://goo.gl/k9Ak0B
-			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_VULKAN|sdl.WINDOW_RESIZABLE)
+			//winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_VULKAN|sdl.WINDOW_RESIZABLE)
+			winWidth, winHeight, sdl.WINDOW_SHOWN|sdl.WINDOW_RESIZABLE)
 
 	})
 	if err != nil {
@@ -93,7 +94,7 @@ func SetupSDL(config *pb.MazeConfig, winTitle string, xOffset, yOffset int32) (*
 	return w, r
 }
 
-// CheckQuit catches quit events n the gui and cleansup
+// CheckQuit catches quit events in the gui and cleans up
 func CheckQuit(running *abool.AtomicBool) {
 	sdl.Do(func() {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {

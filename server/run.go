@@ -5,6 +5,8 @@ import (
 	_ "expvar"
 	"flag"
 	"fmt"
+	"github.com/rcrowley/go-metrics"
+	"github.com/sasha-s/go-deadlock"
 	"io"
 	"log"
 	"net"
@@ -25,9 +27,7 @@ import (
 
 	graphite "github.com/cyberdelia/go-metrics-graphite"
 	"github.com/pkg/profile"
-	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
-	"github.com/sasha-s/go-deadlock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/tevino/abool"
 	"github.com/veandco/go-sdl2/gfx"
@@ -280,7 +280,7 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 		m.SetEncodedString(encoded)
 	}
 
-	log.Printf("Maze is:\n%v\n", encoded)
+	//log.Printf("Maze is:\n%v\n", encoded)
 
 	return m, r, w, nil
 }
@@ -289,8 +289,16 @@ func createMaze(config *pb.MazeConfig) (m *maze.Maze, r *sdl.Renderer, w *sdl.Wi
 func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData) {
 	defer func() {
 		sdl.Do(func() {
-			r.Destroy()
-			w.Destroy()
+			log.Println("Destroying GUI window...")
+			if err := r.Destroy(); err != nil {
+				log.Printf("error destroying window: %v", err)
+			}
+
+			if err := w.Destroy(); err != nil {
+				log.Printf("error destroying window: %v", err)
+			}
+
+			log.Println("Finished destroying GUI window...")
 		})
 	}()
 	var wd sync.WaitGroup
@@ -322,17 +330,20 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 			// check for client communications, they are serialized for one maze
 			checkComm(m, comm, updateBG)
 		}
-		log.Printf("client comm thread died...")
+		log.Printf("client comm thread exiting...")
 	}()
 
 	showMazeStats(m)
 
 	// process background events in the maze
 	ticker := time.NewTicker(time.Second * 1)
+	wd.Add(1)
 	go func() {
+		defer wd.Done()
 		for range ticker.C {
 			processMazeEvents(m, r, updateBG)
 			if !running.IsSet() {
+				log.Println("background events thread exiting...")
 				return
 			}
 		}
@@ -351,8 +362,9 @@ func runMaze(m *maze.Maze, r *sdl.Renderer, w *sdl.Window, comm chan commandData
 	}
 
 	mazeMap.Delete(m.Config().GetId())
-	log.Printf("maze is done...")
+	log.Printf("maze is done, waiting for background threads to exit...")
 	wd.Wait()
+	log.Printf("and all done!")
 }
 
 // processMazeEvents takes care of periodic events happening in the maze
@@ -810,7 +822,9 @@ func (s *server) CreateMaze(ctx context.Context, in *pb.CreateMazeRequest) (*pb.
 	}
 	go runMaze(m, r, w, comm)
 
-	log.Printf("client requested maze in the response!")
+	if in.Config.ReturnMaze {
+		log.Printf("client requested maze in the response!")
+	}
 	return &pb.CreateMazeReply{MazeId: mazeID, EncodedMaze: m.EncodedString()}, nil
 }
 
