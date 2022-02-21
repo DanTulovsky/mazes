@@ -19,6 +19,9 @@ func init() {
 
 // Random returns a random number in [min, max)
 func Random(min, max int) int {
+	if min == max {
+		return min
+	}
 	return rand.Intn(max-min) + min
 }
 
